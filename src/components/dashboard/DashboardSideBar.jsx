@@ -1,0 +1,87 @@
+import React, { useState } from "react";
+import {
+  FaBars,
+  FaTimes,
+  FaHome,
+  FaBook,
+  FaBrain,
+  FaChartBar,
+  FaCog,
+  FaSignOutAlt,
+  FaBell,
+} from "react-icons/fa";
+
+const DashboardSidebar = () => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  const navItems = [
+    { label: "Dashboard", icon: <FaHome /> },
+    { label: "Lessons", icon: <FaBook /> },
+    { label: "Flashcards", icon: <FaBrain /> },
+    { label: "Progress", icon: <FaChartBar /> },
+    { label: "Settings", icon: <FaCog /> },
+    { label: "Logout", icon: <FaSignOutAlt /> },
+  ];
+
+  return (
+    <>
+      {/* Hamburger for small screens */}
+      <div className="lg:hidden flex justify-between bg-white p-3 shadow-md  fixed w-full z-50">
+        <h1 className="text-amber text-2xl font-bold">Lingo-Bud</h1>
+        <div className="flex gap-5 justify-between">
+          <div className="text-xl">
+            <FaBell className="text-3xl cursor-pointer pt-1 text-amber" />
+          </div>
+          <div>
+            <FaBars
+              className="text-3xl text-amber cursor-pointer"
+              onClick={() => setIsOpen(true)}
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Sidebar - always visible on large screens */}
+      <div className="hidden lg:flex lg:flex-col bg-amber text-white w-60 min-h-screen p-6 fixed">
+        <h1 className="text-2xl font-bold mb-6">LingoBud</h1>
+        <ul className="space-y-6 text-lg">
+          {navItems.map((item, i) => (
+            <li
+              key={i}
+              className="flex items-center gap-3 cursor-pointer hover:text-yellow-100"
+            >
+              {item.icon} {item.label}
+            </li>
+          ))}
+        </ul>
+      </div>
+
+      {/* Mobile Sidebar */}
+      <div
+        className={`lg:hidden fixed top-0 left-0 w-[50%] h-screen bg-amber text-white p-6 z-50 transition-transform duration-300 ${
+          isOpen ? "translate-x-0" : "-translate-x-full"
+        }`}
+      >
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold">LingoBud</h1>
+          <FaTimes
+            className="text-2xl cursor-pointer"
+            onClick={() => setIsOpen(false)}
+          />
+        </div>
+        <ul className="space-y-6 text-lg">
+          {navItems.map((item, i) => (
+            <li
+              key={i}
+              className="flex items-center gap-3 cursor-pointer hover:text-yellow-100"
+            >
+              {item.icon} {item.label}
+            </li>
+          ))}
+        </ul>
+      </div>
+    </>
+  );
+};
+
+export default DashboardSidebar;
