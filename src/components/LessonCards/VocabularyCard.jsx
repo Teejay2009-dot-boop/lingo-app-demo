@@ -1,38 +1,42 @@
-// src/components/LessonCards/VocabularyCard.jsx
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import teacher from "../../assets/IMG-20250724-WA0123-removebg-preview.png";
 
-export const VocabularyCard = ({ data, onAnswer, disabled }) => {
+export const VocabularyCard = ({ data, onAnswer, disabled, isAnswered }) => {
   const [selected, setSelected] = useState(null);
 
+  useEffect(() => {
+    // reset selection when question changes
+    setSelected(null);
+  }, [data]);
+
   const handleSelect = (option) => {
-    if (selected || disabled) return;
+    if (disabled || selected) return;
     setSelected(option);
     const isCorrect = option === data.answer;
-    onAnswer(isCorrect); // Call parent with result
+    onAnswer(isCorrect);
   };
 
   return (
     <div className="bg-gray-100 rounded-lg p-6 max-w-[700px] mx-auto text-center">
-      <div className="flex items-center justify-between mb-4 border p-10 rounded-2xl">
-        <h2 className="text-2xl font-bold mb-4">{data.question}</h2>
-        <img src={teacher} style={{ width: "8rem" }} alt="teacher" />
+      <div className="flex items-center justify-between mb-4 border p-6 rounded-2xl">
+        <h2 className="text-2xl font-bold">{data.question}</h2>
+        <img src={teacher} alt="Teacher" style={{ width: "7rem" }} />
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-20">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {data.options.map((option, index) => {
           const isSelected = selected === option;
-          const isAnswer = option === data.answer;
+          const isCorrect = option === data.answer;
 
           let btnStyle = "border px-4 py-2 rounded transition";
 
           if (selected) {
-            if (isSelected && isAnswer) {
+            if (isSelected && isCorrect) {
               btnStyle += " border-green-500 bg-green-100";
-            } else if (isSelected && !isAnswer) {
+            } else if (isSelected && !isCorrect) {
               btnStyle += " border-red-500 bg-red-100";
             } else {
-              btnStyle += " border-gray-300 text-gray-400 cursor-not-allowed";
+              btnStyle += " border-gray-300 text-gray-400";
             }
           } else {
             btnStyle += " border-gray-300 hover:bg-gray-100";
@@ -43,7 +47,7 @@ export const VocabularyCard = ({ data, onAnswer, disabled }) => {
               key={index}
               onClick={() => handleSelect(option)}
               className={btnStyle}
-              disabled={!!selected || disabled}
+              disabled={disabled || !!selected}
             >
               {option}
             </button>

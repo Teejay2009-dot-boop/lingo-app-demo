@@ -1,5 +1,6 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import GoBackBtn from "../components/GoBackBtn";
 
 const fakeLessons = [
   { id: 1, title: "Greetings", xp: 40, isLocked: false },
@@ -36,6 +37,7 @@ const LessonMap = () => {
 
   return (
     <section className="min-h-screen bg-[#fff8e1] py-12 px-4">
+      <GoBackBtn />
       <h2 className="text-3xl font-bold text-center mb-10 text-amber-600 font-fredoka">
         Choose a Lesson
       </h2>
@@ -65,7 +67,9 @@ const LessonMap = () => {
                 }`}
               >
                 <span className="text-xl text-amber">S{lesson.id}</span>
-                <span className="text-sm font-normal text-amber">{lesson.title}</span>
+                <span className="text-sm font-normal text-amber">
+                  {lesson.title}
+                </span>
               </div>
             </div>
 

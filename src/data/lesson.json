@@ -1,140 +1,119 @@
 {
-    "lesson_1": {
-        "title": "Basic Greetings",
-        "lesson_id": "A1-1",
-        "base_xp": 40,
-        "exercises": [
-            {
-                "type": "vocabulary",
-                "question": "Good morning",
-                "options": [
-                    "Ẹ káàsán",
-                    "Bàá wà?",
-                    "Ẹ káàárọ̀",
-                    "Ẹ kú alẹ́"
-                ],
-                "answer": "Ẹ káàárọ̀"
-            },
-            {
-                "type": "tap_what_you_hear",
-                "correct_answer": "Good Afternoon",
-                "audio_path": "asset/audio/good_afternoon.wav",
-                "options": ["Hello", "Good Afternoon", "Thank you", "Please"]
-            },
-            {
-                "type": "vocabulary",
-                "question": "Good evening",
-                "options": [
-                    "Ẹ káàsán",
-                    "Bàá wà?",
-                    "Ẹ káàárọ̀",
-                    "Ẹ kú alẹ́"
-                ],
-                "answer": "Ẹ kú alẹ́"
-            },
-            {
-                "type": "vocabulary",
-                "question": "Thank You",
-                "options": [
-                    "Ẹ kú iṣẹ́",
-                    "Ẹ ṣé",
-                    "Ẹ ká bọ̀",
-                    "Ẹ jọ̀ọ́"
-                ],
-                "answer": "Ẹ ṣé"
-            },
-            {
-                "type": "main_idea",
-                "composition": "John went to the store to buy some groceries. He needed milk, eggs, and bread. On his way home, he saw his friend Sarah and stopped to talk with her for a few minutes.",
-                "question": "What is the main idea of this passage?",
-                "options": [
-                  "John went grocery shopping",
-                  "John needed milk, eggs, and bread"
-                ],
-                "answer": "John went grocery shopping"
-            },
-            {
-                "type": "match_words",
-                "pairs": [
-                  ["Ẹ ṣé", "Thank you"],
-                  ["Ẹ jọ̀ọ́", "Please"],
-                  ["Ẹ ká bọ̀", "Welcome"],
-                  ["Ẹ kú iṣẹ́", "Well done"]
-                ]
-            },
-            {
-              "type": "fill_the_gap",
-              "sentence_parts": [
-                "The",
-                "cat",
-                "sat",
-                "on",
-                "the",
-                "mat"
-              ],
-              "gap_index": 1,
-              "answer": "cat",
-              "audio_path": "asset/audio/good_afternoon.wav",
-              "hint": "A small domesticated carnivorous mammal",
-              "difficulty": "easy"
-            },
-            {
-              "type": "fill_gap_best_option",
-              "sentence_parts": ["I", "want", "to", "go", "to", "the", "beach"],
-              "gap_index": 3,
-              "correct_answer": "go",
-              "options": ["go", "visit", "travel", "see"],
-              "hint": "Verb meaning to move from one place to another"
-            },
-            {
-            "type": "type_what_you_hear",
-            "audio_path": "asset/audio/good_morning.wav",
-            "correct_answer": "Good morning",
-            "difficulty": "easy"
-          },
-          {
-            "type": "type_what_you_hear",
-            "audio_path": "asset/audio/good_afternoon.wav",
-            "correct_answer": "Good afternoon",
-            "difficulty": "easy"
-          },
-          {
-            "type": "match_image_to_word",
-            "question": "What is this?",
-            "image": "asset/A1/book.png",
-            "options": ["Pen", "Book", "Eraser", "Gum"],
-            "answer": "Book"
-          },
-          {
-            "type": "match_image_to_word",
-            "question": "What is this?",
-            "image": "asset/A1/map.png",
-            "options": ["Biro", "Hat", "Map", "Gun"],
-            "answer": "Map"
-          },
-          {
-            "type": "role_play_options",
-            "scenario": "You meet a friend at a cafe. They say 'How are you doing?'",
-            "correct_answer": "I'm great, thanks for asking!",
-            "options": [
-              "I'm great, thanks for asking!",
-              "The weather is nice today",
-              "Can I have a coffee?",
-              "Goodbye"
-            ],
-            "character_image": "asset/Characters/tola 3.png"
-          },
-          {
-              "type": "role_play_type_yourself",
-              "scenario": "You meet a friend at a cafe. They say 'How are you doing?'",
-              "correct_answers": [
-                  "I'm doing well, thanks!",
-                  "Great, how about you?",
-                  "I'm good, thank you",
-                  "Fine, and you?"
-              ],
-              "character_image": "asset/Characters/tola 2.png"
-          }
+  "lesson_1": {
+    "title": "Basic Greetings",
+    "lesson_id": "A1-1",
+    "base_xp": 40,
+    "exercises": [
+      {
+        "type": "vocabulary",
+        "question": "Good morning",
+        "options": ["Ẹ káàsán", "Bàá wà?", "Ẹ káàárọ̀", "Ẹ kú alẹ́"],
+        "answer": "Ẹ káàárọ̀"
+      },
+      {
+        "type": "tap_what_you_hear",
+        "correct_answer": "Good Afternoon",
+        "audio_path": "asset/audio/good_afternoon.wav",
+        "options": ["Hello", "Good Afternoon", "Thank you", "Please"]
+      },
+
+      {
+        "type": "vocabulary",
+        "question": "Good evening",
+        "options": ["Ẹ káàsán", "Bàá wà?", "Ẹ káàárọ̀", "Ẹ kú alẹ́"],
+        "answer": "Ẹ kú alẹ́"
+      },
+      {
+        "type": "vocabulary",
+        "question": "Thank You",
+        "options": ["Ẹ kú iṣẹ́", "Ẹ ṣé", "Ẹ ká bọ̀", "Ẹ jọ̀ọ́"],
+        "answer": "Ẹ ṣé"
+      },
+      {
+        "type": "main_idea",
+        "composition": "John went to the store to buy some groceries. He needed milk, eggs, and bread. On his way home, he saw his friend Sarah and stopped to talk with her for a few minutes.",
+        "question": "What is the main idea of this passage?",
+        "options": [
+          "John went grocery shopping",
+          "John needed milk, eggs, and bread"
+        ],
+        "answer": "John went grocery shopping"
+      },
+      {
+        "type": "match_words",
+        "pairs": [
+          ["Ẹ ṣé", "Thank you"],
+          ["Ẹ jọ̀ọ́", "Please"],
+          ["Ẹ ká bọ̀", "Welcome"],
+          ["Ẹ kú iṣẹ́", "Well done"]
         ]
-    }
+      },
+      {
+        "type": "fill_the_gap",
+        "sentence_parts": ["The", "cat", "sat", "on", "the", "mat"],
+        "gap_index": 1,
+        "answer": "cat",
+        "audio_path": "asset/audio/good_afternoon.wav",
+        "hint": "A small domesticated carnivorous mammal",
+        "difficulty": "easy"
+      },
+      {
+        "type": "fill_gap_best_option",
+        "sentence_parts": ["I", "want", "to", "go", "to", "the", "beach"],
+        "gap_index": 3,
+        "correct_answer": "go",
+        "options": ["go", "visit", "travel", "see"],
+        "hint": "Verb meaning to move from one place to another"
+      },
+      {
+        "type": "type_what_you_hear",
+        "audio_path": "asset/audio/good_morning.wav",
+        "correct_answer": "Good morning",
+        "difficulty": "easy"
+      },
+      {
+        "type": "type_what_you_hear",
+        "audio_path": "asset/audio/good_afternoon.wav",
+        "correct_answer": "Good afternoon",
+        "difficulty": "easy"
+      },
+      {
+        "type": "match_image_to_word",
+        "question": "What is this?",
+        "image": "asset/A1/book.png",
+        "options": ["Pen", "Book", "Eraser", "Gum"],
+        "answer": "Book"
+      },
+      {
+        "type": "match_image_to_word",
+        "question": "What is this?",
+        "image": "asset/A1/map.png",
+        "options": ["Biro", "Hat", "Map", "Gun"],
+        "answer": "Map"
+      },
+      {
+        "type": "role_play_options",
+        "scenario": "You meet a friend at a cafe. They say 'How are you doing?'",
+        "correct_answer": "I'm great, thanks for asking!",
+        "options": [
+          "I'm great, thanks for asking!",
+          "The weather is nice today",
+          "Can I have a coffee?",
+          "Goodbye"
+        ],
+        "character_image": "asset/Characters/tola 3.png"
+      },
+      {
+        "type": "role_play_type_yourself",
+        "scenario": "You meet a friend at a cafe. They say 'How are you doing?'",
+        "correct_answers": [
+          "I'm doing well, thanks!",
+          "Great, how about you?",
+          "I'm good, thank you",
+          "Fine, and you?"
+        ],
+        "character_image": "asset/Characters/tola 2.png"
+      }
+    ]
+  }
 }
