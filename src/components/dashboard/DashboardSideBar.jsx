@@ -1,4 +1,6 @@
 import React, { useState } from "react";
+
+import { Link, useLocation } from "react-router-dom";
 import {
   FaBars,
   FaTimes,
@@ -15,13 +17,18 @@ const DashboardSidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
-    { label: "Dashboard", icon: <FaHome /> },
-    { label: "Lessons", icon: <FaBook /> },
-    { label: "Flashcards", icon: <FaBrain /> },
-    { label: "Progress", icon: <FaChartBar /> },
-    { label: "Settings", icon: <FaCog /> },
-    { label: "Logout", icon: <FaSignOutAlt /> },
+    { label: "Dashboard", icon: <FaHome />, to: "/dashboard" },
+    { label: "Lessons", icon: <FaBook />, to: "/lessons" },
+    { label: "Flashcards", icon: <FaBrain />, to: "/flashcards" },
+    { label: "Progress", icon: <FaChartBar />, to: "/progress" },
+    { label: "Settings", icon: <FaCog />, to: "/settings" },
+    { label: "Logout", icon: <FaSignOutAlt />, to: "/logout" },
   ];
+
+  const location = useLocation();
+  if (location.pathname === "/" || location.pathname === "/welcome") {
+    return null;
+  }
 
   return (
     <>
@@ -46,12 +53,14 @@ const DashboardSidebar = () => {
         <h1 className="text-2xl font-bold mb-6">LingoBud</h1>
         <ul className="space-y-6 text-lg">
           {navItems.map((item, i) => (
-            <li
-              key={i}
-              className="flex items-center gap-3 cursor-pointer hover:text-yellow-100"
-            >
-              {item.icon} {item.label}
-            </li>
+            <Link to={item.to}>
+              <li
+                key={i}
+                className="flex items-center gap-3 p-3 cursor-pointer hover:text-yellow-100"
+              >
+                {item.icon} {item.label}
+              </li>
+            </Link>
           ))}
         </ul>
       </div>
@@ -71,12 +80,14 @@ const DashboardSidebar = () => {
         </div>
         <ul className="space-y-6 text-lg">
           {navItems.map((item, i) => (
+            <Link to={item.to}>
             <li
               key={i}
-              className="flex items-center gap-3 cursor-pointer hover:text-yellow-100"
+              className="flex items-center gap-3 p-3 cursor-pointer hover:text-yellow-100"
             >
               {item.icon} {item.label}
             </li>
+            </Link>
           ))}
         </ul>
       </div>

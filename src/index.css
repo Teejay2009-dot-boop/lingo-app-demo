@@ -1,3 +1,31 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+.lesson-container {
+  background-image: url('../src/assets/Lesson-Night.jpg');
+  /* height: 100vh;
+    background-repeat: no-repeat;
+    background-position: center;
+    background-size: cover; */
+}
+
+.section-one{
+  background-image: url('../src/assets/girlwithbg.jpg')
+  ;
+  background-size: cover ;
+  background-position: center;
+  position: relative;
+  opacity: 2;
+  backdrop-filter: brightness(50%);
+}
+
+/* .section-one::after{
+  content: "";
+  top: 0;
+  left: 0;
+  height: 100%;
+  background-color: rgba(2, 2, 70, 0.075);
+  width: 100%;
+  opacity: 1;
+} */

@@ -7,6 +7,9 @@ import { Login } from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import { Lesson } from "./pages/Lesson";
 import { Progress } from "./pages/Progress";
+import Section from "./pages/Section";
+import LessonDisplay from "./pages/LessonDisplay";
+import LessonMap from "./pages/LessonMap";
 
 function App() {
   return (
@@ -16,10 +19,16 @@ function App() {
           <Route path="/" element={<Welcome />} />
           <Route path="/login" element={<Login />} />
 
-          <Route path="/lesson" element={<Lesson />} />
+          <Route path="/lessons" element={<Lesson />} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/progress" element={<Progress />} />
           <Route path="*" element={<NotFound />} />
+          <Route path="/lessons/section" element={<Section />}></Route>
+          <Route path="/lessons/section/learn" element={<LessonMap />} />
+          <Route
+            path="/lessons/section/learn/:lessonId"
+            element={<LessonDisplay />}
+          />
         </Routes>
       </Router>
     </>

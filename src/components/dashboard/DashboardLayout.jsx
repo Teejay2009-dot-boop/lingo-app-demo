@@ -1,11 +1,11 @@
-import DashboardSidebar from '../dashboard/DashboardSideBar'
+import DashboardSidebar from "../dashboard/DashboardSideBar";
 const DashboardLayout = ({ children }) => {
   // const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
   return (
-    <div className="flex bg-gray-50">
+    <div className="flex ">
       <DashboardSidebar />
-      <main className="flex-1 lg:ml-[245px] p-5 mt-16 lg:mt-0">
+      <main className="flex-1 lg:ml-[245px] mt-0 lg:mt-0">
         {/* Dashboard Content */}
         {children}
       </main>

@@ -8,6 +8,8 @@ import users from "../data/user";
 import { useState, useEffect } from "react";
 import { FaStar, FaSteam } from "react-icons/fa";
 
+import { Link } from "react-router-dom";
+
 const Dashboard = () => {
   const [width, setWidth] = useState(window.innerWidth);
 
@@ -34,7 +36,7 @@ const Dashboard = () => {
     <DashboardLayout>
       <NavBar />
 
-      <div className="transition-all duration-700 ease-in-out transform hover:scale-105 opacity-0 animate-fadeIn bg-gray-50 py-8 px-4 lg:px-12 flex flex-col lg:flex-row justify-between items-center rounded-xl shadow-sm mb-8 animate-fade-in-up">
+      <div className="transition-all duration-700 ease-in-out transform hover:scale-105 pt-52 opacity-0 animate-fadeIn bg-gray-50 py-8 px-4 lg:px-12 flex flex-col lg:flex-row justify-between items-center rounded-xl shadow-sm mb-8 animate-fade-in-up">
         <div className="flex items-center gap-6">
           <div className="text-6xl">👩‍🦰</div>
           <div>
@@ -45,9 +47,10 @@ const Dashboard = () => {
           </div>
         </div>
         <div className="mt-6 lg:mt-0">
+          <Link to={'/lessons'}>
           <button className="bg-amber text-white py-3 px-8 rounded-lg shadow hover:scale-105 transition-transform duration-200">
             Start Lesson
-          </button>
+          </button></Link>
         </div>
       </div>
 
@@ -214,9 +217,10 @@ const Dashboard = () => {
             </h1>
             <p className="text-3xl text-white font-semibold px-3">Lessons</p>
           </div>
+          <Link to={'/lessons'}>
           <button className="bg-white text-amber mt-4 py-2 rounded-full w-full font-bold mb-5">
             Go to Lessons
-          </button>
+          </button></Link>
         </div>
 
         {/* Badges */}
