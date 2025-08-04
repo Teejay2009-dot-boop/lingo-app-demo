@@ -1,23 +1,28 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { VocabularyCard } from "../components/LessonCards/VocabularyCard";
 import AudioChoiceCard from "../components/LessonCards/AudioChoiceCard";
 import GoBackBtn from "../components/GoBackBtn";
 import lessonData from "../data/lesson.json";
 import { Link } from "react-router-dom";
-
+import RolePlayTypeYourself from "../components/LessonCards/RolePlayTypeYourself";
+import MatchImageToWord from "../components/LessonCards/MatchImageToWord";
 import mascot from "../assets/IMG-20250724-WA0115-removebg-preview.png";
 import { FaArrowAltCircleRight, FaArrowCircleLeft } from "react-icons/fa";
 import { MainIdea } from "../components/LessonCards/MainIdea";
-import {FillintheGapBestOption} from "../components/LessonCards/FillintheGapBestOption";
+import { FillintheGapBestOption } from "../components/LessonCards/FillintheGapBestOption";
 import { FillTheGap } from "../components/LessonCards/FillintheGap";
 import MatchWords from "../components/LessonCards/MatchWords";
+import TypeWhatYouHear from "../components/LessonCards/TypeWhatYouHear";
+import RolePlayOptions from "../components/LessonCards/RolePlayOptions";
 
 const LessonDisplay = () => {
   const lesson = lessonData.lesson_1;
   const exercises = lesson.exercises;
 
+  const baseXp = lesson.base_xp || 10;
+
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [lives, setLives] = useState(3);
+  const [lives, setLives] = useState(5);
   const [xp, setXp] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(null);
@@ -26,8 +31,8 @@ const LessonDisplay = () => {
   const currentExercise = exercises[currentIndex];
   const progressPercent = Math.round((currentIndex / exercises.length) * 100);
 
+  // Handle correct/incorrect answer logic
   const handleAnswer = (isCorrect) => {
-    // prevent scoring multiple times
     if (answeredMap[currentIndex]) return;
 
     setAnsweredMap((prev) => ({
@@ -41,16 +46,18 @@ const LessonDisplay = () => {
     if (!isCorrect) {
       setLives((prev) => Math.max(0, prev - 1));
     } else {
-      setXp((prev) => prev + lesson.base_xp);
+      setXp((prev) => prev + baseXp);
     }
   };
 
+  // Proceed to next question
   const handleNext = () => {
     setShowModal(false);
-    setCurrentIndex((prev) => Math.min(prev + 1, exercises.length - 1));
+    setCurrentIndex((prev) => prev + 1); // ← Let it go beyond last index
     setLastAnswerCorrect(null);
   };
 
+  // Render appropriate card
   const renderCard = () => {
     const isAnswered = answeredMap[currentIndex];
     const shouldDisable = showModal || !!isAnswered;
@@ -75,11 +82,35 @@ const LessonDisplay = () => {
         return <FillTheGap {...props} />;
       case "match_words":
         return <MatchWords {...props} />;
+      case "type_what_you_hear":
+        return <TypeWhatYouHear {...props} />;
+      case "role_play_type_yourself":
+        return <RolePlayTypeYourself {...props} />;
+      case "match_image_to_word":
+        return <MatchImageToWord {...props} />;
+      case "role_play_options":
+        return <RolePlayOptions {...props} />;
       default:
         return <p>Unsupported card type</p>;
     }
   };
 
+  // 🧠 Track XP and coins on completion
+  const isLessonComplete = currentIndex >= exercises.length;
+  const totalCorrect = Object.values(answeredMap).filter(
+    (ans) => ans.isCorrect
+  ).length;
+  const totalXP = totalCorrect * baseXp;
+  const totalCoins = totalCorrect * 5;
+
+  useEffect(() => {
+    if (isLessonComplete) {
+      const existingXP = Number(localStorage.getItem("totalXP") || 0);
+      localStorage.setItem("totalXP", existingXP + totalXP);
+    }
+  }, [isLessonComplete, totalXP]);
+
+  // 💀 Game Over
   if (lives <= 0) {
     return (
       <div className="p-6 h-screen flex flex-col items-center justify-center text-center">
@@ -95,11 +126,38 @@ const LessonDisplay = () => {
     );
   }
 
-  if (currentIndex >= exercises.length) {
+  // ✅ Lesson Completion
+  if (isLessonComplete) {
+    const overallXP = localStorage.getItem("totalXP") || totalXP;
+
     return (
-      <div className="p-6 text-center">
-        <h2 className="text-2xl font-bold mb-4">Lesson Complete 🎉</h2>
-        <p>Total XP Earned: {xp}</p>
+      <div className="min-h-screen flex flex-col items-center justify-center text-center p-6">
+        <img src={mascot} alt="Completed" className="w-28 mb-6" />
+
+        <h2 className="text-3xl font-bold text-amber mb-3">
+          Lesson Complete 🎉
+        </h2>
+
+        <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md space-y-4">
+          <p className="text-lg font-semibold">
+            ✅ Correct Answers: {totalCorrect} / {exercises.length}
+          </p>
+          <p className="text-lg font-semibold text-green-700">
+            🌟 XP Gained: {totalXP}
+          </p>
+          <p className="text-lg font-semibold text-yellow-600">
+            🪙 Coins Earned: {totalCoins}
+          </p>
+          <p className="text-sm text-gray-500">
+            🧠 Total XP so far: {overallXP}
+          </p>
+        </div>
+
+        <Link to="/dashboard">
+          <button className="mt-6 bg-amber text-white px-6 py-2 rounded-full hover:bg-amber-600 transition-all">
+            Go to Dashboard
+          </button>
+        </Link>
       </div>
     );
   }
@@ -108,24 +166,24 @@ const LessonDisplay = () => {
     <div className="min-h-screen bg-gray-100 p-6 relative">
       <GoBackBtn />
 
-      {/* Top Stats */}
+      {/* Stats */}
       <div className="flex justify-between items-center pt-10 mb-4">
-        <p className="font-semibold">XP: {xp}</p>
-        <p className="font-semibold">Lives: {lives}</p>
+        <p className="font-semibold hidden">XP: {xp}</p>
+        <p className="font-semibold">❤ Lives: {lives}</p>
       </div>
 
       {/* Progress Bar */}
       <div className="w-full bg-gray-300 h-2 rounded mb-4">
         <div
-          className="bg-amber  h-2 rounded transition-all duration-300"
+          className="bg-amber h-2 rounded transition-all duration-300"
           style={{ width: `${progressPercent}%` }}
         />
       </div>
 
-      {/* Exercise Card */}
+      {/* Current Card */}
       {renderCard()}
 
-      {/* Navigation Buttons */}
+      {/* Navigation */}
       <div className="flex justify-between mt-6 max-w-[700px] mx-auto">
         <button
           onClick={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
@@ -137,14 +195,14 @@ const LessonDisplay = () => {
 
         <button
           onClick={() => setCurrentIndex((prev) => prev + 1)}
-          disabled={currentIndex >= exercises.length - 1}
+          disabled={currentIndex >= exercises.length}
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
         >
           <FaArrowAltCircleRight /> Skip
         </button>
       </div>
 
-      {/* Modal */}
+      {/* Feedback Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div

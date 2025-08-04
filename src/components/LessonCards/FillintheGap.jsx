@@ -26,7 +26,7 @@ export const FillTheGap = ({ data, onAnswer, disabled, isAnswered }) => {
       {data.audio_path && (
         <button
           onClick={playAudio}
-          className="border border-amber rounded-2xl px-28 py-16 text-black mb-6 cursor-pointer transition"
+          className="border border-amber rounded-2xl px-20 lg:px-28 py-16 text-black mb-6 cursor-pointer transition"
         >
           🔊 Play Audio
         </button>

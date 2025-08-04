@@ -19,12 +19,12 @@ export const VocabularyCard = ({ data, onAnswer, disabled, isAnswered }) => {
 
   return (
     <div className="bg-gray-100 rounded-lg p-6 max-w-[700px] mx-auto text-center">
-      <div className="flex items-center justify-between mb-4 border p-6 rounded-2xl">
+      <div className=" grid lg:flex items-center justify-between mb-4 border p-6 rounded-2xl">
         <div>
           <h2 className="text-2xl font-bold">{data.question}</h2>
           <p>{}</p>
         </div>
-        <img src={teacher} alt="Teacher" style={{ width: "7rem" }} />
+        <img src={teacher} alt="Teacher" className="pt-10 lg:pt-0" style={{ width: "7rem", textAlign:'center' }} />
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

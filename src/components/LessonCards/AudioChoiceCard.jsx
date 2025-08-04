@@ -25,7 +25,7 @@ const AudioChoiceCard = ({ data, onAnswer, disabled, isAnswered }) => {
 
       <button
         onClick={handlePlayAudio}
-        className="border border-amber rounded-2xl px-28 py-16 text-black mb-6 cursor-pointer transition"
+        className="border border-amber rounded-2xl px-20 lg:px-28 py-16 text-black mb-6 cursor-pointer transition"
         disabled={disabled}
       >
         🔊 Play Audio

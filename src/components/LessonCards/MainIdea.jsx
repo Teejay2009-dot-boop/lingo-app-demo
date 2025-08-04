@@ -12,13 +12,13 @@ export const MainIdea = ({ data, onAnswer, disabled, isAnswered }) => {
 
   return (
     <div className="bg-gray-100 rounded-lg p-6 max-w-[700px] mx-auto text-center">
-      <h2 className="text-2xl font-bold">{data.question}</h2>
-      <div className="flex items-center gap-5 lg:gap-10 justify-between mb-4 border p-6 rounded-2xl">
+      <h2 className="text-2xl font-bold mb-4">{data.question}</h2>
+      <div className=" grid pt-6 lg:pt-0 lg:flex items-center gap-5 lg:gap-10 justify-between mb-4 border p-6 rounded-2xl">
         <div>
           
           <p className="font-semibold">{data.composition}</p>
         </div>
-        <img src={teacher} alt="Teacher" style={{ width: "7rem" }} />
+        {/* <img src={teacher} alt="Teacher" style={{ width: "7rem" }} /> */}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
