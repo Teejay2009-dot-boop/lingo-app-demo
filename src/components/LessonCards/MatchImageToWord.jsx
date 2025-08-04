@@ -1,5 +1,5 @@
-import React, { useState } from "react";
-import image from '../../assets/IMG-20250724-WA0115-removebg-preview.png'
+import React, { useEffect, useState } from "react";
+import image from "../../assets/IMG-20250724-WA0115-removebg-preview.png";
 
 const MatchImageToWord = ({ data, onAnswer, disabled, isAnswered }) => {
   const [selected, setSelected] = useState(null);
@@ -10,6 +10,11 @@ const MatchImageToWord = ({ data, onAnswer, disabled, isAnswered }) => {
     const isCorrect = option === data.answer;
     onAnswer(isCorrect);
   };
+
+  // ✅ Reset selected when data changes (new question)
+  useEffect(() => {
+    setSelected(null);
+  }, [data]);
 
   return (
     <div className="bg-white rounded-lg p-6 max-w-[700px] mx-auto text-center shadow">

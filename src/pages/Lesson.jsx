@@ -6,22 +6,39 @@ import island from "../assets/Rockremovebg-preview.png";
 import users from "../data/user";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
 import { Link } from "react-router-dom";
-import { FaBell, FaCog, FaHeart, FaWallet, FaArrowCircleLeft } from "react-icons/fa";
+import mascot from '../assets/IMG-20250724-WA0115-removebg-preview.png'
+import { Navigate } from "react-router-dom";
+import {
+  FaBell,
+  FaCog,
+  FaHeart,
+  FaWallet,
+  FaArrowCircleLeft,
+  FaRobot,
+  FaShopify,
+  FaGamepad
+} from "react-icons/fa";
 
 export const Lesson = () => {
   return (
     <>
-      <div className="min-h-screen bg-cover bg-center lesson-container">
+    
+
+      <div className=" bg-cover bg-center lesson-container">
         {/* Centered Content Goes Here */}
-        
+
         <div className="text-amber flex fixed top-0 justify-between  p-3 w-full items-center text-2xl">
-          <Link to={'/dashboard'}>
-          <FaArrowCircleLeft/></Link>
-       
+          <Link to={"/dashboard"}>
+            <FaArrowCircleLeft />
+          </Link>
+
           <FaCog />
           <div className="">
             <Link to={"/lessons/section"}>
-             <button className=" bg-gray-900 border-amber border rounded-3xl  py-2 px-4">MoonStone</button></Link>
+              <button className=" bg-gray-900 border-amber border rounded-3xl  py-2 px-4">
+                MoonStone
+              </button>
+            </Link>
           </div>
           <FaWallet />
           <FaBell />
@@ -38,7 +55,18 @@ export const Lesson = () => {
           </div> */}
         </div>
         <div className="flex items-center justify-center min-h-screen">
-          <img src={island} alt="" />
+         <img src={island} alt="island" className="w-full max-w-md object-contain" />
+
+        </div>
+        <div className="fixed  top-[300px] xl:top-[250px] lg:top-[200px] left-0 border border-amber bg-gray-900 flex flex-col py-3 h-64 px-2 text-3xl rounded-full ml-2 lg:ml-6 justify-around text-amber">
+            <Link to={"/chat"}>
+            <FaRobot  className="cursor-pointer hover:text-white tranition ease-in duration-300" /></Link>
+            <FaShopify className="cursor-pointer hover:text-white tranition ease-in duration-300" />
+            <FaGamepad className="cursor-pointer hover:text-white tranition ease-in duration-300"/>
+</div>
+
+        <div className=" text-amber fixed bottom-0 right-0 items-start">
+          <img src={mascot} style={{width:'10rem'}} alt="" />
         </div>
       </div>
     </>

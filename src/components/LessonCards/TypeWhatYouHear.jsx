@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 const TypeWhatYouHear = ({ data, onAnswer, disabled, isAnswered }) => {
   const [input, setInput] = useState("");
@@ -8,10 +8,18 @@ const TypeWhatYouHear = ({ data, onAnswer, disabled, isAnswered }) => {
   const handleSubmit = () => {
     if (submitted || disabled) return;
 
-    const isCorrect = input.trim().toLowerCase() === data.correct_answer.trim().toLowerCase();
+    const isCorrect =
+      input.trim().toLowerCase() === data.correct_answer.trim().toLowerCase();
+
     setSubmitted(true);
     onAnswer(isCorrect);
   };
+
+  // ✅ Reset state when a new question is loaded
+  useEffect(() => {
+    setInput("");
+    setSubmitted(false);
+  }, [data]); // triggers on question change
 
   return (
     <div className="bg-white rounded-lg p-6 max-w-[700px] mx-auto text-center shadow-md">
@@ -19,7 +27,7 @@ const TypeWhatYouHear = ({ data, onAnswer, disabled, isAnswered }) => {
 
       <button
         onClick={() => audioRef.current && audioRef.current.play()}
-        className="border border-amber rounded-2xl px-20 lg:px-28 py-16 text-black mb-6 cursor-pointer transition"
+        className="border border-amber rounded-2xl px-28 py-16 text-black mb-6 cursor-pointer transition"
         disabled={disabled}
       >
         🔊 Play Audio
@@ -42,20 +50,6 @@ const TypeWhatYouHear = ({ data, onAnswer, disabled, isAnswered }) => {
       >
         Submit
       </button>
-
-      {submitted && (
-        <p
-          className={`mt-4 text-lg font-semibold ${
-            input.trim().toLowerCase() === data.correct_answer.trim().toLowerCase()
-              ? "text-green-600"
-              : "text-red-600"
-          }`}
-        >
-          {/* {input.trim().toLowerCase() === data.correct_answer.trim().toLowerCase()
-            ? "✅ Correct!"
-            : `❌ Incorrect! Answer: ${data.correct_answer}`} */}
-        </p>
-      )}
     </div>
   );
 };

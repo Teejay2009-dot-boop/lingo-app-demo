@@ -10,6 +10,7 @@ import { Progress } from "./pages/Progress";
 import Section from "./pages/Section";
 import LessonDisplay from "./pages/LessonDisplay";
 import LessonMap from "./pages/LessonMap";
+import ChatBotUI from "./pages/ChatBotUi";
 
 function App() {
   return (
@@ -25,6 +26,9 @@ function App() {
           <Route path="*" element={<NotFound />} />
           <Route path="/lessons/section" element={<Section />}></Route>
           <Route path="/lessons/section/learn" element={<LessonMap />} />
+          <Route path="/chat" element={<ChatBotUI />} />
+
+          {/* Dynamic route for lesson display */}
           <Route
             path="/lessons/section/learn/:lessonId"
             element={<LessonDisplay />}
