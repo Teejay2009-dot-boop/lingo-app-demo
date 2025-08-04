@@ -4,9 +4,13 @@ import AudioChoiceCard from "../components/LessonCards/AudioChoiceCard";
 import GoBackBtn from "../components/GoBackBtn";
 import lessonData from "../data/lesson.json";
 import { Link } from "react-router-dom";
+
 import mascot from "../assets/IMG-20250724-WA0115-removebg-preview.png";
 import { FaArrowAltCircleRight, FaArrowCircleLeft } from "react-icons/fa";
-import { MainIdeaCard } from "../components/LessonCards/MainIdea";
+import { MainIdea } from "../components/LessonCards/MainIdea";
+import {FillintheGapBestOption} from "../components/LessonCards/FillintheGapBestOption";
+import { FillTheGap } from "../components/LessonCards/FillintheGap";
+import MatchWords from "../components/LessonCards/MatchWords";
 
 const LessonDisplay = () => {
   const lesson = lessonData.lesson_1;
@@ -63,8 +67,14 @@ const LessonDisplay = () => {
         return <VocabularyCard {...props} />;
       case "tap_what_you_hear":
         return <AudioChoiceCard {...props} />;
-        case    'main_idea':
-            return <MainIdeaCard/>
+      case "main_idea":
+        return <MainIdea {...props} />;
+      case "fill_gap_best_option":
+        return <FillintheGapBestOption {...props} />;
+      case "fill_the_gap":
+        return <FillTheGap {...props} />;
+      case "match_words":
+        return <MatchWords {...props} />;
       default:
         return <p>Unsupported card type</p>;
     }
@@ -107,7 +117,7 @@ const LessonDisplay = () => {
       {/* Progress Bar */}
       <div className="w-full bg-gray-300 h-2 rounded mb-4">
         <div
-          className="bg-green-500 h-2 rounded transition-all duration-300"
+          className="bg-amber  h-2 rounded transition-all duration-300"
           style={{ width: `${progressPercent}%` }}
         />
       </div>
@@ -140,7 +150,7 @@ const LessonDisplay = () => {
           <div
             className={`p-6 rounded-lg shadow-md text-center w-11/12 max-w-md border ${
               lastAnswerCorrect
-                ? "bg-green-200 border-green-500"
+                ? "bg-green-300 border-green-500"
                 : "bg-red-300 border-red-500"
             }`}
           >

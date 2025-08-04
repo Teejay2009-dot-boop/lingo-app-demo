@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import teacher from "../../assets/IMG-20250724-WA0123-removebg-preview.png";
+import lessonData from '../../data/lesson.json'
 
 export const VocabularyCard = ({ data, onAnswer, disabled, isAnswered }) => {
   const [selected, setSelected] = useState(null);
@@ -19,7 +20,10 @@ export const VocabularyCard = ({ data, onAnswer, disabled, isAnswered }) => {
   return (
     <div className="bg-gray-100 rounded-lg p-6 max-w-[700px] mx-auto text-center">
       <div className="flex items-center justify-between mb-4 border p-6 rounded-2xl">
-        <h2 className="text-2xl font-bold">{data.question}</h2>
+        <div>
+          <h2 className="text-2xl font-bold">{data.question}</h2>
+          <p>{}</p>
+        </div>
         <img src={teacher} alt="Teacher" style={{ width: "7rem" }} />
       </div>
 
