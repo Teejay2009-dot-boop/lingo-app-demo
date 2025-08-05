@@ -66,11 +66,13 @@ export const Lesson = () => {
         )}
 
         <div className="flex items-center justify-center min-h-screen px-4 ">
-          <img
+          <Link to={'/lessons/section'}>
+          <button>
+            <img
             src={island}
             alt="island"
             className="w-full max-w-md object-contain animate-float mx-auto"
-          />
+          /></button></Link>
         </div>
 
         <div className="fixed top-[350px] lg:top-[300px] left-0 border border-amber bg-gray-900 flex flex-col py-3 h-64 px-2 text-3xl rounded-full ml-2 lg:ml-6 justify-around text-amber z-30">
