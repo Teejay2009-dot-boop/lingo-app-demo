@@ -19,6 +19,15 @@ export default {
           "100%": { opacity: 1, transform: "scale(1)" },
         },
       },
+      animation: {
+        float: "float 4s ease-in-out infinite",
+      },
+      keyframes: {
+        float: {
+          "0%, 100%": { transform: "translateY(0px)" },
+          "50%": { transform: "translateY(-15px)" },
+        },
+      },
     },
   },
   plugins: [],
