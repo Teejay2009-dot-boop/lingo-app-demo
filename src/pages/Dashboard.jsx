@@ -5,6 +5,7 @@ import NavBar from "../components/dashboard/NavBar";
 import users from "../data/profile_data.json";
 import { FaStar, FaSteam, FaHeart, FaWallet } from "react-icons/fa";
 import { Link } from "react-router-dom";
+import avatar from '../assets/girlwithbg.jpg'; // Adjust the path as necessary
 
 const Dashboard = () => {
   const [width, setWidth] = useState(window.innerWidth);
@@ -31,7 +32,7 @@ const Dashboard = () => {
         <div className="lg:flex items-center justify-between flex-wrap">
           <div className="flex items-center gap-6">
             <img
-              src={`/assets/${users.avatar}`}
+              src={avatar}
               alt="Avatar"
               className="w-16 h-16 rounded-full border-2 border-amber"
             />

@@ -14,12 +14,12 @@ export const NavBar = () => {
         <div className="font-bold font-fredoka text-3xl">LingoBud</div>
 
         <div className="hidden md:flex items-center gap-4">
-          <Link to="/dashboard">
+          <Link to="/login">
             <button className="px-4 py-2 text-lg bg-white text-amber font-semibold rounded-lg hover:bg-yellow-100 transition">
               Login
             </button>
           </Link>
-          <Link to="/signup">
+          <Link to="/login">
             <button className="px-4 py-2 text-lg bg-white text-amber font-semibold rounded-lg hover:bg-yellow-100 transition">
               Sign Up
             </button>
@@ -64,7 +64,7 @@ export const NavBar = () => {
             </Link>
           </li>
           <li onClick={closeMenu} className="px-4 py-5">
-            <Link to="/dashboard">
+            <Link to="/login">
               <button className="w-full bg-amber text-white py-2 rounded-lg text-lg font-semibold shadow hover:translate-y-0.5 transition-all">
                 Login / Sign Up
               </button>

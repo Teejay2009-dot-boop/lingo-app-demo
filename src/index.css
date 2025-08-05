@@ -3,23 +3,34 @@
 @tailwind utilities;
 
 .lesson-container {
-  background-image: url('../src/assets/Lesson-Night.jpg');
+  background-image: url("../src/assets/Lesson-Night.jpg");
   /* height: 100vh;
     background-repeat: no-repeat;
     background-position: center;
     background-size: cover; */
 }
 
-.section-one{
-  background-image: url('../src/assets/girlwithbg.jpg')
-  ;
-  background-size: cover ;
+.section-one {
+  background-image: url("../src/assets/girlwithbg.jpg");
+  background-size: cover;
   background-position: center;
   position: relative;
   opacity: 2;
   backdrop-filter: brightness(50%);
 }
 
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-10px);
+  }
+}
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
 /* .section-one::after{
   content: "";
   top: 0;

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
-
+import { auth } from "../../firebase/config/firebase";
+import { signOut } from "firebase/auth";
 import { Link, useLocation } from "react-router-dom";
 import {
   FaBars,
@@ -14,6 +15,14 @@ import {
 } from "react-icons/fa";
 
 const DashboardSidebar = () => {
+  const logout = async () => {
+    try {
+      await signOut(auth);
+    } catch (error) {
+      console.error("Error signing out: ", error);
+    }
+  };
+
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
@@ -22,7 +31,7 @@ const DashboardSidebar = () => {
     { label: "Flashcards", icon: <FaBrain />, to: "/flashcards" },
     { label: "Progress", icon: <FaChartBar />, to: "/progress" },
     { label: "Settings", icon: <FaCog />, to: "/settings" },
-    { label: "Logout", icon: <FaSignOutAlt />, to: "/logout" },
+    {},
   ];
 
   const location = useLocation();
@@ -81,14 +90,20 @@ const DashboardSidebar = () => {
         <ul className="space-y-6 text-lg">
           {navItems.map((item, i) => (
             <Link to={item.to}>
-            <li
-              key={i}
-              className="flex items-center gap-3 p-3 cursor-pointer hover:text-yellow-100"
-            >
-              {item.icon} {item.label}
-            </li>
+              <li
+                key={i}
+                className="flex items-center gap-3 p-3 cursor-pointer hover:text-yellow-100"
+              >
+                {item.icon} {item.label}
+              </li>
             </Link>
           ))}
+          <Link to={"/"}>
+            <button onClick={logout} className="flex gap-2 items-center pl-4">
+              {" "}
+              <FaSignOutAlt /> LogOut
+            </button>
+          </Link>
         </ul>
       </div>
     </>

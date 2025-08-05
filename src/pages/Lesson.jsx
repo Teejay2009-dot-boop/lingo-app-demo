@@ -19,6 +19,7 @@ import {
   FaRobot,
   FaShopify,
   FaGamepad,
+  FaCoins
 } from "react-icons/fa";
 
 export const Lesson = () => {
@@ -33,9 +34,13 @@ export const Lesson = () => {
             <FaArrowCircleLeft className="text-2xl cursor-pointer" />
           </Link>
 
-          <div className="flex items-center gap-6">
-            <div className="text-lg font-semibold flex items-center gap-1">
+          <div className="flex items-center gap-4">
+            <div className="text-md font-semibold flex items-center gap-3">
               ⭐ {users.xp} XP
+              <p className="hidden md:block lg:flex gap-2 items-center "> Coins:<FaCoins/> {users.coins}</p> 
+            <p className="flex gap-2 items-center">
+            ❤ Lives: {users.lives}/{users.max_lives}
+            </p>
             </div>
 
             <button
@@ -50,16 +55,13 @@ export const Lesson = () => {
               />
             </button>
 
-            <FaCog className="text-2xl cursor-pointer" />
+            
           </div>
         </div>
 
         {showDropdown && (
           <div className="absolute right-4 top-16 bg-gray-800 text-white rounded-lg shadow-md w-48 p-4 z-50">
-            <p>🪙 Coins: {users.coins}</p>
-            <p>
-              ❤️ Lives: {users.lives}/{users.max_lives}
-            </p>
+            
             <p>🎟 Tickets: {users.tickets}</p>
             <p>🔥 Streak: {users.streak_days} days</p>
           </div>
@@ -83,6 +85,7 @@ export const Lesson = () => {
             <FaShopify className="cursor-pointer hover:text-white tranition ease-in duration-300" />
           </Link>
           <FaGamepad className="cursor-pointer hover:text-white tranition ease-in duration-300" />
+          <FaCog className="text-2xl cursor-pointer" />
         </div>
 
         <div className=" text-amber fixed bottom-0 right-0 items-start">
