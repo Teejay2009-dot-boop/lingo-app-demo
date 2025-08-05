@@ -6,7 +6,7 @@ import island from "../assets/Rockremovebg-preview.png";
 import users from "../data/user";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
 import { Link } from "react-router-dom";
-import mascot from '../assets/IMG-20250724-WA0115-removebg-preview.png'
+import mascot from "../assets/IMG-20250724-WA0115-removebg-preview.png";
 import { Navigate } from "react-router-dom";
 import {
   FaBell,
@@ -16,17 +16,14 @@ import {
   FaArrowCircleLeft,
   FaRobot,
   FaShopify,
-  FaGamepad
+  FaGamepad,
 } from "react-icons/fa";
 
 export const Lesson = () => {
   return (
     <>
-    
-
       <div className=" bg-cover bg-center lesson-container">
         {/* Centered Content Goes Here */}
-
         <div className="text-amber flex fixed top-0 justify-between  p-3 w-full items-center text-2xl">
           <Link to={"/dashboard"}>
             <FaArrowCircleLeft />
@@ -54,19 +51,29 @@ export const Lesson = () => {
             </div>
           </div> */}
         </div>
-        <div className="flex items-center justify-center min-h-screen">
-         <img src={island} alt="island" className="w-full max-w-md object-contain" />
 
+        <div className="flex items-center justify-center min-h-screen px-4">
+          <img
+            src={island}
+            alt="island"
+            className="w-full max-w-md object-contain"
+          />
         </div>
-        <div className="fixed  top-[300px] xl:top-[250px] lg:top-[200px] left-0 border border-amber bg-gray-900 flex flex-col py-3 h-64 px-2 text-3xl rounded-full ml-2 lg:ml-6 justify-around text-amber">
-            <Link to={"/chat"}>
-            <FaRobot  className="cursor-pointer hover:text-white tranition ease-in duration-300" /></Link>
+        <div className=" fixed top-1/2 transform -translate-y-1/2 left-0 border border-amber bg-gray-900 flex flex-col py-3 h-64 px-2 text-3xl rounded-full ml-2 lg:ml-6 justify-around text-amber">
+          <Link to={"/chat"}>
+            <FaRobot className="cursor-pointer hover:text-white tranition ease-in duration-300" />
+          </Link>
+          <Link to={"/lessons/shop"}>
             <FaShopify className="cursor-pointer hover:text-white tranition ease-in duration-300" />
-            <FaGamepad className="cursor-pointer hover:text-white tranition ease-in duration-300"/>
-</div>
-
+          </Link>
+          <FaGamepad className="cursor-pointer hover:text-white tranition ease-in duration-300" />
+        </div>
         <div className=" text-amber fixed bottom-0 right-0 items-start">
-          <img src={mascot} style={{width:'10rem'}} alt="" />
+          <Link to={"/chat"}>
+            <button className=" ease-in duration-100 hover:scale-110 transition-transform">
+              <img src={mascot} style={{ width: "10rem" }} alt="" />
+            </button>
+          </Link>
         </div>
       </div>
     </>

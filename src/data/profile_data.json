@@ -1,0 +1,79 @@
+{
+    "username": "",
+    "avatar": "moonstone_avatar.png",
+    "rank": "MoonStone",
+    "learning_reason": "Other.",
+    "proficiency_level": "A1",
+    "xp": 23,
+    "total_accuracy": 65,
+    "total_lessons": 31,
+    "total_xp": 2867,
+    "level": 11,
+    "xp_to_next_level": 882,
+    "lesson_history": [
+    ],
+    "streak_days": 6,
+    "last_reward_date": "2025-08-04",
+    "reward_streak": 3,
+    "streak_freezes": 1,
+    "used_streak_freezes": [],
+    "lives": 4,
+    "max_lives": 5,
+    "last_life_lost_time": null,
+    "last_login": "2025-08-04",
+    "is_premium": false,
+    "life_purchases": [
+    ],
+    "coins": 310,
+    "tickets": 0,
+    "total_coins_earned": 300,
+    "total_coins_spent": 1000,
+    "total_tickets_earned": 0,
+    "total_tickets_spent": 0,
+    "coin_history": [
+    ],
+    "ticket_history": [],
+    "notes": {},
+    "ad_watches": [
+
+    ],
+    "completed_lessons": [
+        ],
+    "progress": {
+        "accuracy": 0,
+        "fluency": 0,
+        "score": 0,
+        "rank": "",
+        "badges": [],
+        "achievements": [],
+        "current_lesson": "",
+        "completed_lessons": [],
+        "challenge_results": [],
+        "exercise_data": {
+            "vocabulary": {},
+            "grammar": {},
+            "speaking": {},
+            "listening": {}
+        }
+    },
+    "title": "Moonstone Beginner",
+    "lessons": 5,
+    "level_thresholds": [
+        0,
+        100,
+        300,
+        600,
+        1000,
+        1500
+    ],
+    "rank_history": [
+        {
+            "date": "2025-07-26 17:18:06",
+            "from": "Moonstone",
+            "to": "Topaz",
+            "level": 11
+        }
+    ],
+    "purchases": [
+    ]
+}
