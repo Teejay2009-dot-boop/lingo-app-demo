@@ -1,5 +1,5 @@
 import "./App.css";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { HashRouter as Router, Routes, Route } from "react-router-dom";
 
 import Welcome from "./pages/Welcome";
 import { NotFound } from "./pages/NotFound";
@@ -28,7 +28,7 @@ function App() {
           <Route path="/lessons/section" element={<Section />}></Route>
           <Route path="/lessons/section/learn" element={<LessonMap />} />
           <Route path="/chat" element={<ChatBotUI />} />
-           <Route path="/lessons/shop" element={<Shop/>}/> 
+          <Route path="/lessons/shop" element={<Shop />} />
 
           {/* Dynamic route for lesson display */}
           <Route
