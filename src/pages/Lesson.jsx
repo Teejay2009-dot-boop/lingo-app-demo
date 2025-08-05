@@ -71,7 +71,7 @@ export const Lesson = () => {
             <img
             src={island}
             alt="island"
-            className="w-full max-w-md object-contain animate-float mx-auto"
+            className="w-full max-w-md object-contain cursor-pointer animate-float mx-auto"
           /></button></Link>
         </div>
 
