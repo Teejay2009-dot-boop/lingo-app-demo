@@ -2,25 +2,54 @@ import React, { useState, useEffect } from "react";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
 import Badge from "../components/dashboard/Badges";
 import NavBar from "../components/dashboard/NavBar";
-import users from "../data/profile_data.json";
 import { FaStar, FaSteam, FaHeart, FaWallet } from "react-icons/fa";
 import { Link } from "react-router-dom";
-import avatar from '../assets/girlwithbg.jpg'; // Adjust the path as necessary
+import avatar from "../assets/girlwithbg.jpg";
+import { auth, db } from "../firebase/config/firebase";
+import { doc, onSnapshot } from "firebase/firestore";
 
 const Dashboard = () => {
   const [width, setWidth] = useState(window.innerWidth);
+  const [userData, setUserData] = useState(null);
 
+  // 📌 Track window resize
   useEffect(() => {
     const handleResize = () => setWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
-  const totalLessons = users.total_lessons || 0;
-  const completedLessons = users.completed_lessons?.length || 0;
-  const progressPercent = totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
-  const xpProgress = users.xp_to_next_level
-    ? (users.xp / users.xp_to_next_level) * 100
+  // 📌 Fetch live user data from Firestore
+  useEffect(() => {
+    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      if (user) {
+        const userRef = doc(db, "users", user.uid);
+        const unsubscribeSnapshot = onSnapshot(userRef, (docSnap) => {
+          if (docSnap.exists()) {
+            setUserData(docSnap.data());
+          }
+        });
+        return unsubscribeSnapshot;
+      }
+    });
+    return unsubscribeAuth;
+  }, []);
+
+  if (!userData) {
+    return (
+      <DashboardLayout>
+        <NavBar />
+        <div className="p-8 text-center flex items-center justify-center text-xl h-screen">Loading your data...</div>
+      </DashboardLayout>
+    );
+  }
+
+  const totalLessons = userData.total_lessons || 0;
+  const completedLessons = userData.completed_lessons?.length || 0;
+  const progressPercent =
+    totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
+  const xpProgress = userData.xp_to_next_level
+    ? (userData.xp / userData.xp_to_next_level) * 100
     : 0;
 
   return (
@@ -28,7 +57,7 @@ const Dashboard = () => {
       <NavBar />
 
       {/* Greeting Banner */}
-      <div className="pt-28 bg-gray-50 py-0 px-4 lg:px-12 rounded-xl shadow-sm mb-8 animate-fade-in-up transition ">
+      <div className="pt-28 bg-gray-50 py-0 px-4 lg:px-12 rounded-xl shadow-sm mb-8 animate-fade-in-up transition">
         <div className="lg:flex items-center justify-between flex-wrap">
           <div className="flex items-center gap-6">
             <img
@@ -37,8 +66,10 @@ const Dashboard = () => {
               className="w-16 h-16 rounded-full border-2 border-amber"
             />
             <div>
-              <h1 className="text-4xl font-bold text-amber pt-2">Hi, {users.username || "Learner"}!</h1>
-              <p className="text-amber py-1 text-lg">{users.title}</p>
+              <h1 className="text-4xl font-bold text-amber pt-2">
+                Hi, {userData.username || "Learner"}!
+              </h1>
+              <p className="text-amber py-1 text-lg">{userData.title}</p>
             </div>
           </div>
           <Link to={"/lessons"}>
@@ -55,7 +86,7 @@ const Dashboard = () => {
         <div className="bg-white p-6 flex justify-between rounded-2xl shadow items-center">
           <FaStar className="text-7xl text-amber" />
           <div>
-            <h1 className="text-3xl font-bold">{users.xp}</h1>
+            <h1 className="text-3xl font-bold">{userData.xp}</h1>
             <p className="text-gray-500">Current XP</p>
             <div className="w-40 h-2 bg-gray-200 rounded mt-2">
               <div
@@ -63,7 +94,9 @@ const Dashboard = () => {
                 style={{ width: `${xpProgress}%` }}
               />
             </div>
-            <p className="text-xs text-gray-400">XP to next level: {users.xp_to_next_level}</p>
+            <p className="text-xs text-gray-400">
+              XP to next level: {userData.xp_to_next_level}
+            </p>
           </div>
         </div>
 
@@ -71,9 +104,11 @@ const Dashboard = () => {
         <div className="bg-white p-6 flex gap-4 rounded-2xl shadow items-center">
           <FaSteam className="text-7xl text-amber" />
           <div>
-            <h1 className="text-3xl font-bold">{users.streak_days}</h1>
+            <h1 className="text-3xl font-bold">{userData.streak_days}</h1>
             <p className="text-gray-500">Day Streak</p>
-            <p className="text-xs text-gray-400">🔥 Streak Freezes: {users.streak_freezes}</p>
+            <p className="text-xs text-gray-400">
+              🔥 Streak Freezes: {userData.streak_freezes}
+            </p>
           </div>
         </div>
 
@@ -81,12 +116,12 @@ const Dashboard = () => {
         <div className="bg-white p-6 rounded-2xl shadow flex flex-col justify-between">
           <div className="flex items-center gap-4">
             <FaWallet className="text-3xl text-yellow-500" />
-            <p className="text-lg font-bold">Coins: {users.coins}</p>
+            <p className="text-lg font-bold">Coins: {userData.coins}</p>
           </div>
           <div className="flex items-center gap-4 mt-3">
             <FaHeart className="text-red-500 text-3xl" />
             <p className="text-lg font-bold">
-              Lives: {users.lives}/{users.max_lives}
+              Lives: {userData.lives}/{userData.max_lives}
             </p>
           </div>
         </div>

@@ -14,8 +14,8 @@ import { FillTheGap } from "../components/LessonCards/FillintheGap";
 import MatchWords from "../components/LessonCards/MatchWords";
 import TypeWhatYouHear from "../components/LessonCards/TypeWhatYouHear";
 import RolePlayOptions from "../components/LessonCards/RolePlayOptions";
-
-const userFromStorage = JSON.parse(localStorage.getItem('user')) || {}
+import { auth, db } from "../firebase/config/firebase";
+import { doc, updateDoc, increment, getDoc } from "firebase/firestore";
 
 const LessonDisplay = () => {
   const lesson = lessonData.lesson_1;
@@ -25,7 +25,7 @@ const LessonDisplay = () => {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [lives, setLives] = useState(5);
-  const [xp, setXp] = useState(userFromStorage.xp || 0);
+  const [xp, setXp] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(null);
   const [answeredMap, setAnsweredMap] = useState({});
@@ -33,8 +33,22 @@ const LessonDisplay = () => {
   const currentExercise = exercises[currentIndex];
   const progressPercent = Math.round((currentIndex / exercises.length) * 100);
 
+  // Fetch lives + XP from Firestore on mount
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (!auth.currentUser) return;
+      const userRef = doc(db, "users", auth.currentUser.uid);
+      const snap = await getDoc(userRef);
+      if (snap.exists()) {
+        setLives(snap.data().lives ?? 5);
+        setXp(snap.data().xp ?? 0);
+      }
+    };
+    fetchUserData();
+  }, []);
+
   // Handle correct/incorrect answer logic
-  const handleAnswer = (isCorrect) => {
+  const handleAnswer = async (isCorrect) => {
     if (answeredMap[currentIndex]) return;
 
     setAnsweredMap((prev) => ({
@@ -45,19 +59,26 @@ const LessonDisplay = () => {
     setShowModal(true);
     setLastAnswerCorrect(isCorrect);
 
+    const userRef = doc(db, "users", auth.currentUser.uid);
+
     if (!isCorrect) {
       setLives((prev) => Math.max(0, prev - 1));
+      await updateDoc(userRef, {
+        lives: increment(-1),
+      });
     } else {
       setXp((prev) => prev + baseXp);
+      await updateDoc(userRef, {
+        xp: increment(baseXp),
+        coins: increment(5),
+      });
     }
   };
-
-  // Update XP on lesson completion
 
   // Proceed to next question
   const handleNext = () => {
     setShowModal(false);
-    setCurrentIndex((prev) => prev + 1); // ← Let it go beyond last index
+    setCurrentIndex((prev) => prev + 1);
     setLastAnswerCorrect(null);
   };
 
@@ -99,22 +120,7 @@ const LessonDisplay = () => {
     }
   };
 
-  // 🧠 Track XP and coins on completion
-  const isLessonComplete = currentIndex >= exercises.length;
-  const totalCorrect = Object.values(answeredMap).filter(
-    (ans) => ans.isCorrect
-  ).length;
-  const totalXP = totalCorrect * baseXp;
-  const totalCoins = totalCorrect * 5;
-
-  useEffect(() => {
-    if (isLessonComplete) {
-      const existingXP = Number(localStorage.getItem("totalXP") || 0);
-      localStorage.setItem("totalXP", existingXP + totalXP);
-    }
-  }, [isLessonComplete, totalXP]);
-
-  // 💀 Game Over
+  // Game Over
   if (lives <= 0) {
     return (
       <div className="p-6 h-screen flex flex-col items-center justify-center text-center">
@@ -130,33 +136,15 @@ const LessonDisplay = () => {
     );
   }
 
-  // ✅ Lesson Completion
+  // Lesson Completion
+  const isLessonComplete = currentIndex >= exercises.length;
   if (isLessonComplete) {
-    const overallXP = localStorage.getItem("totalXP") || totalXP;
-
     return (
       <div className="min-h-screen flex flex-col items-center justify-center text-center p-6">
         <img src={mascot} alt="Completed" className="w-28 mb-6" />
-
         <h2 className="text-3xl font-bold text-amber mb-3">
           Lesson Complete 🎉
         </h2>
-
-        <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-md space-y-4">
-          <p className="text-lg font-semibold">
-            ✅ Correct Answers: {totalCorrect} / {exercises.length}
-          </p>
-          <p className="text-lg font-semibold text-green-700">
-            🌟 XP Gained: {totalXP}
-          </p>
-          <p className="text-lg font-semibold text-yellow-600">
-            🪙 Coins Earned: {totalCoins}
-          </p>
-          <p className="text-sm text-gray-500">
-            🧠 Total XP so far: {overallXP}
-          </p>
-        </div>
-
         <Link to="/dashboard">
           <button className="mt-6 bg-amber text-white px-6 py-2 rounded-full hover:bg-amber-600 transition-all">
             Go to Dashboard
@@ -169,25 +157,17 @@ const LessonDisplay = () => {
   return (
     <div className="min-h-screen bg-gray-100 p-6 relative">
       <GoBackBtn />
-
-      {/* Stats */}
       <div className="flex justify-between items-center pt-10 mb-4">
-        <p className="font-semibold hidden">XP: {xp}</p>
         <p className="font-semibold">❤ Lives: {lives}</p>
+        <p className="font-semibold">XP: {xp}</p>
       </div>
-
-      {/* Progress Bar */}
       <div className="w-full bg-gray-300 h-2 rounded mb-4">
         <div
           className="bg-amber h-2 rounded transition-all duration-300"
           style={{ width: `${progressPercent}%` }}
         />
       </div>
-
-      {/* Current Card */}
       {renderCard()}
-
-      {/* Navigation */}
       <div className="flex justify-between mt-6 max-w-[700px] mx-auto">
         <button
           onClick={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
@@ -196,7 +176,6 @@ const LessonDisplay = () => {
         >
           <FaArrowCircleLeft /> Previous
         </button>
-
         <button
           onClick={() => setCurrentIndex((prev) => prev + 1)}
           disabled={currentIndex >= exercises.length}
@@ -205,8 +184,6 @@ const LessonDisplay = () => {
           <FaArrowAltCircleRight /> Skip
         </button>
       </div>
-
-      {/* Feedback Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
           <div
