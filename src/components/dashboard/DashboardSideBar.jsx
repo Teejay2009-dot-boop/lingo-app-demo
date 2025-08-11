@@ -71,6 +71,12 @@ const DashboardSidebar = () => {
               </li>
             </Link>
           ))}
+          <Link to={"/"}>
+            <button onClick={logout} className="flex gap-2 items-center pl-4">
+              {" "}
+              <FaSignOutAlt /> LogOut
+            </button>
+          </Link>
         </ul>
       </div>
 

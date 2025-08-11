@@ -20,7 +20,7 @@ export const HowItWorks = () => {
   ];
 
   return (
-    <section className="bg-white px-4 md:px-20 py-10 text-center ">
+    <section id="#about" className="bg-white px-4 md:px-20 py-10 text-center ">
       <h2 className="text-amber text-3xl md:text-4xl lg:text-5xl font-fredoka font-bold">
         How It Works
       </h2>

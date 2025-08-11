@@ -36,7 +36,7 @@ const plans = [
 
 const Pricing = () => {
   return (
-    <section className="py-16 px-6 md:px-20 bg-white">
+    <section id="#pricing" className="py-16 px-6 md:px-20 bg-white">
       <h2 className="text-center text-4xl font-fredoka font-bold text-amber mb-12">
         Choose Your Plan
       </h2>

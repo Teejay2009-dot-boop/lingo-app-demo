@@ -20,7 +20,7 @@ const Footer = () => {
         <div>
           <h3 className="text-lg font-semibold text-amber mb-4">Quick Links</h3>
           <ul className="space-y-2 text-sm">
-            {["Home", "Pricing", "FAQ", "Login", "Sign Up"].map((link, i) => (
+            {/* {["Home", "Pricing", "FAQ", "Login", "Sign Up"].map((link, i) => (
               <li key={i}>
                 <Link
                   to={`/${link.toLowerCase().replace(" ", "")}`}
@@ -29,7 +29,12 @@ const Footer = () => {
                   {link}
                 </Link>
               </li>
-            ))}
+            ))} */}
+            <li><a href="Home" className="text-white transition-colors duration-200 hover:text-amber">Home</a></li>
+            <li><a href="about" className="text-white transition-colors duration-200 hover:text-amber">About</a></li>
+            <li><a href="pricing" className="text-white transition-colors duration-200 hover:text-amber">Pricing</a></li>
+            <li><a href="faq" className="text-white transition-colors duration-200 hover:text-amber">FAQ</a></li>
+            <li><a href="login" className="text-white transition-colors duration-200 hover:text-amber">Login</a></li>
           </ul>
         </div>
 
@@ -40,7 +45,7 @@ const Footer = () => {
           </h3>
           <div className="flex space-x-5 text-xl text-gray-300">
             <a
-              href="#"
+              href="#Home"
               className="hover:text-amber hover:scale-110 transition duration-300"
             >
               <FaTwitter />

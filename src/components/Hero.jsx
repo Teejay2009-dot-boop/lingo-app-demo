@@ -7,7 +7,7 @@ import welcomeChar from "../assets/IMG-20250724-WA0123-removebg-preview.png";
 
 function HeroSection() {
   return (
-    <section className="min-h-[90vh] flex flex-col-reverse md:flex-row items-center justify-between px-6 md:px-10 py-5 bg-[#FFFBEA]">
+    <section id="#Home" className="min-h-[90vh] flex flex-col-reverse md:flex-row items-center justify-between px-6 md:px-10 py-5 bg-[#FFFBEA]">
       {/* Left Text */}
       <div className="text-center md:text-left space-y-6 max-w-xl">
         <h1 className="text-4xl md:text-5xl font-fredoka font-bold text-amber leading-tight">

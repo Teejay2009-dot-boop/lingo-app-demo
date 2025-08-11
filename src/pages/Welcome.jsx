@@ -17,7 +17,7 @@ import Footer from "../components/Footer";
 const Welcome = () => {
   return (
     <>
-      <NavBar />
+      <NavBar  />
       <HeroSection />
       <HowItWorks />
       <div className="text-4xl lg:text-5xl font-bold text-amber my-10 text-center">

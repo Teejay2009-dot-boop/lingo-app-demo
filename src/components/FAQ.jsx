@@ -40,7 +40,7 @@ const FAQ = () => {
   };
 
   return (
-    <section className="bg-[#FFFDE7] py-16 px-4">
+    <section id="#faq" className="bg-[#FFFDE7] py-16 px-4">
       <h2 className="text-3xl font-bold text-center text-amber font-fredoka mb-10">
         Frequently Asked Questions
       </h2>

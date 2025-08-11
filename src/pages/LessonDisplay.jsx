@@ -15,6 +15,8 @@ import MatchWords from "../components/LessonCards/MatchWords";
 import TypeWhatYouHear from "../components/LessonCards/TypeWhatYouHear";
 import RolePlayOptions from "../components/LessonCards/RolePlayOptions";
 
+const userFromStorage = JSON.parse(localStorage.getItem('user')) || {}
+
 const LessonDisplay = () => {
   const lesson = lessonData.lesson_1;
   const exercises = lesson.exercises;
@@ -23,7 +25,7 @@ const LessonDisplay = () => {
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [lives, setLives] = useState(5);
-  const [xp, setXp] = useState(0);
+  const [xp, setXp] = useState(userFromStorage.xp || 0);
   const [showModal, setShowModal] = useState(false);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(null);
   const [answeredMap, setAnsweredMap] = useState({});
@@ -49,6 +51,8 @@ const LessonDisplay = () => {
       setXp((prev) => prev + baseXp);
     }
   };
+
+  // Update XP on lesson completion
 
   // Proceed to next question
   const handleNext = () => {

@@ -10,7 +10,7 @@ const CallToAction = () => {
       <p className="text-gray-700 text-lg mb-6">
         Build your language skills with fun lessons, streaks, and flashcards.
       </p>
-      <Link to="/signup">
+      <Link to="/login">
         <button className="bg-amber text-white font-bold py-3 px-6 rounded-xl text-lg shadow hover:bg-[#d5a900] transition">
           Get Started
         </button>
