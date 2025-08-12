@@ -42,8 +42,8 @@ export const FillTheGap = ({ data, onAnswer, disabled, isAnswered }) => {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               disabled={hasSubmitted || disabled}
-              className="mx-2 px-2 py-1 border border-gray-400 rounded w-32 text-center"
-              placeholder="___"
+              className="mx-2 px-1 py-1  w-32 text-center"
+              placeholder="__________"
             />
           ) : (
             <span key={idx} className="mx-1">

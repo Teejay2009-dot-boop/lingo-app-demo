@@ -11,11 +11,28 @@ import { doc, onSnapshot } from "firebase/firestore";
 const Dashboard = () => {
   const [width, setWidth] = useState(window.innerWidth);
   const [userData, setUserData] = useState(null);
+  const [loadind, setLoading] = useState(true);
 
   // 📌 Track window resize
   useEffect(() => {
     const handleResize = () => setWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
+
+    if (auth.currentUser) {
+      const unsub = onSnapshot(
+        doc(db, "users", auth.currentUser.uid),
+        (docSnap) => {
+          if (docSnap.exists()) {
+            setUserData(docSnap.data());
+          }
+          setLoading(false);
+        }
+      );
+      return () => {
+        window.removeEventListener("resize", handleResize);
+        unsub();
+      };
+    }
     return () => window.removeEventListener("resize", handleResize);
   }, []);
 
@@ -39,17 +56,19 @@ const Dashboard = () => {
     return (
       <DashboardLayout>
         <NavBar />
-        <div className="p-8 text-center flex items-center justify-center text-xl h-screen">Loading your data...</div>
+        <div className="p-8 text-center flex items-center justify-center text-xl h-screen">
+          Loading your data...
+        </div>
       </DashboardLayout>
     );
   }
 
-  const totalLessons = userData.total_lessons || 0;
-  const completedLessons = userData.completed_lessons?.length || 0;
+  const totalLessons = userData?.totalLessons || 0;
+  const completedLessons = userData?.completed_lessons?.length || 0;
   const progressPercent =
     totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
-  const xpProgress = userData.xp_to_next_level
-    ? (userData.xp / userData.xp_to_next_level) * 100
+  const xpProgress = userData?.xp_to_next_level
+    ? (userData?.xp / userData?.xp_to_next_level) * 100
     : 0;
 
   return (
@@ -67,9 +86,9 @@ const Dashboard = () => {
             />
             <div>
               <h1 className="text-4xl font-bold text-amber pt-2">
-                Hi, {userData.username || "Learner"}!
+                Hi, {userData?.username || "Learner"}!
               </h1>
-              <p className="text-amber py-1 text-lg">{userData.title}</p>
+              <p className="text-amber py-1 text-lg">{userData?.title}</p>
             </div>
           </div>
           <Link to={"/lessons"}>
@@ -86,7 +105,7 @@ const Dashboard = () => {
         <div className="bg-white p-6 flex justify-between rounded-2xl shadow items-center">
           <FaStar className="text-7xl text-amber" />
           <div>
-            <h1 className="text-3xl font-bold">{userData.xp}</h1>
+            <h1 className="text-3xl font-bold">{userData?.xp}</h1>
             <p className="text-gray-500">Current XP</p>
             <div className="w-40 h-2 bg-gray-200 rounded mt-2">
               <div
@@ -95,7 +114,7 @@ const Dashboard = () => {
               />
             </div>
             <p className="text-xs text-gray-400">
-              XP to next level: {userData.xp_to_next_level}
+              XP to next level: {userData?.xp_to_next_level}
             </p>
           </div>
         </div>
@@ -104,10 +123,10 @@ const Dashboard = () => {
         <div className="bg-white p-6 flex gap-4 rounded-2xl shadow items-center">
           <FaSteam className="text-7xl text-amber" />
           <div>
-            <h1 className="text-3xl font-bold">{userData.streak_days}</h1>
+            <h1 className="text-3xl font-bold">{userData?.streak_days}</h1>
             <p className="text-gray-500">Day Streak</p>
             <p className="text-xs text-gray-400">
-              🔥 Streak Freezes: {userData.streak_freezes}
+              🔥 Streak Freezes: {userData?.streak_freezes}
             </p>
           </div>
         </div>
@@ -116,12 +135,12 @@ const Dashboard = () => {
         <div className="bg-white p-6 rounded-2xl shadow flex flex-col justify-between">
           <div className="flex items-center gap-4">
             <FaWallet className="text-3xl text-yellow-500" />
-            <p className="text-lg font-bold">Coins: {userData.coins}</p>
+            <p className="text-lg font-bold">Coins: {userData?.coins}</p>
           </div>
           <div className="flex items-center gap-4 mt-3">
             <FaHeart className="text-red-500 text-3xl" />
             <p className="text-lg font-bold">
-              Lives: {userData.lives}/{userData.max_lives}
+              Lives: {userData?.lives}/{userData?.max_lives}
             </p>
           </div>
         </div>

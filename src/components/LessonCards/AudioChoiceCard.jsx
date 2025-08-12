@@ -36,7 +36,7 @@ const AudioChoiceCard = ({ data, onAnswer, disabled, isAnswered }) => {
           const isSelected = selected === option;
           const isCorrect = option === data.correct_answer;
 
-          let btnStyle = "border px-4 py-2 rounded transition";
+          let btnStyle = "rounded-lg hover:translate-y-[3px] ease-in duration-300 transition border px-4 py-2 rounded transition";
 
           if (selected) {
             if (isSelected && isCorrect) {

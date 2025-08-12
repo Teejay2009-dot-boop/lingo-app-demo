@@ -19,7 +19,7 @@ export const VocabularyCard = ({ data, onAnswer, disabled, isAnswered }) => {
 
   return (
     <div className="bg-gray-100 rounded-lg p-6 max-w-[700px] mx-auto text-center">
-      <div className=" grid lg:flex items-center justify-between mb-4 border p-6 rounded-2xl">
+      <div className=" grid lg:flex items-center justify-between mb-4 border border-amber p-6 rounded-2xl">
         <div>
           <h2 className="text-2xl font-bold">{data.question}</h2>
           <p>{}</p>
@@ -32,7 +32,7 @@ export const VocabularyCard = ({ data, onAnswer, disabled, isAnswered }) => {
           const isSelected = selected === option;
           const isCorrect = option === data.answer;
 
-          let btnStyle = "border px-4 py-2 rounded transition";
+          let btnStyle = "border px-4 py-2 rounded-lg hover:translate-y-[3px] ease-in duration-300 transition";
 
           if (selected) {
             if (isSelected && isCorrect) {

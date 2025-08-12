@@ -140,16 +140,31 @@ const LessonDisplay = () => {
   const isLessonComplete = currentIndex >= exercises.length;
   if (isLessonComplete) {
     return (
-      <div className="min-h-screen flex flex-col items-center justify-center text-center p-6">
+      <div className="min-h-screen flex flex-col items-center justify-around px-3 text-center py-6">
         <img src={mascot} alt="Completed" className="w-28 mb-6" />
         <h2 className="text-3xl font-bold text-amber mb-3">
           Lesson Complete 🎉
         </h2>
-        <Link to="/dashboard">
+        <div className="flex justify-center gap-10 rounded-full">
+          <button className="py-7 px-4 border border-amber rounded-full flex flex-col gap-5">
+            <p className="text-xl">Xp</p>
+            <p>{getDoc(xp )}</p>
+          </button>
+          <button className="p-8 items-center border border-amber rounded-lg flex flex-col gap-5"><p className="text-xl">Coins</p></button>
+          <button className="py-7 px-4 border border-amber rounded-md flex flex-col gap-5"><p className="text-xl">Lives Remaining</p></button>
+        </div>
+       <div className="flex justify-between gap-4">
+         <Link to="/dashboard">
           <button className="mt-6 bg-amber text-white px-6 py-2 rounded-full hover:bg-amber-600 transition-all">
             Go to Dashboard
           </button>
         </Link>
+         <Link to="/dashboard">
+          <button className="mt-6 bg-amber text-white px-6 py-2 rounded-full hover:bg-amber-600 transition-all">
+            Go to Shop
+          </button>
+        </Link>
+       </div>
       </div>
     );
   }
