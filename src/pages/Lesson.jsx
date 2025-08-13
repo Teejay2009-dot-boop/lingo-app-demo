@@ -59,7 +59,7 @@ export const Lesson = () => {
         <div className="flex items-center gap-4">
           <div className="text-md font-semibold flex items-center gap-3">
             ⭐ {userData.xp} XP
-            <p className="hidden md:block lg:flex gap-2 items-center">
+            <p className="hidden  md:flex gap-2 items-center">
               Coins: <FaCoins /> {userData.coins}
             </p>
             <p className="flex gap-2 items-center">
@@ -102,7 +102,7 @@ export const Lesson = () => {
       </div>
 
       {/* Sidebar */}
-      <div className="fixed top-[350px] lg:top-[300px] left-0 border border-amber bg-gray-900 flex flex-col py-3 h-64 px-2 text-3xl rounded-full ml-2 lg:ml-6 justify-around text-amber z-30">
+      <div className="fixed top-[350px] md:top-[250px] lg:top-[300px] left-0 border border-amber bg-gray-900 flex flex-col py-3 h-64 px-2 text-3xl rounded-full ml-2 lg:ml-6 justify-around text-amber z-30">
         <Link to={"/chat"}>
           <FaRobot className="cursor-pointer hover:text-white transition ease-in duration-300" />
         </Link>

@@ -1,6 +1,8 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import GoBackBtn from "../components/GoBackBtn";
+import { Link } from "react-router-dom";
+import { FaArrowAltCircleLeft, FaArrowCircleLeft } from "react-icons/fa";
 
 const fakeLessons = [
   { id: 1, title: "Greetings", xp: 40, isLocked: false },
@@ -36,8 +38,10 @@ const LessonMap = () => {
   };
 
   return (
-    <section className="min-h-screen bg-[#fff8e1] py-12 px-4">
-      <GoBackBtn />
+    <section className="min-h-screen bg-[#fff8e1] pb-12 pt-7 px-4">
+      <Link to={'/lessons/section'}>
+      <FaArrowAltCircleLeft className="text-3xl text-amber hover:text-yellow-600 transition-colors duration-150 ease-in"/>
+      </Link>
       <h2 className="text-3xl font-bold text-center mb-10 text-amber-600 font-fredoka">
         Choose a Lesson
       </h2>

@@ -2,11 +2,11 @@ import React, { useState, useEffect } from "react";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
 import Badge from "../components/dashboard/Badges";
 import NavBar from "../components/dashboard/NavBar";
-import { FaStar, FaSteam, FaHeart, FaWallet } from "react-icons/fa";
+import { FaStar, FaSteam, FaHeart, FaWallet, FaBell } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import avatar from "../assets/girlwithbg.jpg";
 import { auth, db } from "../firebase/config/firebase";
-import { doc, onSnapshot } from "firebase/firestore";
+import { doc, getDoc, onSnapshot } from "firebase/firestore";
 
 const Dashboard = () => {
   const [width, setWidth] = useState(window.innerWidth);
@@ -18,6 +18,9 @@ const Dashboard = () => {
     const handleResize = () => setWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
 
+    // Fetching username
+
+    
     // Listen for auth state, then set up Firestore listener
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
       if (user) {
@@ -73,11 +76,23 @@ const Dashboard = () => {
 
   return (
     <DashboardLayout>
-      <NavBar />
+      <div className="hidden lg:block bg-gray-50">
+        <div className="">
+          <div className="flex gap-10 pt-4 items-center justify-end mr-9">
+            <FaBell className="text-3xl hover:translate-y-[-2px] transition-transform duration-500 cursor-pointer pt-1 text-amber" />
+            <div className="text-xl flex justify-center gap-2">
+              <div className="flex items-center justify-center gap-2">
+                <div>👩‍🦰</div>
+              <div className="text-amber pt-1 font-semibold">{userData?.username}</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Greeting Banner */}
-      <div className="pt-28 bg-gray-50 py-0 px-4 lg:px-12 rounded-xl shadow-sm mb-8 animate-fade-in-up transition">
-        <div className="lg:flex items-center justify-between flex-wrap">
+      <div className="pt-28 md:pt-18 lg:10 bg-gray-50 py-0 px-4 lg:px-12 rounded-xl shadow-sm mb-10 animate-fade-in-up transition">
+        <div className="md:flex items-center justify-between flex-wrap">
           <div className="flex items-center gap-6">
             <img
               src={avatar}
@@ -107,7 +122,7 @@ const Dashboard = () => {
           <div>
             <h1 className="text-3xl font-bold">{userData?.xp}</h1>
             <p className="text-gray-500">Current XP</p>
-            <div className="w-40 h-2 bg-gray-200 rounded mt-2">
+            <div className="w-40 h-2 bg-gray-200 rounded mt-2 overflow-hidden">
               <div
                 className="h-2 bg-amber rounded"
                 style={{ width: `${xpProgress}%` }}
