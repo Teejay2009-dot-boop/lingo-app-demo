@@ -11,33 +11,14 @@ import { doc, onSnapshot } from "firebase/firestore";
 const Dashboard = () => {
   const [width, setWidth] = useState(window.innerWidth);
   const [userData, setUserData] = useState(null);
-  const [loadind, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
 
-  // 📌 Track window resize
   useEffect(() => {
+    // Track screen resize
     const handleResize = () => setWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
 
-    if (auth.currentUser) {
-      const unsub = onSnapshot(
-        doc(db, "users", auth.currentUser.uid),
-        (docSnap) => {
-          if (docSnap.exists()) {
-            setUserData(docSnap.data());
-          }
-          setLoading(false);
-        }
-      );
-      return () => {
-        window.removeEventListener("resize", handleResize);
-        unsub();
-      };
-    }
-    return () => window.removeEventListener("resize", handleResize);
-  }, []);
-
-  // 📌 Fetch live user data from Firestore
-  useEffect(() => {
+    // Listen for auth state, then set up Firestore listener
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
       if (user) {
         const userRef = doc(db, "users", user.uid);
@@ -45,19 +26,38 @@ const Dashboard = () => {
           if (docSnap.exists()) {
             setUserData(docSnap.data());
           }
+          setLoading(false);
         });
-        return unsubscribeSnapshot;
+        return unsubscribeSnapshot; // cleanup when auth changes
+      } else {
+        setUserData(null);
+        setLoading(false);
       }
     });
-    return unsubscribeAuth;
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+      unsubscribeAuth();
+    };
   }, []);
+
+  if (loading) {
+    return (
+      <DashboardLayout>
+        <NavBar />
+        <div className="p-8 text-center flex items-center justify-center text-xl h-screen">
+          Loading your data...
+        </div>
+      </DashboardLayout>
+    );
+  }
 
   if (!userData) {
     return (
       <DashboardLayout>
         <NavBar />
         <div className="p-8 text-center flex items-center justify-center text-xl h-screen">
-          Loading your data...
+          Please log in to view your dashboard.
         </div>
       </DashboardLayout>
     );

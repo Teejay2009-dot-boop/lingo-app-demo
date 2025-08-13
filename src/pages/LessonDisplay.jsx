@@ -15,7 +15,13 @@ import MatchWords from "../components/LessonCards/MatchWords";
 import TypeWhatYouHear from "../components/LessonCards/TypeWhatYouHear";
 import RolePlayOptions from "../components/LessonCards/RolePlayOptions";
 import { auth, db } from "../firebase/config/firebase";
-import { doc, updateDoc, increment, getDoc } from "firebase/firestore";
+import {
+  doc,
+  updateDoc,
+  increment,
+  getDoc,
+  onSnapshot,
+} from "firebase/firestore";
 
 const LessonDisplay = () => {
   const lesson = lessonData.lesson_1;
@@ -26,6 +32,7 @@ const LessonDisplay = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [lives, setLives] = useState(5);
   const [xp, setXp] = useState(0);
+  const [coins, setCoins] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(null);
   const [answeredMap, setAnsweredMap] = useState({});
@@ -33,21 +40,23 @@ const LessonDisplay = () => {
   const currentExercise = exercises[currentIndex];
   const progressPercent = Math.round((currentIndex / exercises.length) * 100);
 
-  // Fetch lives + XP from Firestore on mount
+  // ✅ Real-time fetch for XP, coins, lives
   useEffect(() => {
-    const fetchUserData = async () => {
-      if (!auth.currentUser) return;
-      const userRef = doc(db, "users", auth.currentUser.uid);
-      const snap = await getDoc(userRef);
+    if (!auth.currentUser) return;
+    const userRef = doc(db, "users", auth.currentUser.uid);
+
+    const unsub = onSnapshot(userRef, (snap) => {
       if (snap.exists()) {
         setLives(snap.data().lives ?? 5);
         setXp(snap.data().xp ?? 0);
+        setCoins(snap.data().coins ?? 0);
       }
-    };
-    fetchUserData();
+    });
+
+    return () => unsub();
   }, []);
 
-  // Handle correct/incorrect answer logic
+  // ✅ Handle correct/incorrect answer
   const handleAnswer = async (isCorrect) => {
     if (answeredMap[currentIndex]) return;
 
@@ -62,12 +71,8 @@ const LessonDisplay = () => {
     const userRef = doc(db, "users", auth.currentUser.uid);
 
     if (!isCorrect) {
-      setLives((prev) => Math.max(0, prev - 1));
-      await updateDoc(userRef, {
-        lives: increment(-1),
-      });
+      await updateDoc(userRef, { lives: increment(-1) });
     } else {
-      setXp((prev) => prev + baseXp);
       await updateDoc(userRef, {
         xp: increment(baseXp),
         coins: increment(5),
@@ -75,14 +80,12 @@ const LessonDisplay = () => {
     }
   };
 
-  // Proceed to next question
   const handleNext = () => {
     setShowModal(false);
     setCurrentIndex((prev) => prev + 1);
     setLastAnswerCorrect(null);
   };
 
-  // Render appropriate card
   const renderCard = () => {
     const isAnswered = answeredMap[currentIndex];
     const shouldDisable = showModal || !!isAnswered;
@@ -120,7 +123,7 @@ const LessonDisplay = () => {
     }
   };
 
-  // Game Over
+  // 🛑 Game Over
   if (lives <= 0) {
     return (
       <div className="p-6 h-screen flex flex-col items-center justify-center text-center">
@@ -136,7 +139,7 @@ const LessonDisplay = () => {
     );
   }
 
-  // Lesson Completion
+  // 🎉 Lesson Complete
   const isLessonComplete = currentIndex >= exercises.length;
   if (isLessonComplete) {
     return (
@@ -147,24 +150,30 @@ const LessonDisplay = () => {
         </h2>
         <div className="flex justify-center gap-10 rounded-full">
           <button className="py-7 px-4 border border-amber rounded-full flex flex-col gap-5">
-            <p className="text-xl">Xp</p>
-            <p>{getDoc(xp )}</p>
+            <p className="text-xl">XP</p>
+            <p>{xp}</p>
           </button>
-          <button className="p-8 items-center border border-amber rounded-lg flex flex-col gap-5"><p className="text-xl">Coins</p></button>
-          <button className="py-7 px-4 border border-amber rounded-md flex flex-col gap-5"><p className="text-xl">Lives Remaining</p></button>
+          <button className="p-8 items-center border border-amber rounded-lg flex flex-col gap-5">
+            <p className="text-xl">Coins</p>
+            <p>{coins}</p>
+          </button>
+          <button className="py-7 px-4 border border-amber rounded-md flex flex-col gap-5">
+            <p className="text-xl">Lives Remaining</p>
+            <p>{lives}</p>
+          </button>
         </div>
-       <div className="flex justify-between gap-4">
-         <Link to="/dashboard">
-          <button className="mt-6 bg-amber text-white px-6 py-2 rounded-full hover:bg-amber-600 transition-all">
-            Go to Dashboard
-          </button>
-        </Link>
-         <Link to="/dashboard">
-          <button className="mt-6 bg-amber text-white px-6 py-2 rounded-full hover:bg-amber-600 transition-all">
-            Go to Shop
-          </button>
-        </Link>
-       </div>
+        <div className="flex justify-between gap-4">
+          <Link to="/dashboard">
+            <button className="mt-6 bg-amber text-white px-6 py-2 rounded-full hover:bg-amber-600 transition-all">
+              Go to Dashboard
+            </button>
+          </Link>
+          <Link to="/shop">
+            <button className="mt-6 bg-amber text-white px-6 py-2 rounded-full hover:bg-amber-600 transition-all">
+              Go to Shop
+            </button>
+          </Link>
+        </div>
       </div>
     );
   }
