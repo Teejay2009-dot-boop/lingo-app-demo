@@ -35,11 +35,21 @@ const LessonDisplay = () => {
   const [showModal, setShowModal] = useState(false);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(null);
   const [answeredMap, setAnsweredMap] = useState({});
-  const [streakUpdated, setStreakUpdated] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [startTime, setStartTime] = useState(null);
   const [earnedXPPerQuestion, setEarnedXPPerQuestion] = useState([]);
   const [lessonCompleted, setLessonCompleted] = useState(false);
+  const [xpBreakdown, setXpBreakdown] = useState({
+    base: 0,
+    accuracy: 0,
+    streak: 0,
+    speed: 0,
+    total: 0,
+  });
+
+  const MAX_XP_PER_LESSON = 30;
+  const IDEAL_TIME_PER_QUESTION = 10; // seconds
+  const PERFECT_LESSON_BONUS = 5;
 
   const currentExercise = exercises[currentIndex];
   const progressPercent = Math.round((currentIndex / exercises.length) * 100);
@@ -66,16 +76,32 @@ const LessonDisplay = () => {
     return () => unsub();
   }, []);
 
-  // Calculate XP for a single question
+  // Enhanced XP calculation with detailed breakdown
   const calculateQuestionXP = (isCorrect, timeTaken) => {
+    // 1. Base value (capped at 2 XP per question)
+    const base = Math.min(baseXp, 2);
+
+    // 2. Accuracy (50-100% of base)
     const accuracy = isCorrect ? 1.0 : 0.5;
-    const streakBonus = 1 + Math.min(currentStreak * 0.05, 0.5);
-    const avgTimePerQuestion = 10;
-    const speedFactor = Math.min(
-      1.5,
-      avgTimePerQuestion / Math.max(1, timeTaken)
-    );
-    return Math.round(baseXp * accuracy * streakBonus * speedFactor);
+
+    // 3. Streak bonus (1-1.5x)
+    const streakBonus = 1 + Math.min(currentStreak * 0.02, 0.5);
+
+    // 4. Speed bonus (0.8-1.2x)
+    const timeRatio = IDEAL_TIME_PER_QUESTION / Math.max(1, timeTaken);
+    const speedFactor = Math.min(1.2, Math.max(0.8, timeRatio));
+
+    // Calculate with breakdown
+    const breakdown = {
+      base: base,
+      accuracy: Math.round(base * accuracy),
+      streak: Math.round(base * (streakBonus - 1)),
+      speed: Math.round(base * (speedFactor - 1)),
+      total: Math.round(base * accuracy * streakBonus * speedFactor),
+    };
+
+    setXpBreakdown(breakdown);
+    return breakdown.total;
   };
 
   // Handle answer submission
@@ -91,26 +117,35 @@ const LessonDisplay = () => {
     setLastAnswerCorrect(isCorrect);
 
     const userRef = doc(db, "users", auth.currentUser.uid);
-
     if (!isCorrect) {
       await updateDoc(userRef, { lives: increment(-1) });
     }
   };
 
-  // Complete lesson and update XP/streak
   const completeLesson = async () => {
     if (!auth.currentUser || lessonCompleted) return;
 
     const userRef = doc(db, "users", auth.currentUser.uid);
+    const correctAnswers = Object.values(answeredMap).filter(
+      (a) => a.isCorrect
+    ).length;
+
+    // Calculate raw XP (sum of all questions)
     const totalRawXP = earnedXPPerQuestion.reduce((sum, xp) => sum + xp, 0);
-    const finalXP = Math.min(totalRawXP, 30);
+
+    // Apply perfect lesson bonus if needed
+    const perfectBonus =
+      correctAnswers === exercises.length ? PERFECT_LESSON_BONUS : 0;
+
+    // Final capped XP
+    const finalXP = Math.min(totalRawXP + perfectBonus, MAX_XP_PER_LESSON);
 
     await updateDoc(userRef, {
       xp: increment(finalXP),
-      coins: increment(5),
+      coins: increment(Math.floor(finalXP / 3)), // 1 coin per ~3 XP
     });
 
-    // Update streak
+    // Streak update
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const userSnap = await getDoc(userRef);
@@ -212,6 +247,7 @@ const LessonDisplay = () => {
   if (isLessonComplete) {
     const totalRawXP = earnedXPPerQuestion.reduce((sum, xp) => sum + xp, 0);
     const finalXP = Math.min(totalRawXP, 30);
+    const perfectLesson = Object.values(answeredMap).every((a) => a.isCorrect);
 
     return (
       <div className="min-h-screen flex flex-col items-center justify-around px-3 text-center py-6">
@@ -221,6 +257,9 @@ const LessonDisplay = () => {
         </h2>
         <div className="streak-badge bg-white p-3 rounded-full shadow-md mb-4">
           🔥 {currentStreak}-day streak! | Earned: {finalXP}/30 XP
+          {perfectLesson && (
+            <span className="block text-green-500">+ Perfect Lesson!</span>
+          )}
         </div>
         <div className="flex justify-center gap-10 rounded-full">
           <button className="py-7 px-4 border border-amber rounded-full flex flex-col gap-5">
@@ -229,7 +268,7 @@ const LessonDisplay = () => {
           </button>
           <button className="p-8 items-center border border-amber rounded-lg flex flex-col gap-5">
             <p className="text-xl">Coins</p>
-            <p>{coins + 5}</p>
+            <p>{coins + 5 + (perfectLesson ? 2 : 0)}</p>
           </button>
           <button className="py-7 px-4 border border-amber rounded-md flex flex-col gap-5">
             <p className="text-xl">Lives Remaining</p>
@@ -298,11 +337,47 @@ const LessonDisplay = () => {
             >
               {lastAnswerCorrect ? "✔ Correct" : "❌ Incorrect!"}
             </h2>
+
             {lastAnswerCorrect && (
-              <p className="mb-2">
-                +{earnedXPPerQuestion[earnedXPPerQuestion.length - 1]} XP
-              </p>
+              <div className="xp-breakdown mb-4 text-left">
+                <div className="flex justify-between">
+                  <span>Base:</span>
+                  <span>{xpBreakdown.base} XP</span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Accuracy:</span>
+                  <span>
+                    {xpBreakdown.accuracy > 0
+                      ? `+${xpBreakdown.accuracy}`
+                      : xpBreakdown.accuracy}{" "}
+                    XP
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Streak Bonus:</span>
+                  <span>
+                    {xpBreakdown.streak > 0
+                      ? `+${xpBreakdown.streak}`
+                      : xpBreakdown.streak}{" "}
+                    XP
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span>Speed Bonus:</span>
+                  <span>
+                    {xpBreakdown.speed > 0
+                      ? `+${xpBreakdown.speed}`
+                      : xpBreakdown.speed}{" "}
+                    XP
+                  </span>
+                </div>
+                <div className="flex justify-between font-bold mt-2 pt-2 border-t">
+                  <span>Total:</span>
+                  <span>+{xpBreakdown.total} XP</span>
+                </div>
+              </div>
             )}
+
             <button
               onClick={handleNext}
               className={`px-6 py-2 mt-4 rounded text-white shadow-lg transition duration-300 ${

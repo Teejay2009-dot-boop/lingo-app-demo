@@ -9,7 +9,7 @@ export const defaultUser = {
   total_lessons: 0,
   total_xp: 0,
   level: 1,
-  xp_to_next_level: 100,
+  xp_to_next_level: 6000,
   lesson_history: [],
   streak_days: 0,
   last_reward_date: null,
