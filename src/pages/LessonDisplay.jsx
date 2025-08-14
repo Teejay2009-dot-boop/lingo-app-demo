@@ -15,6 +15,7 @@ import MatchWords from "../components/LessonCards/MatchWords";
 import TypeWhatYouHear from "../components/LessonCards/TypeWhatYouHear";
 import RolePlayOptions from "../components/LessonCards/RolePlayOptions";
 import { auth, db } from "../firebase/config/firebase";
+import { FaCoins, FaHeart, FaFire, } from "react-icons/fa";
 import {
   doc,
   updateDoc,
@@ -261,18 +262,19 @@ const LessonDisplay = () => {
             <span className="block text-green-500">+ Perfect Lesson!</span>
           )}
         </div>
-        <div className="flex justify-center gap-10 rounded-full">
-          <button className="py-7 px-4 border border-amber rounded-full flex flex-col gap-5">
-            <p className="text-xl">Total XP</p>
-            <p>{xp + finalXP}</p>
+        <div className="flex justify-center gap-5 rounded-full ">
+          <button className=" border border-amber rounded-lg  h-28 w-28 lg:h-32 lg:w-32 flex flex-col items-center justify-center ml-2">
+            <p className="text-xl pb-5">XP</p>
+
+            <p className="flex items-center text-amber gap justify-center text-2xl">{finalXP} <FaFire/> {" "}  + </p>
           </button>
-          <button className="p-8 items-center border border-amber rounded-lg flex flex-col gap-5">
+          <button className="p-8 items-center border border-amber h-28 w-28 lg:h-32 lg:w-32 rounded-lg justify-center flex flex-col gap-5">
             <p className="text-xl">Coins</p>
-            <p>{coins + 5 + (perfectLesson ? 2 : 0)}</p>
+            <p className="flex items-center gap-1 text-amber gap justify-center text-2xl">{coins + 5 + (perfectLesson ? 2 : 0)} <FaCoins/> {" "}  +</p>
           </button>
-          <button className="py-7 px-4 border border-amber rounded-md flex flex-col gap-5">
-            <p className="text-xl">Lives Remaining</p>
-            <p>{lives}</p>
+          <button className="py-7 px-4 border border-amber h-28 w-28 lg:h-32 lg:w-32 justify-center rounded-md flex flex-col gap-5">
+            <p className="text-xl ">Lives</p>
+            <p className="flex  items-center text-amber gap-1 justify-center text-2xl">{lives} <FaHeart/> {" "}  +</p>
           </button>
         </div>
         <div className="flex justify-between gap-4 mt-6">
@@ -281,7 +283,7 @@ const LessonDisplay = () => {
               Go to Dashboard
             </button>
           </Link>
-          <Link to="/shop">
+          <Link to="/lessons/shop">
             <button className="bg-amber text-white px-6 py-2 rounded-full hover:bg-amber-600 transition-all">
               Go to Shop
             </button>

@@ -11,6 +11,7 @@ import { doc, setDoc, updateDoc, getDoc, increment } from "firebase/firestore";
 import { auth, db } from "../firebase/config/firebase";
 import { useNavigate } from "react-router-dom";
 import { NavBar } from "../components/NavBar";
+import { defaultUser, LEVEL_CONFIG } from "../data/defaultUser"; // Import the new defaults
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -34,40 +35,92 @@ const Login = () => {
     return unsubscribe;
   }, [navigate]);
 
-  const updateStreak = async (user) => {
+  // Updated streak system with level progression
+  const updateStreakOnLogin = async (user) => {
     if (!user) return;
 
     const userRef = doc(db, "users", user.uid);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-    const todayStr = today.toDateString();
 
     try {
       const snap = await getDoc(userRef);
-      const data = snap.exists() ? snap.data() : null;
-      const lastLogin = data?.last_login_date
-        ? new Date(data.last_login_date)
-        : null;
+      if (!snap.exists()) return;
 
-      let streakUpdate = 0;
-      if (!lastLogin) {
-        streakUpdate = 0;
+      const userData = snap.data();
+      let lastActive = userData.last_active_date
+        ? new Date(userData.last_active_date)
+        : null;
+      if (lastActive) lastActive.setHours(0, 0, 0, 0);
+
+      let newStreak = userData.current_streak || 0;
+      let streakChanged = false;
+
+      if (!lastActive) {
+        // First login
+        newStreak = 1;
+        streakChanged = true;
       } else {
-        lastLogin.setHours(0, 0, 0, 0);
         const diffDays = Math.floor(
-          (today - lastLogin) / (1000 * 60 * 60 * 24)
+          (today - lastActive) / (1000 * 60 * 60 * 24)
         );
-        streakUpdate =
-          diffDays === 1 ? 1 : diffDays > 1 ? -data.streak_days : 0;
+        if (diffDays === 1) {
+          newStreak += 1;
+          streakChanged = true;
+        } else if (diffDays > 1) {
+          newStreak = 1;
+          streakChanged = true;
+        }
       }
 
-      await updateDoc(userRef, {
-        streak_days: increment(streakUpdate),
-        last_login_date: todayStr,
-      });
+      const updates = {
+        last_active_date: today.toISOString(),
+      };
+
+      if (streakChanged) {
+        updates.current_streak = newStreak;
+        updates.streak_days = increment(
+          newStreak > userData.current_streak ? 1 : -userData.current_streak
+        );
+
+        // Check for level up based on streak
+        const currentLevel = LEVEL_CONFIG.find(
+          (l) => l.level === userData.level
+        );
+        const nextLevel = LEVEL_CONFIG.find(
+          (l) => l.level === userData.level + 1
+        );
+
+        if (
+          nextLevel &&
+          userData.xp >= nextLevel.xp_required &&
+          newStreak >= nextLevel.streak_required
+        ) {
+          updates.level = nextLevel.level;
+          updates.level_name = nextLevel.name;
+          updates.title = nextLevel.title;
+          updates.xp_to_next_level =
+            LEVEL_CONFIG[nextLevel.level + 1]?.xp_required || 0;
+        }
+      }
+
+      await updateDoc(userRef, updates);
     } catch (err) {
       console.error("Error updating streak:", err);
     }
+  };
+
+  // Initialize new user with level progression data
+  const initializeNewUser = async (user, additionalData = {}) => {
+    const userRef = doc(db, "users", user.uid);
+    await setDoc(userRef, {
+      ...defaultUser,
+      ...additionalData,
+      email: user.email,
+      username: additionalData.username || user.displayName || "New User",
+      last_active_date: new Date().toISOString(),
+      avatar: user.photoURL || defaultUser.avatar,
+    });
   };
 
   const handleGoogleAuth = async () => {
@@ -77,29 +130,17 @@ const Login = () => {
       const result = await signInWithPopup(auth, googleProvider);
 
       // Check if user is new (first time sign-in)
-      if (
+      const isNewUser =
         result.user.metadata.creationTime ===
-        result.user.metadata.lastSignInTime
-      ) {
-        await setDoc(doc(db, "users", result.user.uid), {
-          email: result.user.email,
-          username: result.user.displayName || name || "User",
-          xp: 0,
-          coins: 0,
-          lives: 5,
-          max_lives: 5,
-          streak_days: 0,
-          streak_freezes: 0,
-          xp_to_next_level: 100,
-          total_lessons: 0,
-          completed_lessons: [],
-          title: "New Learner",
-          createdAt: new Date(),
-          last_login_date: new Date().toDateString(),
+        result.user.metadata.lastSignInTime;
+
+      if (isNewUser) {
+        await initializeNewUser(result.user, {
+          displayName: result.user.displayName || name,
         });
       }
 
-      await updateStreak(result.user);
+      await updateStreakOnLogin(result.user);
     } catch (error) {
       console.error("Google auth error:", error);
       setError(getFriendlyAuthError(error));
@@ -129,7 +170,7 @@ const Login = () => {
     try {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
-        await updateStreak(auth.currentUser);
+        await updateStreakOnLogin(auth.currentUser);
       } else {
         const userCredential = await createUserWithEmailAndPassword(
           auth,
@@ -137,21 +178,8 @@ const Login = () => {
           password
         );
 
-        await setDoc(doc(db, "users", userCredential.user.uid), {
-          email,
+        await initializeNewUser(userCredential.user, {
           username: name,
-          xp: 0,
-          coins: 0,
-          lives: 5,
-          max_lives: 5,
-          streak_days: 0,
-          streak_freezes: 0,
-          xp_to_next_level: 100,
-          total_lessons: 0,
-          completed_lessons: [],
-          title: "New Learner",
-          createdAt: new Date(),
-          last_login_date: new Date().toDateString(),
         });
 
         await sendEmailVerification(userCredential.user);
