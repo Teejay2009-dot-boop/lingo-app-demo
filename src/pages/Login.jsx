@@ -10,7 +10,7 @@ import {
 import { doc, setDoc, updateDoc, getDoc, increment } from "firebase/firestore";
 import { auth, db } from "../firebase/config/firebase";
 import { useNavigate } from "react-router-dom";
-import { NavBar } from "../components/NavBar";
+import { NavBar } from "../components/Welcome/NavBar";
 import { defaultUser, LEVEL_CONFIG } from "../data/defaultUser"; // Import the new defaults
 
 const Login = () => {

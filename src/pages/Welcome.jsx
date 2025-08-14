@@ -1,23 +1,23 @@
 import React from "react";
-import { NavBar } from "../components/NavBar";
-import HeroSection from "../components/Hero";
-import { HowItWorks } from "../components/HowItWorks";
-import { Features } from "../components/Features";
+import { NavBar } from "../components/Welcome/NavBar";
+import HeroSection from "../components/Welcome/Hero";
+import { HowItWorks } from "../components/Welcome/HowItWorks";
+import { Features } from "../components/Welcome/Features";
 import badgeAnim from "../animations/Gamified.json";
 import kidAnim from "../animations/Mascot.json";
 import voiceAnim from "../animations/TalkingChar.json";
 import schoolAnim from "../animations/Education.json";
-import FlashcardSlider from "../components/FlashcardSlider";
-import Pricing from "../components/Pricing";
+import FlashcardSlider from "../components/Welcome/FlashcardSlider";
+import Pricing from "../components/Welcome/Pricing";
 import Testimonials from "../components/Testimonials";
-import FAQ from "../components/FAQ";
-import CallToAction from "../components/CalltoAction";
-import Footer from "../components/Footer";
+import FAQ from "../components/Welcome/FAQ";
+import CallToAction from "../components/Welcome/CalltoAction";
+import Footer from "../components/Welcome/Footer";
 
 const Welcome = () => {
   return (
     <>
-      <NavBar  />
+      <NavBar />
       <HeroSection />
       <HowItWorks />
       <div className="text-4xl lg:text-5xl font-bold text-amber my-10 text-center">

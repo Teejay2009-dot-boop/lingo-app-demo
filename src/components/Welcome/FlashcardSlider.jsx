@@ -1,10 +1,10 @@
 import React from "react";
 import Slider from "react-slick";
 
-import sliderImg from "../assets/IMG-20250724-WA0123-removebg-preview.png";
-import sliderImgtwo from "../assets/girlwithbg.jpg";
-import sliderImgthree from "../assets/IMG-20250724-WA0115.jpg";
-import sliderImgfour from "../assets/IMG-20250724-WA0123.jpg";
+import sliderImg from "../../assets/IMG-20250724-WA0115-removebg-preview.png";
+import sliderImgtwo from "../../assets/girlwithbg.jpg";
+import sliderImgthree from "../../assets/IMG-20250724-WA0115.jpg";
+import sliderImgfour from "../../assets/IMG-20250724-WA0123.jpg";
 
 function FlashcardSlider() {
   const flashcards = [

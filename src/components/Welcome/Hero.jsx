@@ -1,8 +1,8 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import Lottie from "lottie-react";
-import welcomeAnim from "../animations/Welcome Screen.json"; // Replace with your Lottie file
-import welcomeChar from "../assets/IMG-20250724-WA0123-removebg-preview.png";
+ // Replace with your Lottie file
+import welcomeChar from "../../assets/IMG-20250724-WA0123-removebg-preview.png";
 // import characterImg from "../assets/characters/mascot1.png"; // Replace with actual image
 
 function HeroSection() {

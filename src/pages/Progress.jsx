@@ -1,4 +1,4 @@
-import { NavBar } from "../components/NavBar";
+import { NavBar } from "../components/Welcome/NavBar";
 
 import { useState, useEffect } from "react";
 import { db } from "../firebase/config/firebase";
@@ -37,7 +37,7 @@ export const Progress = () => {
       Username: newUser,
       xp: newXp,
       coins: newCoin,
-    }); 
+    });
   };
   return (
     <>
