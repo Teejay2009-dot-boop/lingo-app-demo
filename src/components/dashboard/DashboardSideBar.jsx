@@ -8,11 +8,12 @@ import {
   FaHome,
   FaBook,
   FaBrain,
-  FaChartBar,
+  
   FaCog,
   FaSignOutAlt,
   FaBell,
 } from "react-icons/fa";
+import { FaShop } from "react-icons/fa6";
 
 const DashboardSidebar = () => {
   const logout = async () => {
@@ -29,7 +30,7 @@ const DashboardSidebar = () => {
     { label: "Dashboard", icon: <FaHome />, to: "/dashboard" },
     { label: "Lessons", icon: <FaBook />, to: "/lessons" },
     { label: "Flashcards", icon: <FaBrain />, to: "/flashcards" },
-    { label: "Progress", icon: <FaChartBar />, to: "/progress" },
+    { label: "Shop", icon: <FaShop />, to: "/lessons/shop" },
     { label: "Settings", icon: <FaCog />, to: "/settings" },
     {},
   ];

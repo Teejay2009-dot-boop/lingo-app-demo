@@ -7,11 +7,12 @@ import {
   FaStar,
   FaSnowflake,
   FaGamepad,
-  FaCocktail
+  FaCocktail,
 } from "react-icons/fa";
 import mascot from "../assets/IMG-20250724-WA0115-removebg-preview.png";
 import { auth, db } from "../firebase/config/firebase";
 import { doc, onSnapshot, updateDoc, increment } from "firebase/firestore";
+import DashboardLayout from "../components/dashboard/DashboardLayout";
 
 const shopItems = [
   {
@@ -114,8 +115,14 @@ const Shop = () => {
         <Link to="/lessons">
           <FaArrowLeft className="text-2xl text-amber" />
         </Link>
-        <h1 className="text-4xl md:text-5xl pb-6 font-bold font-fredoka text-amber">Lingo Shop</h1>
-        <img src={mascot} alt="Mascot" className="w-10 cursor-pointer animate-bounce" />
+        <h1 className="text-4xl md:text-5xl pb-6 font-bold font-fredoka text-amber">
+          Lingo Shop
+        </h1>
+        <img
+          src={mascot}
+          alt="Mascot"
+          className="w-10 cursor-pointer animate-bounce"
+        />
       </div>
 
       {/* Stats */}
@@ -143,7 +150,9 @@ const Shop = () => {
           >
             <div className="text-5xl mb-3 flex justify-center">{item.icon}</div>
             <h3 className="font-bold text-2xl mt-3 mb-1">{item.name}</h3>
-            <p className="text-lg text-gray-600 mb-3 mt-3 flex  items-center gap-1">Cost: {item.cost} <FaCoins/></p>
+            <p className="text-lg text-gray-600 mb-3 mt-3 flex  items-center gap-1">
+              Cost: {item.cost} <FaCoins />
+            </p>
             <button
               onClick={() => handlePurchase(item)}
               className="bg-amber text-white px-10 py-2 rounded-full hover:bg-amber-600 transition m-10 hover:translate-y-[-2px] ease-in duration-300 font-semibold hover:bg-yellow-600"

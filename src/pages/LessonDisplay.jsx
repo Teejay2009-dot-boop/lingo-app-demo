@@ -26,7 +26,6 @@ import {
 const LessonDisplay = () => {
   const lesson = lessonData.lesson_1;
   const exercises = lesson.exercises;
-
   const baseXp = lesson.base_xp || 10;
 
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -36,11 +35,21 @@ const LessonDisplay = () => {
   const [showModal, setShowModal] = useState(false);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(null);
   const [answeredMap, setAnsweredMap] = useState({});
+  const [streakUpdated, setStreakUpdated] = useState(false);
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [startTime, setStartTime] = useState(null);
+  const [totalXPEarned, setTotalXPEarned] = useState(0); // Track cumulative XP
+  const [lessonCompleted, setLessonCompleted] = useState(false); // Track lesson completion
 
   const currentExercise = exercises[currentIndex];
   const progressPercent = Math.round((currentIndex / exercises.length) * 100);
 
-  // ✅ Real-time fetch for XP, coins, lives
+  // Reset timer when question changes
+  useEffect(() => {
+    setStartTime(Date.now());
+  }, [currentIndex]);
+
+  // Fetch user data (including streak)
   useEffect(() => {
     if (!auth.currentUser) return;
     const userRef = doc(db, "users", auth.currentUser.uid);
@@ -50,35 +59,95 @@ const LessonDisplay = () => {
         setLives(snap.data().lives ?? 5);
         setXp(snap.data().xp ?? 0);
         setCoins(snap.data().coins ?? 0);
+        setCurrentStreak(snap.data().current_streak ?? 0);
       }
     });
 
     return () => unsub();
   }, []);
 
-  // ✅ Handle correct/incorrect answer
+  // Calculate XP for a single question (no cap)
+  const calculateQuestionXP = (isCorrect, timeTaken) => {
+    const accuracy = isCorrect ? 1.0 : 0.5; // Half XP for incorrect answers
+    const streakBonus = 1 + Math.min(currentStreak * 0.05, 0.5); // Max +50% bonus
+    const avgTimePerQuestion = 10; // Adjust based on expected speed
+    const speedFactor = Math.min(
+      1.5,
+      avgTimePerQuestion / Math.max(1, timeTaken)
+    );
+    return Math.round(baseXp * accuracy * streakBonus * speedFactor);
+  };
+
+  // Handle answer submission
   const handleAnswer = async (isCorrect) => {
     if (answeredMap[currentIndex]) return;
 
-    setAnsweredMap((prev) => ({
-      ...prev,
-      [currentIndex]: { isCorrect },
-    }));
+    const timeTaken = (Date.now() - startTime) / 1000;
+    const questionXP = calculateQuestionXP(isCorrect, timeTaken);
+    const newTotalXP = Math.min(totalXPEarned + questionXP, 30); // Enforce 30 XP cap
 
+    setAnsweredMap((prev) => ({ ...prev, [currentIndex]: { isCorrect } }));
     setShowModal(true);
     setLastAnswerCorrect(isCorrect);
+    setTotalXPEarned(newTotalXP);
 
     const userRef = doc(db, "users", auth.currentUser.uid);
 
     if (!isCorrect) {
       await updateDoc(userRef, { lives: increment(-1) });
-    } else {
+    } else if (currentIndex === exercises.length - 1 && !lessonCompleted) {
+      // Only update XP when lesson completes
       await updateDoc(userRef, {
-        xp: increment(baseXp),
+        xp: increment(newTotalXP),
         coins: increment(5),
       });
+      setLessonCompleted(true);
     }
   };
+
+  // Streak update logic
+  const updateStreak = async () => {
+    if (!auth.currentUser || streakUpdated) return;
+
+    const userRef = doc(db, "users", auth.currentUser.uid);
+    const userSnap = await getDoc(userRef);
+    if (!userSnap.exists()) return;
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const userData = userSnap.data();
+    let lastActive = userData.last_active_date
+      ? new Date(userData.last_active_date.toDate())
+      : null;
+    if (lastActive) lastActive.setHours(0, 0, 0, 0);
+
+    let newStreak = userData.current_streak || 0;
+    let longestStreak = userData.longest_streak || 0;
+
+    if (!lastActive) {
+      newStreak = 1;
+    } else {
+      const diffDays = Math.floor((today - lastActive) / (1000 * 60 * 60 * 24));
+      if (diffDays === 1) newStreak += 1;
+      else if (diffDays > 1) newStreak = 1;
+    }
+
+    await updateDoc(userRef, {
+      current_streak: newStreak,
+      longest_streak: Math.max(longestStreak, newStreak),
+      last_active_date: today,
+    });
+
+    setStreakUpdated(true);
+    setCurrentStreak(newStreak);
+  };
+
+  useEffect(() => {
+    if (currentIndex >= exercises.length && !streakUpdated) {
+      updateStreak();
+    }
+  }, [currentIndex, streakUpdated]);
 
   const handleNext = () => {
     setShowModal(false);
@@ -86,6 +155,7 @@ const LessonDisplay = () => {
     setLastAnswerCorrect(null);
   };
 
+  // Render card based on exercise type
   const renderCard = () => {
     const isAnswered = answeredMap[currentIndex];
     const shouldDisable = showModal || !!isAnswered;
@@ -123,13 +193,13 @@ const LessonDisplay = () => {
     }
   };
 
-  // 🛑 Game Over
+  // Game Over Screen
   if (lives <= 0) {
     return (
       <div className="p-6 h-screen flex flex-col items-center justify-center text-center">
         <img src={mascot} style={{ width: "10rem" }} alt="" />
         <h2 className="text-2xl font-bold mb-4">Game Over</h2>
-        <p>You’ve lost all your lives! Come back tomorrow.</p>
+        <p>You've lost all your lives! Come back tomorrow.</p>
         <Link to="/lessons/section/learn">
           <button className="bg-amber text-white font-semibold flex gap-4 items-center px-6 py-2 text-lg rounded-full my-3">
             <FaArrowCircleLeft style={{ fontSize: "1rem" }} /> Go Back
@@ -139,7 +209,7 @@ const LessonDisplay = () => {
     );
   }
 
-  // 🎉 Lesson Complete
+  // Lesson Complete Screen
   const isLessonComplete = currentIndex >= exercises.length;
   if (isLessonComplete) {
     return (
@@ -148,28 +218,31 @@ const LessonDisplay = () => {
         <h2 className="text-3xl font-bold text-amber mb-3">
           Lesson Complete 🎉
         </h2>
+        <div className="streak-badge bg-white p-3 rounded-full shadow-md mb-4">
+          🔥 {currentStreak}-day streak! | Earned: {totalXPEarned}/30 XP
+        </div>
         <div className="flex justify-center gap-10 rounded-full">
           <button className="py-7 px-4 border border-amber rounded-full flex flex-col gap-5">
-            <p className="text-xl">XP</p>
-            <p>{xp}</p>
+            <p className="text-xl">Total XP</p>
+            <p>{xp + totalXPEarned}</p>
           </button>
           <button className="p-8 items-center border border-amber rounded-lg flex flex-col gap-5">
             <p className="text-xl">Coins</p>
-            <p>{coins}</p>
+            <p>{coins + 5}</p>
           </button>
           <button className="py-7 px-4 border border-amber rounded-md flex flex-col gap-5">
             <p className="text-xl">Lives Remaining</p>
             <p>{lives}</p>
           </button>
         </div>
-        <div className="flex justify-between gap-4">
+        <div className="flex justify-between gap-4 mt-6">
           <Link to="/dashboard">
-            <button className="mt-6 bg-amber text-white px-6 py-2 rounded-full hover:bg-amber-600 transition-all">
+            <button className="bg-amber text-white px-6 py-2 rounded-full hover:bg-amber-600 transition-all">
               Go to Dashboard
             </button>
           </Link>
           <Link to="/shop">
-            <button className="mt-6 bg-amber text-white px-6 py-2 rounded-full hover:bg-amber-600 transition-all">
+            <button className="bg-amber text-white px-6 py-2 rounded-full hover:bg-amber-600 transition-all">
               Go to Shop
             </button>
           </Link>
@@ -178,6 +251,7 @@ const LessonDisplay = () => {
     );
   }
 
+  // Main Lesson Screen
   return (
     <div className="min-h-screen bg-gray-100 p-6 relative">
       <GoBackBtn />
@@ -224,6 +298,11 @@ const LessonDisplay = () => {
             >
               {lastAnswerCorrect ? "✔ Correct" : "❌ Incorrect!"}
             </h2>
+            {lastAnswerCorrect && (
+              <p className="mb-2">
+                +{calculateQuestionXP(true, 0)} XP (Total: {totalXPEarned}/30)
+              </p>
+            )}
             <button
               onClick={handleNext}
               className={`px-6 py-2 mt-4 rounded text-white shadow-lg transition duration-300 ${

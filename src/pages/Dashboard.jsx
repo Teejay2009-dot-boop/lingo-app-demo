@@ -2,7 +2,14 @@ import React, { useState, useEffect } from "react";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
 import Badge from "../components/dashboard/Badges";
 import NavBar from "../components/dashboard/NavBar";
-import { FaStar, FaSteam, FaHeart, FaWallet, FaBell } from "react-icons/fa";
+import {
+  FaStar,
+  FaSteam,
+  FaHeart,
+  FaWallet,
+  FaBell,
+  FaFire,
+} from "react-icons/fa";
 import { Link } from "react-router-dom";
 import avatar from "../assets/girlwithbg.jpg";
 import { auth, db } from "../firebase/config/firebase";
@@ -18,20 +25,21 @@ const Dashboard = () => {
     const handleResize = () => setWidth(window.innerWidth);
     window.addEventListener("resize", handleResize);
 
-    // Fetching username
-
-    
     // Listen for auth state, then set up Firestore listener
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
       if (user) {
         const userRef = doc(db, "users", user.uid);
         const unsubscribeSnapshot = onSnapshot(userRef, (docSnap) => {
           if (docSnap.exists()) {
-            setUserData(docSnap.data());
+            setUserData({
+              ...docSnap.data(),
+              current_streak: docSnap.data().current_streak || 0,
+              longest_streak: docSnap.data().longest_streak || 0,
+            });
           }
           setLoading(false);
         });
-        return unsubscribeSnapshot; // cleanup when auth changes
+        return unsubscribeSnapshot;
       } else {
         setUserData(null);
         setLoading(false);
@@ -83,7 +91,9 @@ const Dashboard = () => {
             <div className="text-xl flex justify-center gap-2">
               <div className="flex items-center justify-center gap-2">
                 <div>👩‍🦰</div>
-              <div className="text-amber pt-1 font-semibold">{userData?.username}</div>
+                <div className="text-amber pt-1 font-semibold">
+                  {userData?.username}
+                </div>
               </div>
             </div>
           </div>
@@ -134,15 +144,37 @@ const Dashboard = () => {
           </div>
         </div>
 
-        {/* Streak Card */}
-        <div className="bg-white p-6 flex gap-4 rounded-2xl shadow items-center">
-          <FaSteam className="text-7xl text-amber" />
-          <div>
-            <h1 className="text-3xl font-bold">{userData?.streak_days}</h1>
-            <p className="text-gray-500">Day Streak</p>
-            <p className="text-xs text-gray-400">
-              🔥 Streak Freezes: {userData?.streak_freezes}
-            </p>
+        {/* NEW: Improved Streak Card */}
+        <div className="bg-white p-6 rounded-2xl shadow flex flex-col">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="bg-amber-100 p-3 rounded-full">
+              <FaFire className="text-2xl text-amber" />
+            </div>
+            <div>
+              <h2 className="text-xl font-bold">Streak</h2>
+              <p className="text-gray-500">Daily Progress</p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="text-center">
+              <p className="text-3xl font-bold text-amber">
+                {userData?.current_streak || 0}
+              </p>
+              <p className="text-sm">Current</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold">
+                {userData?.longest_streak || 0}
+              </p>
+              <p className="text-sm">Longest</p>
+            </div>
+            <div className="text-center">
+              <p className="text-3xl font-bold">
+                {userData?.streak_freezes || 0}
+              </p>
+              <p className="text-sm">Freezes</p>
+            </div>
           </div>
         </div>
 
