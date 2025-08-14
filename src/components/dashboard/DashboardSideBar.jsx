@@ -99,7 +99,7 @@ const DashboardSidebar = () => {
             <Link to={item.to}>
               <li
                 key={i}
-                className="flex items-center gap-3 p-3 cursor-pointer hover:text-yellow-100"
+                className="flex items-center gap-1 p-3 cursor-pointer hover:text-yellow-100"
               >
                 {item.icon} {item.label}
               </li>

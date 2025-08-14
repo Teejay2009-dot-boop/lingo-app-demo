@@ -38,8 +38,8 @@ const LessonDisplay = () => {
   const [streakUpdated, setStreakUpdated] = useState(false);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [startTime, setStartTime] = useState(null);
-  const [totalXPEarned, setTotalXPEarned] = useState(0); // Track cumulative XP
-  const [lessonCompleted, setLessonCompleted] = useState(false); // Track lesson completion
+  const [earnedXPPerQuestion, setEarnedXPPerQuestion] = useState([]);
+  const [lessonCompleted, setLessonCompleted] = useState(false);
 
   const currentExercise = exercises[currentIndex];
   const progressPercent = Math.round((currentIndex / exercises.length) * 100);
@@ -49,7 +49,7 @@ const LessonDisplay = () => {
     setStartTime(Date.now());
   }, [currentIndex]);
 
-  // Fetch user data (including streak)
+  // Fetch user data
   useEffect(() => {
     if (!auth.currentUser) return;
     const userRef = doc(db, "users", auth.currentUser.uid);
@@ -66,11 +66,11 @@ const LessonDisplay = () => {
     return () => unsub();
   }, []);
 
-  // Calculate XP for a single question (no cap)
+  // Calculate XP for a single question
   const calculateQuestionXP = (isCorrect, timeTaken) => {
-    const accuracy = isCorrect ? 1.0 : 0.5; // Half XP for incorrect answers
-    const streakBonus = 1 + Math.min(currentStreak * 0.05, 0.5); // Max +50% bonus
-    const avgTimePerQuestion = 10; // Adjust based on expected speed
+    const accuracy = isCorrect ? 1.0 : 0.5;
+    const streakBonus = 1 + Math.min(currentStreak * 0.05, 0.5);
+    const avgTimePerQuestion = 10;
     const speedFactor = Math.min(
       1.5,
       avgTimePerQuestion / Math.max(1, timeTaken)
@@ -84,70 +84,71 @@ const LessonDisplay = () => {
 
     const timeTaken = (Date.now() - startTime) / 1000;
     const questionXP = calculateQuestionXP(isCorrect, timeTaken);
-    const newTotalXP = Math.min(totalXPEarned + questionXP, 30); // Enforce 30 XP cap
 
     setAnsweredMap((prev) => ({ ...prev, [currentIndex]: { isCorrect } }));
+    setEarnedXPPerQuestion((prev) => [...prev, questionXP]);
     setShowModal(true);
     setLastAnswerCorrect(isCorrect);
-    setTotalXPEarned(newTotalXP);
 
     const userRef = doc(db, "users", auth.currentUser.uid);
 
     if (!isCorrect) {
       await updateDoc(userRef, { lives: increment(-1) });
-    } else if (currentIndex === exercises.length - 1 && !lessonCompleted) {
-      // Only update XP when lesson completes
-      await updateDoc(userRef, {
-        xp: increment(newTotalXP),
-        coins: increment(5),
-      });
-      setLessonCompleted(true);
     }
   };
 
-  // Streak update logic
-  const updateStreak = async () => {
-    if (!auth.currentUser || streakUpdated) return;
+  // Complete lesson and update XP/streak
+  const completeLesson = async () => {
+    if (!auth.currentUser || lessonCompleted) return;
 
     const userRef = doc(db, "users", auth.currentUser.uid);
-    const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) return;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const userData = userSnap.data();
-    let lastActive = userData.last_active_date
-      ? new Date(userData.last_active_date.toDate())
-      : null;
-    if (lastActive) lastActive.setHours(0, 0, 0, 0);
-
-    let newStreak = userData.current_streak || 0;
-    let longestStreak = userData.longest_streak || 0;
-
-    if (!lastActive) {
-      newStreak = 1;
-    } else {
-      const diffDays = Math.floor((today - lastActive) / (1000 * 60 * 60 * 24));
-      if (diffDays === 1) newStreak += 1;
-      else if (diffDays > 1) newStreak = 1;
-    }
+    const totalRawXP = earnedXPPerQuestion.reduce((sum, xp) => sum + xp, 0);
+    const finalXP = Math.min(totalRawXP, 30);
 
     await updateDoc(userRef, {
-      current_streak: newStreak,
-      longest_streak: Math.max(longestStreak, newStreak),
-      last_active_date: today,
+      xp: increment(finalXP),
+      coins: increment(5),
     });
 
-    setStreakUpdated(true);
-    setCurrentStreak(newStreak);
+    // Update streak
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const userSnap = await getDoc(userRef);
+
+    if (userSnap.exists()) {
+      let lastActive = userSnap.data().last_active_date?.toDate();
+      if (lastActive) lastActive.setHours(0, 0, 0, 0);
+
+      let newStreak = userSnap.data().current_streak || 0;
+      if (!lastActive) {
+        newStreak = 1;
+      } else {
+        const diffDays = Math.floor(
+          (today - lastActive) / (1000 * 60 * 60 * 24)
+        );
+        newStreak =
+          diffDays === 1 ? newStreak + 1 : diffDays > 1 ? 1 : newStreak;
+      }
+
+      await updateDoc(userRef, {
+        current_streak: newStreak,
+        longest_streak: Math.max(
+          userSnap.data().longest_streak || 0,
+          newStreak
+        ),
+        last_active_date: today,
+      });
+      setCurrentStreak(newStreak);
+    }
+
+    setLessonCompleted(true);
   };
 
   useEffect(() => {
-    if (currentIndex >= exercises.length && !streakUpdated) {
-      updateStreak();
+    if (currentIndex >= exercises.length && !lessonCompleted) {
+      completeLesson();
     }
-  }, [currentIndex, streakUpdated]);
+  }, [currentIndex, lessonCompleted]);
 
   const handleNext = () => {
     setShowModal(false);
@@ -155,7 +156,6 @@ const LessonDisplay = () => {
     setLastAnswerCorrect(null);
   };
 
-  // Render card based on exercise type
   const renderCard = () => {
     const isAnswered = answeredMap[currentIndex];
     const shouldDisable = showModal || !!isAnswered;
@@ -193,7 +193,6 @@ const LessonDisplay = () => {
     }
   };
 
-  // Game Over Screen
   if (lives <= 0) {
     return (
       <div className="p-6 h-screen flex flex-col items-center justify-center text-center">
@@ -209,9 +208,11 @@ const LessonDisplay = () => {
     );
   }
 
-  // Lesson Complete Screen
   const isLessonComplete = currentIndex >= exercises.length;
   if (isLessonComplete) {
+    const totalRawXP = earnedXPPerQuestion.reduce((sum, xp) => sum + xp, 0);
+    const finalXP = Math.min(totalRawXP, 30);
+
     return (
       <div className="min-h-screen flex flex-col items-center justify-around px-3 text-center py-6">
         <img src={mascot} alt="Completed" className="w-28 mb-6" />
@@ -219,12 +220,12 @@ const LessonDisplay = () => {
           Lesson Complete 🎉
         </h2>
         <div className="streak-badge bg-white p-3 rounded-full shadow-md mb-4">
-          🔥 {currentStreak}-day streak! | Earned: {totalXPEarned}/30 XP
+          🔥 {currentStreak}-day streak! | Earned: {finalXP}/30 XP
         </div>
         <div className="flex justify-center gap-10 rounded-full">
           <button className="py-7 px-4 border border-amber rounded-full flex flex-col gap-5">
             <p className="text-xl">Total XP</p>
-            <p>{xp + totalXPEarned}</p>
+            <p>{xp + finalXP}</p>
           </button>
           <button className="p-8 items-center border border-amber rounded-lg flex flex-col gap-5">
             <p className="text-xl">Coins</p>
@@ -251,7 +252,6 @@ const LessonDisplay = () => {
     );
   }
 
-  // Main Lesson Screen
   return (
     <div className="min-h-screen bg-gray-100 p-6 relative">
       <GoBackBtn />
@@ -300,7 +300,7 @@ const LessonDisplay = () => {
             </h2>
             {lastAnswerCorrect && (
               <p className="mb-2">
-                +{calculateQuestionXP(true, 0)} XP (Total: {totalXPEarned}/30)
+                +{earnedXPPerQuestion[earnedXPPerQuestion.length - 1]} XP
               </p>
             )}
             <button
