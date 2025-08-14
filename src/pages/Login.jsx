@@ -5,9 +5,10 @@ import {
   sendEmailVerification,
   updateProfile,
   signInWithPopup,
+  GoogleAuthProvider,
 } from "firebase/auth";
 import { doc, setDoc, updateDoc, getDoc, increment } from "firebase/firestore";
-import { auth, db, googleProvider } from "../firebase/config/firebase";
+import { auth, db } from "../firebase/config/firebase";
 import { useNavigate } from "react-router-dom";
 import { NavBar } from "../components/NavBar";
 
@@ -17,7 +18,14 @@ const Login = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+
+  // Initialize Google provider
+  const googleProvider = new GoogleAuthProvider();
+  googleProvider.setCustomParameters({
+    prompt: "select_account", // Forces account selection
+  });
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
@@ -26,60 +34,102 @@ const Login = () => {
     return unsubscribe;
   }, [navigate]);
 
-  const updateStreak = async () => {
-    const user = auth.currentUser;
+  const updateStreak = async (user) => {
     if (!user) return;
 
     const userRef = doc(db, "users", user.uid);
-    const snap = await getDoc(userRef);
     const today = new Date();
+    today.setHours(0, 0, 0, 0);
     const todayStr = today.toDateString();
 
-    if (snap.exists()) {
-      const data = snap.data();
-      const lastLogin = data.last_login_date
+    try {
+      const snap = await getDoc(userRef);
+      const data = snap.exists() ? snap.data() : null;
+      const lastLogin = data?.last_login_date
         ? new Date(data.last_login_date)
         : null;
 
+      let streakUpdate = 0;
       if (!lastLogin) {
-        await updateDoc(userRef, {
-          streak_days: 0,
-          last_login_date: todayStr,
-        });
+        streakUpdate = 0;
       } else {
-        const diffDays = (today - lastLogin) / (1000 * 60 * 60 * 24);
-
-        if (diffDays === 1) {
-          await updateDoc(userRef, {
-            streak_days: increment(1),
-            last_login_date: todayStr,
-          });
-        } else if (diffDays > 1) {
-          await updateDoc(userRef, {
-            streak_days: 0,
-            last_login_date: todayStr,
-          });
-        }
+        lastLogin.setHours(0, 0, 0, 0);
+        const diffDays = Math.floor(
+          (today - lastLogin) / (1000 * 60 * 60 * 24)
+        );
+        streakUpdate =
+          diffDays === 1 ? 1 : diffDays > 1 ? -data.streak_days : 0;
       }
+
+      await updateDoc(userRef, {
+        streak_days: increment(streakUpdate),
+        last_login_date: todayStr,
+      });
+    } catch (err) {
+      console.error("Error updating streak:", err);
     }
   };
 
-  const signInWithGoogle = async () => {
+  const handleGoogleAuth = async () => {
+    setLoading(true);
+    setError("");
     try {
-      await signInWithPopup(auth, googleProvider);
-      await updateStreak();
+      const result = await signInWithPopup(auth, googleProvider);
+
+      // Check if user is new (first time sign-in)
+      if (
+        result.user.metadata.creationTime ===
+        result.user.metadata.lastSignInTime
+      ) {
+        await setDoc(doc(db, "users", result.user.uid), {
+          email: result.user.email,
+          username: result.user.displayName || name || "User",
+          xp: 0,
+          coins: 0,
+          lives: 5,
+          max_lives: 5,
+          streak_days: 0,
+          streak_freezes: 0,
+          xp_to_next_level: 100,
+          total_lessons: 0,
+          completed_lessons: [],
+          title: "New Learner",
+          createdAt: new Date(),
+          last_login_date: new Date().toDateString(),
+        });
+      }
+
+      await updateStreak(result.user);
     } catch (error) {
-      console.error("Error during Google sign-in:", error);
+      console.error("Google auth error:", error);
+      setError(getFriendlyAuthError(error));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getFriendlyAuthError = (error) => {
+    switch (error.code) {
+      case "auth/popup-closed-by-user":
+        return "You closed the sign-in window";
+      case "auth/account-exists-with-different-credential":
+        return "Account already exists with different method";
+      case "auth/cancelled-popup-request":
+        return "Sign in was cancelled";
+      default:
+        return error.message.replace("Firebase: ", "");
     }
   };
 
   const handleAuth = async (e) => {
     e.preventDefault();
+    setLoading(true);
     setError("");
+
     try {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
-        await updateStreak();
+        await updateStreak(auth.currentUser);
       } else {
         const userCredential = await createUserWithEmailAndPassword(
           auth,
@@ -110,7 +160,9 @@ const Login = () => {
         alert("Account created! Please verify your email.");
       }
     } catch (err) {
-      setError(err.message.replace("Firebase: ", ""));
+      setError(getFriendlyAuthError(err));
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -125,7 +177,7 @@ const Login = () => {
                 onClick={() => setIsLogin(true)}
                 className={`px-4 py-2 rounded-full font-semibold ${
                   isLogin
-                    ? "bg-amber-500 text-amber"
+                    ? "bg-amber-500 text-white"
                     : "bg-gray-200 text-gray-700"
                 }`}
               >
@@ -135,7 +187,7 @@ const Login = () => {
                 onClick={() => setIsLogin(false)}
                 className={`px-4 py-2 rounded-full font-semibold ${
                   !isLogin
-                    ? "bg-amber-500 text-amber"
+                    ? "bg-amber-500 text-white"
                     : "bg-gray-200 text-gray-700"
                 }`}
               >
@@ -144,7 +196,7 @@ const Login = () => {
             </div>
 
             {error && (
-              <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
+              <div className="mb-4 p-2 bg-red-100 text-red-700 rounded text-center">
                 {error}
               </div>
             )}
@@ -167,6 +219,7 @@ const Login = () => {
                       className="w-full border px-4 py-3 rounded-full focus:ring-2 focus:ring-amber-500"
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      disabled={loading}
                     />
                     <input
                       type="password"
@@ -174,19 +227,33 @@ const Login = () => {
                       className="w-full border px-4 py-3 rounded-full focus:ring-2 focus:ring-amber-500"
                       onChange={(e) => setPassword(e.target.value)}
                       required
+                      disabled={loading}
                     />
                     <button
-                      onClick={signInWithGoogle}
+                      onClick={handleGoogleAuth}
                       type="button"
-                      className="py-3 mx-auto bg-amber w-full rounded-full font-semibold text-white"
+                      disabled={loading}
+                      className="py-3 mx-auto bg-amber w-full rounded-full font-semibold text-white hover:bg-amber-600 disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                      Sign in with Google
+                      {loading ? (
+                        "Processing..."
+                      ) : (
+                        <>
+                          <img
+                            src="https://www.google.com/favicon.ico"
+                            alt="Google"
+                            className="w-5 h-5"
+                          />
+                          Sign in with Google
+                        </>
+                      )}
                     </button>
                     <button
                       type="submit"
-                      className="w-full bg-gray-200 text-amber py-3 rounded-full font-semibold hover:bg-amber hover:text-white"
+                      disabled={loading}
+                      className="w-full bg-gray-200 text-amber py-3 rounded-full font-semibold hover:bg-amber hover:text-white disabled:opacity-50"
                     >
-                      Log In
+                      {loading ? "Loading..." : "Log In"}
                     </button>
                   </div>
                 </form>
@@ -209,6 +276,7 @@ const Login = () => {
                       className="w-full border px-4 py-3 rounded-full focus:ring-2 focus:ring-amber-500"
                       onChange={(e) => setName(e.target.value)}
                       required={!isLogin}
+                      disabled={loading}
                     />
                     <input
                       type="email"
@@ -216,6 +284,7 @@ const Login = () => {
                       className="w-full border px-4 py-3 rounded-full focus:ring-2 focus:ring-amber-500"
                       onChange={(e) => setEmail(e.target.value)}
                       required
+                      disabled={loading}
                     />
                     <input
                       type="password"
@@ -224,21 +293,35 @@ const Login = () => {
                       className="w-full border px-4 py-3 rounded-full focus:ring-2 focus:ring-amber-500"
                       onChange={(e) => setPassword(e.target.value)}
                       required
+                      disabled={loading}
                     />
                   </div>
                   <div className="flex flex-col gap-4 pt-4">
                     <button
                       type="submit"
-                      className="w-full bg-gray-200 text-amber py-3 rounded-full font-semibold hover:bg-amber hover:text-white"
+                      disabled={loading}
+                      className="w-full bg-gray-200 text-amber py-3 rounded-full font-semibold hover:bg-amber hover:text-white disabled:opacity-50"
                     >
-                      Create Account
+                      {loading ? "Creating account..." : "Create Account"}
                     </button>
                     <button
-                      onClick={signInWithGoogle}
+                      onClick={handleGoogleAuth}
                       type="button"
-                      className="py-3 mx-auto text-white font-semibold bg-amber w-full rounded-full hover:bg-gray-200 hover:text-amber"
+                      disabled={loading}
+                      className="py-3 mx-auto text-white font-semibold bg-amber w-full rounded-full hover:bg-gray-200 hover:text-amber disabled:opacity-50 flex items-center justify-center gap-2"
                     >
-                      Sign up with Google
+                      {loading ? (
+                        "Processing..."
+                      ) : (
+                        <>
+                          <img
+                            src="https://www.google.com/favicon.ico"
+                            alt="Google"
+                            className="w-5 h-5"
+                          />
+                          Sign up with Google
+                        </>
+                      )}
                     </button>
                   </div>
                 </form>
