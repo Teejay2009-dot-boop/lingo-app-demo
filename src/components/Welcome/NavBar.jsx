@@ -1,15 +1,15 @@
 import React, { useState } from "react";
 import { FaBars, FaTimes } from "react-icons/fa";
 import { href, Link } from "react-router-dom";
-import { HashRouter } from "react-router-dom";
 
-export const NavBar = () => {
+export const NavBar = ({onHeroClick, onPricingClick, onAboutClick}) => {
   const [isOpen, setIsOpen] = useState(false);
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => setIsOpen(false);
 
+  
   return (
-    <div className="relative z-50 top-0 ">
+    <div className="relative z-50 top-0 fixed ">
       {/* Top Navbar */}
       <div className="bg-amber  text-white flex justify-between items-center shadow-lg px-4 py-3">
         <div className="font-bold font-fredoka text-3xl">LingoBud</div>
@@ -17,13 +17,13 @@ export const NavBar = () => {
         <div className="hidden md:flex items-center gap-4">
           <ul className="flex items-center gap-7">
             <li className="text-lg sliding-underline">
-              <a href="about">Home</a>
+              <button onClick={onHeroClick}>Home</button>
             </li>
             <li className="text-lg  sliding-underline">
-              <a href="about">About</a>
+              <button onClick={onAboutClick}>About</button>
             </li>
             <li className="text-lg sliding-underline">
-              <a href="about">Pricing</a>
+              <button onClick={onPricingClick}>Pricing</button>
             </li>
           </ul>
           <Link to="/login">
@@ -62,20 +62,18 @@ export const NavBar = () => {
         <ul className="flex flex-col mt-6">
           <li onClick={closeMenu} className="border-b px-4 py-3 text-underline">
             <p className="text-xl">
-              <a href="Home">Home</a>
+              <button onClick={onHeroClick}>Home</button>
             </p>
           </li>
           <li onClick={closeMenu} className="border-b px-4 py-3 text-underline">
             <p className="text-xl cursor-pointer">
-              <a href="about">About</a>
+              <button onClick={onAboutClick}>About</button>
             </p>
           </li>
           <li onClick={closeMenu} className="border-b px-4 py-3 text-underline">
-          
-              <p className="text-xl cursor-pointer">
-                Pricing
-              </p>
-            
+          <p className="text-xl cursor-pointer">
+              <button onClick={onPricingClick}>Pricing</button>
+            </p>            
           </li>
           <li onClick={closeMenu} className="px-4 py-5">
             <Link to="/login">

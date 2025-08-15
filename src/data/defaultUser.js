@@ -57,7 +57,7 @@ export const defaultUser = {
   },
   title: "Moonstone Beginner",
   lessons: 5,
-  level_thresholds: [0, 50, 1500, 3000, 5000],
+  level_thresholds: [0, 600, 1500, 3000, 5000],
   streak_requirements: [0, 3, 7, 14, 21],
   rank_history: [],
   purchases: [],

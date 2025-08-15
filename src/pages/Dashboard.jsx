@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
 import Badge from "../components/dashboard/Badges";
 import NavBar from "../components/dashboard/NavBar";
+import { LevelUpModal } from "../components/LevelUpModal";
 import {
   FaStar,
   FaSteam,
@@ -13,12 +14,44 @@ import {
 import { Link } from "react-router-dom";
 import avatar from "../assets/girlwithbg.jpg";
 import { auth, db } from "../firebase/config/firebase";
-import { doc, getDoc, onSnapshot } from "firebase/firestore";
+import { doc, onSnapshot, updateDoc, increment } from "firebase/firestore";
+import { LEVEL_CONFIG } from "../data/defaultUser";
 
 const Dashboard = () => {
   const [width, setWidth] = useState(window.innerWidth);
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [showDevTools, setShowDevTools] = useState(false);
+  const [showLevelUpModal, setShowLevelUpModal] = useState(false);
+  const [testLevel, setTestLevel] = useState(1);
+
+  useEffect(() => {
+    if (!userData) return;
+
+    // Check if user has leveled up
+    const currentLevelConfig = LEVEL_CONFIG.find(
+      (l) => l.level === userData.level
+    );
+    const nextLevelConfig = LEVEL_CONFIG.find(
+      (l) => l.level === userData.level + 1
+    );
+
+    if (
+      nextLevelConfig &&
+      userData.xp >= nextLevelConfig.xp_required &&
+      userData.current_streak >= nextLevelConfig.streak_required
+    ) {
+      // Level up!
+      setTestLevel(userData.level + 1);
+      setShowLevelUpModal(true);
+
+      // Update level in Firestore
+      updateDoc(doc(db, "users", auth.currentUser.uid), {
+        level: increment(1),
+        title: nextLevelConfig.title,
+      });
+    }
+  }, [userData]);
 
   useEffect(() => {
     // Track screen resize
@@ -81,6 +114,35 @@ const Dashboard = () => {
   const xpProgress = userData?.xp_to_next_level
     ? (userData?.xp / userData?.xp_to_next_level) * 100
     : 0;
+
+  // Add to your Dashboard component (before the return statement)
+
+  // Add these test functions
+  const simulateLevelUp = async (level) => {
+    const userRef = doc(db, "users", auth.currentUser.uid);
+    const nextLevel = LEVEL_CONFIG.find((l) => l.level === level);
+
+    await updateDoc(userRef, {
+      level: level,
+      xp: nextLevel.xp_required,
+      current_streak: nextLevel.streak_required,
+      title: nextLevel.title,
+    });
+
+    setTestLevel(level);
+    setShowLevelUpModal(true);
+  };
+
+  const resetTestData = async () => {
+    const userRef = doc(db, "users", auth.currentUser.uid);
+    await updateDoc(userRef, {
+      level: 1,
+      xp: 0,
+      current_streak: 0,
+      title: "Moonstone Beginner",
+    });
+    setShowLevelUpModal(false);
+  };
 
   return (
     <DashboardLayout>
@@ -235,6 +297,83 @@ const Dashboard = () => {
       <div className="mt-8 transition-transform duration-300 hover:scale-105 px-4 lg:px-12">
         <Badge />
       </div>
+
+      {/* Developer Tools Button */}
+      <button
+        onClick={() => setShowDevTools(!showDevTools)}
+        className="fixed bottom-4 right-4 bg-red-500 text-white p-3 rounded-full shadow-lg z-50"
+      >
+        {showDevTools ? "❌" : "🧪"}
+      </button>
+
+      {/* Developer Tools Panel */}
+      {showDevTools && (
+        <div className="fixed bottom-20 right-4 bg-white p-4 rounded-lg shadow-xl border-2 border-red-500 z-50 max-w-xs">
+          <h3 className="font-bold text-lg mb-2 text-red-600">
+            Developer Tools
+          </h3>
+
+          <div className="mb-4">
+            <h4 className="font-semibold mb-1">Test Level Up</h4>
+            <div className="grid grid-cols-3 gap-2">
+              {LEVEL_CONFIG.map((level) => (
+                <button
+                  key={level.level}
+                  onClick={() => simulateLevelUp(level.level)}
+                  className={`py-1 px-2 rounded text-xs ${level.color}`}
+                >
+                  {level.name}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="mb-4">
+            <h4 className="font-semibold mb-1">Quick Actions</h4>
+            <div className="flex gap-2 flex-wrap">
+              <button
+                onClick={() =>
+                  updateDoc(doc(db, "users", auth.currentUser.uid), {
+                    xp: increment(100),
+                    coins: increment(50),
+                  })
+                }
+                className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
+              >
+                +100 XP +50 Coins
+              </button>
+              <button
+                onClick={() =>
+                  updateDoc(doc(db, "users", auth.currentUser.uid), {
+                    current_streak: increment(1),
+                  })
+                }
+                className="bg-green-500 text-white px-2 py-1 rounded text-xs"
+              >
+                +1 Streak
+              </button>
+              <button
+                onClick={resetTestData}
+                className="bg-gray-500 text-white px-2 py-1 rounded text-xs"
+              >
+                Reset Data
+              </button>
+            </div>
+          </div>
+
+          <p className="text-xs text-gray-500 mt-2">
+            These controls are for testing only
+          </p>
+        </div>
+      )}
+
+      {/* Level Up Modal */}
+      {showLevelUpModal && (
+        <LevelUpModal
+          newLevel={testLevel}
+          onClose={() => setShowLevelUpModal(false)}
+        />
+      )}
     </DashboardLayout>
   );
 };

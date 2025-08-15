@@ -97,3 +97,7 @@
   transform: scaleX(1);
   transform-origin: bottom left;
 }
+
+html{
+  scroll-behavior: smooth;
+}
