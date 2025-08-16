@@ -7,7 +7,13 @@ import { Link } from "react-router-dom";
 import RolePlayTypeYourself from "../components/LessonCards/RolePlayTypeYourself";
 import MatchImageToWord from "../components/LessonCards/MatchImageToWord";
 import mascot from "../assets/IMG-20250724-WA0115-removebg-preview.png";
-import { FaArrowAltCircleRight, FaArrowCircleLeft } from "react-icons/fa";
+import {
+  FaArrowAltCircleRight,
+  FaArrowCircleLeft,
+  FaCoins,
+  FaHeart,
+  FaFire,
+} from "react-icons/fa";
 import { MainIdea } from "../components/LessonCards/MainIdea";
 import { FillintheGapBestOption } from "../components/LessonCards/FillintheGapBestOption";
 import { FillTheGap } from "../components/LessonCards/FillintheGap";
@@ -15,13 +21,13 @@ import MatchWords from "../components/LessonCards/MatchWords";
 import TypeWhatYouHear from "../components/LessonCards/TypeWhatYouHear";
 import RolePlayOptions from "../components/LessonCards/RolePlayOptions";
 import { auth, db } from "../firebase/config/firebase";
-import { FaCoins, FaHeart, FaFire, } from "react-icons/fa";
 import {
   doc,
   updateDoc,
   increment,
   getDoc,
   onSnapshot,
+  arrayUnion,
 } from "firebase/firestore";
 
 const LessonDisplay = () => {
@@ -77,22 +83,13 @@ const LessonDisplay = () => {
     return () => unsub();
   }, []);
 
-  // Enhanced XP calculation with detailed breakdown
   const calculateQuestionXP = (isCorrect, timeTaken) => {
-    // 1. Base value (capped at 2 XP per question)
     const base = Math.min(baseXp, 2);
-
-    // 2. Accuracy (50-100% of base)
     const accuracy = isCorrect ? 1.0 : 0.5;
-
-    // 3. Streak bonus (1-1.5x)
     const streakBonus = 1 + Math.min(currentStreak * 0.02, 0.5);
-
-    // 4. Speed bonus (0.8-1.2x)
     const timeRatio = IDEAL_TIME_PER_QUESTION / Math.max(1, timeTaken);
     const speedFactor = Math.min(1.2, Math.max(0.8, timeRatio));
 
-    // Calculate with breakdown
     const breakdown = {
       base: base,
       accuracy: Math.round(base * accuracy),
@@ -105,21 +102,29 @@ const LessonDisplay = () => {
     return breakdown.total;
   };
 
-  // Handle answer submission
   const handleAnswer = async (isCorrect) => {
     if (answeredMap[currentIndex]) return;
 
     const timeTaken = (Date.now() - startTime) / 1000;
     const questionXP = calculateQuestionXP(isCorrect, timeTaken);
 
-    setAnsweredMap((prev) => ({ ...prev, [currentIndex]: { isCorrect } }));
-    setEarnedXPPerQuestion((prev) => [...prev, questionXP]);
-    setShowModal(true);
-    setLastAnswerCorrect(isCorrect);
-
     const userRef = doc(db, "users", auth.currentUser.uid);
-    if (!isCorrect) {
-      await updateDoc(userRef, { lives: increment(-1) });
+
+    try {
+      await updateDoc(userRef, {
+        xp: increment(questionXP),
+        total_xp: increment(questionXP),
+        weeklyXP: increment(questionXP),
+        monthlyXP: increment(questionXP),
+        ...(!isCorrect && { lives: increment(-1) }),
+      });
+
+      setAnsweredMap((prev) => ({ ...prev, [currentIndex]: { isCorrect } }));
+      setEarnedXPPerQuestion((prev) => [...prev, questionXP]);
+      setShowModal(true);
+      setLastAnswerCorrect(isCorrect);
+    } catch (error) {
+      console.error("Error updating progress:", error);
     }
   };
 
@@ -131,53 +136,52 @@ const LessonDisplay = () => {
       (a) => a.isCorrect
     ).length;
 
-    // Calculate raw XP (sum of all questions)
-    const totalRawXP = earnedXPPerQuestion.reduce((sum, xp) => sum + xp, 0);
-
-    // Apply perfect lesson bonus if needed
     const perfectBonus =
       correctAnswers === exercises.length ? PERFECT_LESSON_BONUS : 0;
+    const streakBonus = Math.floor(currentStreak / 7);
+    const totalRawXP = earnedXPPerQuestion.reduce((sum, xp) => sum + xp, 0);
+    const finalXP = Math.min(
+      totalRawXP + perfectBonus + streakBonus,
+      MAX_XP_PER_LESSON
+    );
+    const coinsEarned = Math.floor(finalXP / 3) + (perfectBonus ? 2 : 0);
 
-    // Final capped XP
-    const finalXP = Math.min(totalRawXP + perfectBonus, MAX_XP_PER_LESSON);
+    try {
+      await updateDoc(userRef, {
+        xp: increment(finalXP),
+        total_xp: increment(finalXP),
+        weeklyXP: increment(finalXP),
+        monthlyXP: increment(finalXP),
+        coins: increment(coinsEarned),
+        total_lessons: increment(1),
+        completed_lessons: arrayUnion(lesson.id),
+        last_active_date: new Date().toISOString(),
+      });
 
-    await updateDoc(userRef, {
-      xp: increment(finalXP),
-      coins: increment(Math.floor(finalXP / 3)), // 1 coin per ~3 XP
-    });
+      // Update streak
+      const userSnap = await getDoc(userRef);
+      if (userSnap.exists()) {
+        const lastActive = userSnap.data().last_active_date?.toDate();
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
-    // Streak update
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const userSnap = await getDoc(userRef);
-
-    if (userSnap.exists()) {
-      let lastActive = userSnap.data().last_active_date?.toDate();
-      if (lastActive) lastActive.setHours(0, 0, 0, 0);
-
-      let newStreak = userSnap.data().current_streak || 0;
-      if (!lastActive) {
-        newStreak = 1;
-      } else {
-        const diffDays = Math.floor(
-          (today - lastActive) / (1000 * 60 * 60 * 24)
-        );
-        newStreak =
-          diffDays === 1 ? newStreak + 1 : diffDays > 1 ? 1 : newStreak;
+        let newStreak = userSnap.data().current_streak || 0;
+        if (!lastActive || lastActive < today) {
+          newStreak += 1;
+          await updateDoc(userRef, {
+            current_streak: newStreak,
+            longest_streak: Math.max(
+              userSnap.data().longest_streak || 0,
+              newStreak
+            ),
+          });
+        }
       }
 
-      await updateDoc(userRef, {
-        current_streak: newStreak,
-        longest_streak: Math.max(
-          userSnap.data().longest_streak || 0,
-          newStreak
-        ),
-        last_active_date: today,
-      });
-      setCurrentStreak(newStreak);
+      setLessonCompleted(true);
+    } catch (error) {
+      console.error("Error completing lesson:", error);
     }
-
-    setLessonCompleted(true);
   };
 
   useEffect(() => {
@@ -246,9 +250,18 @@ const LessonDisplay = () => {
 
   const isLessonComplete = currentIndex >= exercises.length;
   if (isLessonComplete) {
+    const correctAnswers = Object.values(answeredMap).filter(
+      (a) => a.isCorrect
+    ).length;
+    const perfectLesson = correctAnswers === exercises.length;
     const totalRawXP = earnedXPPerQuestion.reduce((sum, xp) => sum + xp, 0);
-    const finalXP = Math.min(totalRawXP, 30);
-    const perfectLesson = Object.values(answeredMap).every((a) => a.isCorrect);
+    const finalXP = Math.min(
+      totalRawXP +
+        (perfectLesson ? PERFECT_LESSON_BONUS : 0) +
+        Math.floor(currentStreak / 7),
+      MAX_XP_PER_LESSON
+    );
+    const coinsEarned = Math.floor(finalXP / 3) + (perfectLesson ? 2 : 0);
 
     return (
       <div className="min-h-screen flex flex-col items-center justify-around px-3 text-center py-6">
@@ -256,27 +269,57 @@ const LessonDisplay = () => {
         <h2 className="text-3xl font-bold text-amber mb-3">
           Lesson Complete 🎉
         </h2>
+
         <div className="streak-badge bg-white p-3 rounded-full shadow-md mb-4">
           🔥 {currentStreak}-day streak! | Earned: {finalXP}/30 XP
           {perfectLesson && (
             <span className="block text-green-500">+ Perfect Lesson!</span>
           )}
         </div>
-        <div className="flex justify-center gap-5 rounded-full ">
-          <button className=" border border-amber rounded-lg  h-28 w-28 lg:h-32 lg:w-32 flex flex-col items-center justify-center ml-2">
-            <p className="text-xl pb-5">XP</p>
 
-            <p className="flex items-center text-amber gap justify-center text-2xl">{finalXP} <FaFire/> {" "}  + </p>
-          </button>
-          <button className="p-8 items-center border border-amber h-28 w-28 lg:h-32 lg:w-32 rounded-lg justify-center flex flex-col gap-5">
-            <p className="text-xl">Coins</p>
-            <p className="flex items-center gap-1 text-amber gap justify-center text-2xl">{coins + 5 + (perfectLesson ? 2 : 0)} <FaCoins/> {" "}  +</p>
-          </button>
-          <button className="py-7 px-4 border border-amber h-28 w-28 lg:h-32 lg:w-32 justify-center rounded-md flex flex-col gap-5">
-            <p className="text-xl ">Lives</p>
-            <p className="flex  items-center text-amber gap-1 justify-center text-2xl">{lives} <FaHeart/> {" "}  +</p>
-          </button>
+        <div className="xp-details w-full max-w-md p-4 bg-white rounded-lg mb-6">
+          <h3 className="font-bold mb-2">XP Breakdown</h3>
+          <div className="flex justify-between">
+            <span>Questions:</span>
+            <span>{totalRawXP} XP</span>
+          </div>
+          {perfectLesson && (
+            <div className="flex justify-between text-green-500">
+              <span>Perfect Lesson:</span>
+              <span>+{PERFECT_LESSON_BONUS} XP</span>
+            </div>
+          )}
+          <div className="flex justify-between">
+            <span>Streak Bonus:</span>
+            <span>+{Math.floor(currentStreak / 7)} XP</span>
+          </div>
+          <div className="flex justify-between font-bold border-t pt-2">
+            <span>Total Earned:</span>
+            <span>{finalXP} XP</span>
+          </div>
         </div>
+
+        <div className="flex justify-center gap-5 rounded-full">
+          <div className="border border-amber rounded-lg h-28 w-28 lg:h-32 lg:w-32 flex flex-col items-center justify-center">
+            <p className="text-xl pb-5">XP</p>
+            <p className="flex items-center text-amber justify-center text-2xl">
+              {finalXP} <FaFire />
+            </p>
+          </div>
+          <div className="p-8 items-center border border-amber h-28 w-28 lg:h-32 lg:w-32 rounded-lg justify-center flex flex-col gap-5">
+            <p className="text-xl">Coins</p>
+            <p className="flex items-center gap-1 text-amber justify-center text-2xl">
+              {coins + coinsEarned} <FaCoins />
+            </p>
+          </div>
+          <div className="py-7 px-4 border border-amber h-28 w-28 lg:h-32 lg:w-32 justify-center rounded-md flex flex-col gap-5">
+            <p className="text-xl">Lives</p>
+            <p className="flex items-center text-amber gap-1 justify-center text-2xl">
+              {lives} <FaHeart />
+            </p>
+          </div>
+        </div>
+
         <div className="flex justify-between gap-4 mt-6">
           <Link to="/dashboard">
             <button className="bg-amber text-white px-6 py-2 rounded-full hover:bg-amber-600 transition-all">

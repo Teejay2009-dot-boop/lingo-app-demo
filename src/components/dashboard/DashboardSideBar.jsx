@@ -31,7 +31,7 @@ const DashboardSidebar = () => {
     { label: "Lessons", icon: <FaBook />, to: "/lessons" },
     { label: "Flashcards", icon: <FaBrain />, to: "/flashcards" },
     { label: "Shop", icon: <FaShop />, to: "/lessons/shop" },
-    { label: "Settings", icon: <FaCog />, to: "/settings" },
+    { label: "Settings", icon: <FaCog />, to: "/leaderboard" },
     {},
   ];
 

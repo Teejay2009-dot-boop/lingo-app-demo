@@ -7,6 +7,7 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import { Lesson } from "./pages/Lesson";
 import { Progress } from "./pages/Progress";
+import Leaderboard from "./components/LeaderBoard/Leaderboard";
 import Section from "./pages/Section";
 import LessonDisplay from "./pages/LessonDisplay";
 import LessonMap from "./pages/LessonMap";
@@ -30,6 +31,9 @@ function App() {
           <Route path="/lessons/section" element={<Section />}></Route>
           <Route path="/lessons/section/learn" element={<LessonMap />} />
           <Route path="/chat" element={<ChatBotUI />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
+
+          {/* Dynamic route for lesson sections */}
           <Route path="/lessons/shop" element={<Shop />} />
 
           {/* Dynamic route for lesson display */}
