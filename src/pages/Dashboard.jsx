@@ -25,6 +25,46 @@ const Dashboard = () => {
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [testLevel, setTestLevel] = useState(1);
 
+  // Calculate level progress based on XP
+  const getLevelProgress = (xp) => {
+    const currentLevel =
+      LEVEL_CONFIG.find((level) => level.level === userData?.level) ||
+      LEVEL_CONFIG[0];
+    const nextLevel = LEVEL_CONFIG.find(
+      (level) => level.level === userData?.level + 1
+    );
+
+    if (!nextLevel) {
+      return {
+        currentLevel,
+        nextLevel: null,
+        xpTowardsNextLevel: 0,
+        xpNeededForNextLevel: 0,
+        progressPercentage: 100,
+        isMaxLevel: true,
+      };
+    }
+
+    const xpNeededForNextLevel =
+      nextLevel.xp_required - currentLevel.xp_required;
+    const xpTowardsNextLevel = xp - currentLevel.xp_required;
+    const progressPercentage = Math.min(
+      100,
+      (xpTowardsNextLevel / xpNeededForNextLevel) * 100
+    );
+
+    return {
+      currentLevel,
+      nextLevel,
+      xpTowardsNextLevel,
+      xpNeededForNextLevel,
+      progressPercentage,
+      isMaxLevel: false,
+    };
+  };
+
+  const levelProgress = getLevelProgress(userData?.xp || 0);
+
   useEffect(() => {
     if (!userData) return;
 
@@ -111,11 +151,6 @@ const Dashboard = () => {
   const completedLessons = userData?.completed_lessons?.length || 0;
   const progressPercent =
     totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
-  const xpProgress = userData?.xp_to_next_level
-    ? (userData?.xp / userData?.xp_to_next_level) * 100
-    : 0;
-
-  // Add to your Dashboard component (before the return statement)
 
   // Add these test functions
   const simulateLevelUp = async (level) => {
@@ -188,7 +223,7 @@ const Dashboard = () => {
 
       {/* Stats */}
       <div className="grid md:grid-cols-3 md:grid-rows-2 gap-8 bg-gray-50 py-10 px-4 lg:px-12">
-        {/* XP Card */}
+        {/* Updated XP Card with dynamic progress */}
         <div className="bg-white p-6 flex justify-between rounded-2xl shadow items-center">
           <FaStar className="text-7xl text-amber" />
           <div>
@@ -197,16 +232,24 @@ const Dashboard = () => {
             <div className="w-40 h-2 bg-gray-200 rounded mt-2 overflow-hidden">
               <div
                 className="h-2 bg-amber rounded"
-                style={{ width: `${xpProgress}%` }}
+                style={{ width: `${levelProgress.progressPercentage}%` }}
               />
             </div>
             <p className="text-xs text-gray-400">
-              XP to next level: {userData?.xp_to_next_level}
+              {levelProgress.isMaxLevel ? (
+                "Max level reached!"
+              ) : (
+                <>
+                  {levelProgress.xpTowardsNextLevel}/
+                  {levelProgress.xpNeededForNextLevel} XP to{" "}
+                  {levelProgress.nextLevel.name}
+                </>
+              )}
             </p>
           </div>
         </div>
 
-        {/* NEW: Improved Streak Card */}
+        {/* Streak Card */}
         <div className="bg-white p-6 rounded-2xl shadow flex flex-col">
           <div className="flex items-center gap-4 mb-4">
             <div className="bg-amber-100 p-3 rounded-full">

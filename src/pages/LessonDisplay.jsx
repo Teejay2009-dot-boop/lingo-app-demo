@@ -55,7 +55,7 @@ const LessonDisplay = () => {
   });
 
   const MAX_XP_PER_LESSON = 30;
-  const IDEAL_TIME_PER_QUESTION = 10; // seconds
+  const IDEAL_TIME_PER_QUESTION = 10;
   const PERFECT_LESSON_BONUS = 5;
 
   const currentExercise = exercises[currentIndex];
@@ -108,24 +108,27 @@ const LessonDisplay = () => {
     const timeTaken = (Date.now() - startTime) / 1000;
     const questionXP = calculateQuestionXP(isCorrect, timeTaken);
 
-    const userRef = doc(db, "users", auth.currentUser.uid);
+    // Immediate UI update
+    setAnsweredMap((prev) => ({ ...prev, [currentIndex]: { isCorrect } }));
+    setEarnedXPPerQuestion((prev) => [...prev, questionXP]);
+    setShowModal(true);
+    setLastAnswerCorrect(isCorrect);
 
-    try {
-      await updateDoc(userRef, {
-        xp: increment(questionXP),
-        total_xp: increment(questionXP),
-        weeklyXP: increment(questionXP),
-        monthlyXP: increment(questionXP),
-        ...(!isCorrect && { lives: increment(-1) }),
-      });
-
-      setAnsweredMap((prev) => ({ ...prev, [currentIndex]: { isCorrect } }));
-      setEarnedXPPerQuestion((prev) => [...prev, questionXP]);
-      setShowModal(true);
-      setLastAnswerCorrect(isCorrect);
-    } catch (error) {
-      console.error("Error updating progress:", error);
-    }
+    // Deferred Firebase update
+    setTimeout(async () => {
+      const userRef = doc(db, "users", auth.currentUser.uid);
+      try {
+        await updateDoc(userRef, {
+          xp: increment(questionXP),
+          total_xp: increment(questionXP),
+          weeklyXP: increment(questionXP),
+          monthlyXP: increment(questionXP),
+          ...(!isCorrect && { lives: increment(-1) }),
+        });
+      } catch (error) {
+        console.error("Error updating progress:", error);
+      }
+    }, 0);
   };
 
   const completeLesson = async () => {

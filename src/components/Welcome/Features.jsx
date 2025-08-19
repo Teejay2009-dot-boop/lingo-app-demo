@@ -3,7 +3,7 @@ import Lottie from "lottie-react";
 
 export const Features = ({ title, desc, animation, reverse = false }) => {
   return (
-    <section
+    <section data-aos="fade-up" data-aos-duration="2000"
       className={`flex flex-col ${
         reverse ? "md:flex-row-reverse" : "md:flex-row"
       } items-center justify-between gap-10 py-16 px-6 md:px-20`}

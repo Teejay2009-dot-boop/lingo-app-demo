@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
+import { easeIn, motion } from "framer-motion";
 import {
   FaArrowLeft,
   FaCoins,
@@ -10,12 +11,15 @@ import {
   FaCocktail,
   FaCheck,
   FaTimes,
+  FaCheckCircle,
 } from "react-icons/fa";
 import mascot from "../assets/IMG-20250724-WA0115-removebg-preview.png";
 import { auth, db } from "../firebase/config/firebase";
 import { doc, onSnapshot, updateDoc, increment } from "firebase/firestore";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
-import Confetti from "react-confetti"
+import Confetti from "react-confetti";
+import { div } from "framer-motion/client";
+import { YAxis } from "recharts";
 
 const shopItems = [
   {
@@ -33,10 +37,10 @@ const shopItems = [
     icon: (
       <div className="flex">
         <FaHeart className="text-red-500" />
+        {/* <FaHeart className="text-red-500" />
         <FaHeart className="text-red-500" />
         <FaHeart className="text-red-500" />
-        <FaHeart className="text-red-500" />
-        <FaHeart className="text-red-500" />
+        <FaHeart className="text-red-500" /> */}
       </div>
     ),
     cost: 60,
@@ -173,37 +177,39 @@ const Shop = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-100 p-6 relative">
-      {showConfetti && (
-        <Confetti
-          width={windowSize.width}
-          height={windowSize.height}
-          recycle={false}
-          numberOfPieces={200}
-        />
-      )}
+    <DashboardLayout>
+      <div className="min-h-screen bg-gray-100 p-6 relative">
+        {showConfetti && (
+          <Confetti
+            width={windowSize.width}
+            height={windowSize.height}
+            recycle={false}
+            numberOfPieces={200}
+          />
+        )}
 
-      {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <Link to="/lessons" className="hover:scale-110 transition-transform">
-          <FaArrowLeft className="text-2xl text-amber" />
-        </Link>
-        <h1 className="text-4xl md:text-5xl pb-6 font-bold font-fredoka text-amber text-center">
-          Lingo Shop
-        </h1>
-        <img
-          src={mascot}
-          alt="Mascot"
-          className="w-10 cursor-pointer animate-bounce hover:animate-spin"
-        />
-      </div>
+        {/* Header */}
+        <div className="flex justify-around items-center mt-16 mb-6 lg:mt-2">
+          {/* <Link to="/lessons" className="hover:scale-110 transition-transform">
+            <FaArrowLeft className="text-2xl text-amber" />
+          </Link> */}
+          <h1 className="text-4xl md:text-5xl pb-1 font-bold font-fredoka text-amber text-center">
+            Shop
+          </h1>
+          {/* <img
+            src={mascot}
+            alt="Mascot"
+            className="w-10 cursor-pointer animate-bounce hover:animate-spin"
+          /> */}
+        </div>
 
-      {/* Stats */}
-      <div className="flex justify-around items-center mb-6 text-lg font-semibold bg-white p-3 rounded-xl shadow-sm">
-        <p className="flex gap-2 items-center bg-amber text-white px-4 py-2 rounded-full">
-          <FaCoins /> {coins}
-        </p>
-        <p className="flex items-center gap-1 bg-blue-50 text-blue-600 px-4 py-2 rounded-full">
+        {/* Stats */}
+        <div className="flex justify-end items-center mb-6 text-lg font-semibold bg-white p-3 rounded-full shadow-md">
+          <p className="flex gap-2 items-center  text-amber text-2xl px-4  rounded-full ">
+            <FaCoins /> {coins}
+          </p>
+
+          {/* <p className="flex items-center gap-1 bg-blue-50 text-blue-600 px-4 py-2 rounded-full">
           ⭐ {xp} XP
         </p>
         <p className="flex items-center gap-1 bg-red-50 text-red-600 px-4 py-2 rounded-full">
@@ -213,105 +219,275 @@ const Shop = () => {
               (+{getRemainingLives()} available)
             </span>
           )}
-        </p>
-      </div>
-
-      {/* Message */}
-      {message && (
-        <div
-          className={`bg-white text-center p-3 mb-4 mx-6 lg:mx-20 rounded-full shadow-md font-medium flex items-center justify-center gap-2 ${
-            message.startsWith("✅") ? "text-green-600" : "text-red-600"
-          }`}
-        >
-          {message.startsWith("✅") ? <FaCheck /> : <FaTimes />}
-          {message.replace(/[✅❌]/g, "")}
+        </p> */}
         </div>
-      )}
 
-      {/* Items */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mx-auto max-w-6xl">
-        {shopItems.map((item) => {
-          const canBuyLife = !item.action.lives || lives < 5;
-          const canAfford = coins >= item.cost;
-          const isDisabled = (item.action.lives && lives >= 5) || !canAfford;
+        {/* Message */}
+        {message && (
+          <div
+            className={`bg-white text-center p-3 mb-4 mx-6 lg:mx-20 rounded-full shadow-md font-medium flex items-center justify-center gap-2 ${
+              message.startsWith("✅") ? "text-green-600" : "text-red-600"
+            }`}
+          >
+            {message.startsWith("✅") ? <FaCheck /> : <FaTimes />}
+            {message.replace(/[✅❌]/g, "")}
+          </div>
+        )}
 
-          return (
-            <div
-              key={item.id}
-              className={`bg-white rounded-xl shadow w-full flex flex-col items-center text-center border-2 transition-all duration-300 mx-auto cursor-pointer relative overflow-hidden ${
-                isDisabled
-                  ? "border-gray-200 opacity-80"
-                  : "border-amber hover:border-amber-600 hover:shadow-lg"
-              } ${item.popular ? "ring-2 ring-yellow-400" : ""} ${
-                item.bestValue ? "ring-2 ring-blue-400" : ""
-              }`}
-            >
-              {item.popular && (
-                <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-bl-md">
-                  POPULAR
-                </div>
-              )}
-              {item.bestValue && (
-                <div className="absolute top-0 right-0 bg-blue-400 text-blue-900 text-xs font-bold px-2 py-1 rounded-bl-md">
-                  BEST VALUE
-                </div>
-              )}
+        <p className="text-2xl text-black py-2 font-semibold pl-1">Items</p>
 
-              <div className="p-6 w-full flex flex-col items-center">
-                <div className="text-5xl mb-4 flex justify-center">
-                  {item.icon}
-                </div>
-                <h3 className="font-bold text-2xl mb-2">{item.name}</h3>
-                {item.description && (
-                  <p className="text-gray-600 mb-4 text-sm">
-                    {item.description}
-                  </p>
+        {/* Items */}
+        <div className="grid grid-cols-2 lg:grid-cols-3 gap-6 mx-auto max-w-6xl">
+          {shopItems.map((item) => {
+            const canBuyLife = !item.action.lives || lives < 5;
+            const canAfford = coins >= item.cost;
+            const isDisabled = (item.action.lives && lives >= 5) || !canAfford;
+
+            return (
+              <div
+                key={item.id}
+                className={`bg-white rounded-xl shadow w-full flex flex-col items-center text-center border-2 transition-all duration-300 mx-auto cursor-pointer relative overflow-hidden ${
+                  isDisabled
+                    ? "border-gray-200 opacity-80"
+                    : "border-amber hover:border-amber-600 hover:shadow-lg"
+                } ${item.popular ? "ring-2 ring-yellow-400" : ""} ${
+                  item.bestValue ? "ring-2 ring-blue-400" : ""
+                }`}
+              >
+                {item.popular && (
+                  <div className="absolute top-0 right-0 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-1 rounded-bl-md">
+                    POPULAR
+                  </div>
                 )}
-                <p className="text-lg font-semibold mb-4 flex items-center gap-1">
-                  <span className={canAfford ? "text-amber" : "text-gray-400"}>
-                    {item.cost}
-                  </span>
-                  <FaCoins
-                    className={canAfford ? "text-yellow-500" : "text-gray-400"}
-                  />
-                </p>
-
-                {item.action.lives && lives >= 5 && (
-                  <p className="text-red-500 text-sm mb-2">
-                    Maximum lives reached
-                  </p>
-                )}
-                {!canAfford && (
-                  <p className="text-red-500 text-sm mb-2">
-                    Need {item.cost - coins} more coins
-                  </p>
+                {item.bestValue && (
+                  <div className="absolute top-0 right-0 bg-blue-400 text-blue-900 text-xs font-bold px-2 py-1 rounded-bl-md">
+                    BEST VALUE
+                  </div>
                 )}
 
-                <button
-                  onClick={() => handlePurchase(item)}
-                  disabled={isDisabled}
-                  className={`px-6 py-2 rounded-full font-semibold transition-all duration-200 w-full max-w-xs ${
-                    isDisabled
-                      ? "bg-gray-200 text-gray-500 cursor-not-allowed"
-                      : "bg-amber text-white hover:bg-amber-600 hover:scale-105"
-                  }`}
-                >
-                  {isDisabled ? "Unavailable" : "Purchase"}
-                </button>
+                <div className="p-6 w-full flex flex-col items-center">
+                  <div className="text-5xl mb-4 flex justify-center">
+                    {item.icon}
+                  </div>
+                  <h3 className="font-bold text-2xl mb-2">{item.name}</h3>
+                  {item.description && (
+                    <p className="text-gray-600 mb-4 text-sm">
+                      {item.description}
+                    </p>
+                  )}
+                  <p className="text-lg font-semibold mb-4 flex items-center gap-1">
+                    <span
+                      className={canAfford ? "text-amber" : "text-gray-400"}
+                    >
+                      {item.cost}
+                    </span>
+                    <FaCoins
+                      className={
+                        canAfford ? "text-yellow-500" : "text-gray-400"
+                      }
+                    />
+                  </p>
+
+                  {item.action.lives && lives >= 5 && (
+                    <p className="text-red-500 text-sm mb-2">
+                      Maximum lives reached
+                    </p>
+                  )}
+                  {!canAfford && (
+                    <p className="text-red-500 text-sm mb-2">
+                      Need {item.cost - coins} more coins
+                    </p>
+                  )}
+
+                  <button
+                    onClick={() => handlePurchase(item)}
+                    disabled={isDisabled}
+                    className={`px-0 py-2 rounded-full font-semibold transition-all duration-200 w-full max-w-48 ${
+                      isDisabled
+                        ? "bg-gray-200 text-gray-500 px-0 text-sm cursor-not-allowed text-center"
+                        : "bg-amber text-white hover:bg-amber-600 hover:scale-105"
+                    }`}
+                  >
+                    {isDisabled ? "No Coins" : "Purchase"}
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Life counter helper */}
+        {lives < 5 && (
+          <div className="mt-8 text-center text-sm text-gray-600">
+            You can purchase up to {getRemainingLives()} more{" "}
+            {getRemainingLives() === 1 ? "life" : "lives"}
+          </div>
+        )}
+
+        <div>
+          <h1 className="text-2xl p-2 font-semibold">Subscriptions</h1>
+          <div className="grid md:grid-cols-2 gap-6 ">
+            {/* BASIC SUBSCRIPTION */}
+
+            <div className=" relative w-full m-4 bg-white p-4 shadow-md mx-1 px-1 rounded-2xl">
+              <div className="absolute top-0 bg-green-500 font-semibold right-0 rounded-tr-xl m-r-2 px-3">
+                FREE
+              </div>
+              <div className="px-2 py-2">
+                <h1 className="text-2xl font-semibold">Basic</h1>
+                <div className="flex flex-col py-1">
+                  <div className="flex gap-1 items-center">
+                    <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                    <p className="text-sm">Limited Yoruba Lessons</p>
+                  </div>
+                  <div className="flex gap-1 items-center">
+                    <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                    <p className="text-sm">Limited Lives</p>
+                  </div>
+                  <div className="flex gap-1 items-center">
+                    <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                    <p className="text-sm">No Progress Tracking</p>
+                  </div>
+                  <div className="flex gap-1 items-center">
+                    <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                    <p className="text-sm">Ads</p>
+                  </div>
+                </div>
+              </div>
+              <div className="absolute bottom-4 right-3 bg-amber text-sm py-1 flex items-center font-semibold px-5 rounded-full">
+                Get
               </div>
             </div>
-          );
-        })}
-      </div>
 
-      {/* Life counter helper */}
-      {lives < 5 && (
-        <div className="mt-8 text-center text-sm text-gray-600">
-          You can purchase up to {getRemainingLives()} more{" "}
-          {getRemainingLives() === 1 ? "life" : "lives"}
+            {/* ADVANCE SUBSCRIPTION */}
+
+            <div className=" relative w-full m-4 bg-white p-4 mx-1  px-1 rounded-2xl shadow-md ">
+              <div className="absolute top-0 bg-blue-500  font-semibold right-0 rounded-tr-xl m-r-2 px-3">
+                POPULAR
+              </div>
+              <div className="px-2 py-2">
+                <h1 className="text-2xl font-semibold">Advance</h1>
+                <div className="flex gap-3">
+                  <div className="flex flex-col py-1">
+                    <div className="flex gap-1 items-center">
+                      <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                      <p className="text-sm">Basic Priviledges</p>
+                    </div>
+                    <div className="flex gap-1 items-center">
+                      <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                      <p className="text-sm">Unlimited Lives</p>
+                    </div>
+                    <div className="flex gap-1 items-center">
+                      <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                      <p className="text-sm">No Ads</p>
+                    </div>
+                    <div className="flex gap-1 items-center">
+                      <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                      <p className="text-sm">Explain my Answers</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col py-1">
+                    <div className="flex gap-1 items-center">
+                      <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                      <p className="text-sm">Advance Lessons</p>
+                    </div>
+                    <div className="flex gap-1 items-center">
+                      <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                      <p className="text-sm">Offline Mode</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <motion.button
+                initial={{ transform: -10 }}
+                animate={{ transform: 0 }}
+                transition={{ duration: 1, ease: "easeInOut" }}
+                className="absolute bottom-1 right-3 bg-amber text-sm py-[1px] flex items-center font-semibold px-5 rounded-full shadow-xl cursor-pointer "
+              >
+                Get
+              </motion.button>
+            </div>
+
+            {/* MAX LEVEL SUBSCRIPTION */}
+
+            <div className=" relative w-full m-4 border p-4 mx-1 bg-white px-1 rounded-2xl">
+              <div className="absolute top-0 bg-red-500 font-semibold right-0 rounded-tr-xl m-r-2 px-3">
+                PREMIUM
+              </div>
+              <div className="px-2 py-2">
+                <h1 className="text-2xl font-semibold">Max</h1>
+                <div className="flex flex-col py-1">
+                  <div className="flex gap-1 items-center">
+                    <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                    <p className="text-sm">Advanced Priviledges</p>
+                  </div>
+                  <div className="flex gap-1 items-center">
+                    <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                    <p className="text-sm">AI Tutor</p>
+                  </div>
+                  <div className="flex gap-1 items-center">
+                    <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                    <p className="text-sm">AI live mode</p>
+                  </div>
+                </div>
+              </div>
+              <div className="absolute bottom-1 right-3 bg-amber text-sm py-[1px] flex items-center font-semibold px-5 rounded-full">
+                Get
+              </div>
+            </div>
+
+            {/* SCHOOL SUBSCRIPTION */}
+
+            <div className=" relative w-full m-4 border p-4 bg-white mx-1  px-1 rounded-2xl shadow-md ">
+              <div className="absolute top-0 bg-blue-500  font-semibold right-0 rounded-tr-xl m-r-2 px-3">
+                POPULAR
+              </div>
+              <div className="px-2 py-2">
+                <h1 className="text-2xl font-semibold">For Schools</h1>
+                <div className="flex gap-3">
+                  <div className="flex flex-col py-1">
+                    <div className="flex gap-1 items-center">
+                      <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                      <p className="text-sm">Basic Priviledges</p>
+                    </div>
+                    <div className="flex gap-1 items-center">
+                      <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                      <p className="text-sm">Unlimited Lives</p>
+                    </div>
+                    <div className="flex gap-1 items-center">
+                      <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                      <p className="text-sm">No Ads</p>
+                    </div>
+                    <div className="flex gap-1 items-center">
+                      <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                      <p className="text-sm">Explain my Answers</p>
+                    </div>
+                  </div>
+                  <div className="flex flex-col py-1">
+                    <div className="flex gap-1 items-center">
+                      <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                      <p className="text-sm">Advance Lessons</p>
+                    </div>
+                    <div className="flex gap-1 items-center">
+                      <FaCheckCircle className="text-white rounded-full text-sm bg-green-500" />
+                      <p className="text-sm">Offline Mode</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <motion.button
+                initial={{ transform: -10 }}
+                animate={{ transform: 0 }}
+                transition={{ duration: 1, ease: "easeInOut" }}
+                className="absolute bottom-1 right-3 bg-amber text-sm py-[1px] flex items-center font-semibold px-5 rounded-full shadow-xl cursor-pointer "
+              >
+                Get
+              </motion.button>
+            </div>
+          </div>
         </div>
-      )}
-    </div>
+      </div>
+    </DashboardLayout>
   );
 };
 

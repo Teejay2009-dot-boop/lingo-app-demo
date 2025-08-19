@@ -93,6 +93,12 @@
   transition: transform 0.3s ease;
 }
 
+.profile-background{
+  background-image: url('./assets/girlwithbg.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
 .text-underline:hover::after {
   transform: scaleX(1);
   transform-origin: bottom left;

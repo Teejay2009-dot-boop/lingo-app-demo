@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { FaArrowCircleUp } from "react-icons/fa";
+import { motion } from "framer-motion";
 
 export default function BackToTopButton() {
   const [isVisible, setIsVisible] = useState(false);

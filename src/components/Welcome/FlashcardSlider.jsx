@@ -1,5 +1,6 @@
 import React from "react";
 import Slider from "react-slick";
+import { motion } from "framer-motion";
 
 import sliderImg from "../../assets/IMG-20250724-WA0115-removebg-preview.png";
 import sliderImgtwo from "../../assets/girlwithbg.jpg";
@@ -26,6 +27,12 @@ function FlashcardSlider() {
     pauseOnHover: true,
   };
 
+  const variants = {
+    inital: { opacity: 0, x: 100 },
+    animate: { opacity: 1, x: 0 },
+    exit: { opacity: 0, x: -100 },
+  };
+
   return (
     <section className="w-full bg-[#FFFDE7] py-16 px-2 overflow-hidden">
       <h2 className="text-3xl font-fredoka font-bold text-amber text-center mb-10">
@@ -34,7 +41,14 @@ function FlashcardSlider() {
 
       <Slider {...settings}>
         {flashcards.map((card, index) => (
-          <div key={index} className="w-full flex justify-center">
+          <motion.div
+            variants={variants}
+            animate="animate"
+            initial="initial"
+            exit="exit"
+            key={index}
+            className="w-full flex justify-center"
+          >
             <div className="bg-white rounded-xl shadow-xl p-10 w-full max-w-5xl flex flex-col md:flex-row items-center justify-center gap-10 mx-auto">
               <img
                 src={card.image}
@@ -46,7 +60,7 @@ function FlashcardSlider() {
                 <p className="text-4xl font-bold text-amber">{card.yoruba}</p>
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </Slider>
     </section>

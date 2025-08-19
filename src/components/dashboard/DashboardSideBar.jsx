@@ -12,8 +12,11 @@ import {
   FaCog,
   FaSignOutAlt,
   FaBell,
+  FaDotCircle
 } from "react-icons/fa";
 import { FaShop } from "react-icons/fa6";
+import {Dropdown} from "./DropDown";
+import { label } from "framer-motion/client";
 
 const DashboardSidebar = () => {
   const logout = async () => {
@@ -28,10 +31,12 @@ const DashboardSidebar = () => {
 
   const navItems = [
     { label: "Dashboard", icon: <FaHome />, to: "/dashboard" },
-    { label: "Lessons", icon: <FaBook />, to: "/lessons" },
-    { label: "Flashcards", icon: <FaBrain />, to: "/flashcards" },
+    { label: "Learn", icon: <FaBook />, to: "/lessons" },
+    // { label: "Flashcards", icon: <FaBrain />, to: "/flashcards" },
     { label: "Shop", icon: <FaShop />, to: "/lessons/shop" },
-    { label: "Settings", icon: <FaCog />, to: "/leaderboard" },
+    { label: "Profile", icon: <FaCog />, to: "/profile" },
+    { label: "Feed", icon: <FaBell />, to: "/notifications" },
+   
     {},
   ];
 
@@ -59,25 +64,29 @@ const DashboardSidebar = () => {
       </div>
 
       {/* Sidebar - always visible on large screens */}
-      <div className="hidden lg:flex lg:flex-col bg-amber text-white w-60 min-h-screen p-6 fixed">
-        <h1 className="text-2xl font-bold mb-6">LingoBud</h1>
-        <ul className="space-y-6 text-lg">
+      <div className="hidden lg:flex lg:flex-col bg-amber text-white w-60 min-h-screen px-6 fixed">
+        <h1 className="text-2xl font-bold mb-2 mt-10 pl-3">LingoBud</h1>
+        <ul className="text-lg py-10">
           {navItems.map((item, i) => (
             <Link to={item.to}>
               <li
                 key={i}
-                className="flex items-center gap-3 p-3 cursor-pointer hover:text-yellow-100"
+                className="flex items-center gap-3 px-3 py-2 cursor-pointer hover:text-yellow-100"
               >
                 {item.icon} {item.label}
               </li>
             </Link>
           ))}
+          <div className="pl-3">
+            <Dropdown/>
+          </div>
           <Link to={"/"}>
-            <button onClick={logout} className="flex gap-2 items-center pl-4">
+            <button onClick={logout} className="flex gap-2 py-4 items-center pl-4">
               {" "}
               <FaSignOutAlt /> LogOut
             </button>
           </Link>
+          
         </ul>
       </div>
 
@@ -94,19 +103,22 @@ const DashboardSidebar = () => {
             onClick={() => setIsOpen(false)}
           />
         </div>
-        <ul className="space-y-6 text-lg">
+        <ul className=" text-lg">
           {navItems.map((item, i) => (
-            <Link to={item.to}>
+            <Link to={item.to}> 
               <li
                 key={i}
-                className="flex items-center gap-1 p-3 cursor-pointer hover:text-yellow-100"
+                className="flex items-center gap-1 px-3 py-2 cursor-pointer hover:text-yellow-100"
               >
                 {item.icon} {item.label}
               </li>
             </Link>
           ))}
+          <div className="pl-3">
+            <Dropdown/>
+          </div>
           <Link to={"/"}>
-            <button onClick={logout} className="flex gap-2 items-center pl-4">
+            <button onClick={logout} className="flex gap-2 items-center py-4 pl-3">
               {" "}
               <FaSignOutAlt /> LogOut
             </button>

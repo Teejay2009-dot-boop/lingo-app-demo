@@ -1,15 +1,26 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FaBars, FaTimes } from "react-icons/fa";
 import { href, Link } from "react-router-dom";
+import { motion } from "framer-motion";
 
 export const NavBar = ({onHeroClick, onPricingClick, onAboutClick}) => {
   const [isOpen, setIsOpen] = useState(false);
   const toggleMenu = () => setIsOpen(!isOpen);
   const closeMenu = () => setIsOpen(false);
+const [scrolled,setScrolled] = useState(false)
+
+useEffect(() => {
+  const handleScroll = () => {
+    setScrolled(window.scrollY > 50)
+  }
+  window.addEventListener('scroll', handleScroll)
+
+  return () => window.removeEventListener('scroll', handleScroll)
+}, [])
 
   
   return (
-    <div className="relative z-50 top-0 fixed ">
+    <div data-aos="fade-down" data-aos-duration="1000" className="relative z-50 top-0 ">
       {/* Top Navbar */}
       <div className="bg-amber  text-white flex justify-between items-center shadow-lg px-4 py-3">
         <div className="font-bold font-fredoka text-3xl">LingoBud</div>

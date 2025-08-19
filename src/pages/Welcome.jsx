@@ -45,7 +45,7 @@ const Welcome = ({onNavBarClick}) => {
       </div>
       <div ref={aboutRef}>
         <HowItWorks />
-        <div className="text-4xl lg:text-5xl font-bold text-amber my-10 text-center">
+        <div data-aos="fade-down" data-aos-duration="2500" className="text-4xl lg:text-5xl font-bold text-amber my-10 text-center">
           Why Lingo-Bud?
         </div>
         <Features

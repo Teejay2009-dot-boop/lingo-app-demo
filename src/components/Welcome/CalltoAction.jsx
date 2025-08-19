@@ -1,4 +1,6 @@
+import { motion } from "framer-motion";
 import React from "react";
+
 import { Link } from "react-router-dom";
 
 const CallToAction = () => {
@@ -11,9 +13,9 @@ const CallToAction = () => {
         Build your language skills with fun lessons, streaks, and flashcards.
       </p>
       <Link to="/login">
-        <button className="bg-amber text-white font-bold py-3 px-6 rounded-xl text-lg shadow hover:bg-[#d5a900] transition">
+        <motion.button initial={{scale:0}} animate={{scale:1.2}} transition={{duration:Infinity}} data-aos="fade-up" data-aos-duration="2000" className="bg-amber text-white font-bold py-3 px-6 rounded-xl text-lg shadow hover:bg-[#d5a900] transition">
           Get Started
-        </button>
+        </motion.button>
       </Link>
     </section>
   );

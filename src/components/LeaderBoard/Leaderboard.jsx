@@ -1,51 +1,63 @@
-// src/pages/Leaderboard.js
 import React, { useState, useEffect } from "react";
-import { collection, query, orderBy, limit, getDocs } from "firebase/firestore";
-import { db } from "../../firebase/config/firebase";
-
-import { auth } from "../../firebase/config/firebase";
-import { FaTrophy, FaCrown, FaMedal, FaUserAlt } from "react-icons/fa";
+import {
+  collection,
+  query,
+  orderBy,
+  limit,
+  onSnapshot,
+} from "firebase/firestore";
+import { db, auth } from "../../firebase/config/firebase";
+import { FaTrophy, FaCrown, FaMedal, FaUserAlt, FaFire } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../dashboard/DashboardLayout";
 
 const Leaderboard = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState("all-time"); // 'weekly', 'monthly'
+  const [timeRange, setTimeRange] = useState("all-time");
+  const [currentUserPosition, setCurrentUserPosition] = useState(null);
 
   useEffect(() => {
+    let unsubscribe;
     const fetchLeaderboard = async () => {
       try {
-        let q;
-        if (timeRange === "weekly") {
-          // For weekly leaderboard (you'll need to add a weeklyXP field to users)
-          q = query(
-            collection(db, "users"),
-            orderBy("weeklyXP", "desc"),
-            limit(50)
-          );
-        } else if (timeRange === "monthly") {
-          // For monthly leaderboard
-          q = query(
-            collection(db, "users"),
-            orderBy("monthlyXP", "desc"),
-            limit(50)
-          );
-        } else {
-          // All-time leaderboard
-          q = query(
-            collection(db, "users"),
-            orderBy("total_xp", "desc"),
-            limit(50)
-          );
+        setLoading(true);
+
+        // Determine the field to sort by
+        let sortField;
+        switch (timeRange) {
+          case "weekly":
+            sortField = "weeklyXP";
+            break;
+          case "monthly":
+            sortField = "monthlyXP";
+            break;
+          default:
+            sortField = "total_xp";
         }
 
-        const querySnapshot = await getDocs(q);
-        const usersData = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-        }));
-        setUsers(usersData);
+        const q = query(
+          collection(db, "users"),
+          orderBy(sortField, "desc"),
+          limit(50)
+        );
+
+        unsubscribe = onSnapshot(q, (querySnapshot) => {
+          const usersData = querySnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+
+          setUsers(usersData);
+
+          // Find current user's position
+          if (auth.currentUser) {
+            const position = usersData.findIndex(
+              (user) => user.id === auth.currentUser.uid
+            );
+            setCurrentUserPosition(position >= 0 ? position + 1 : null);
+          }
+        });
       } catch (error) {
         console.error("Error fetching leaderboard:", error);
       } finally {
@@ -54,19 +66,27 @@ const Leaderboard = () => {
     };
 
     fetchLeaderboard();
+
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [timeRange]);
 
   if (loading) {
-    return <div className="text-center py-8">Loading leaderboard...</div>;
+    return (
+      <DashboardLayout>
+        <div className="text-center py-8">Loading leaderboard...</div>
+      </DashboardLayout>
+    );
   }
 
   return (
     <DashboardLayout>
-      <div className="max-w-4xl px-auto  bg-gray-50 px-2 pt-24 md:pt-0">
-        <h1 className="text-3xl font-bold text-center mb-6 ">Leaderboard</h1>
+      <div className="max-w-4xl mx-auto bg-gray-50 px-4 pt-24 md:pt-0 pb-8">
+        <h1 className="text-3xl font-bold text-center mb-6">Leaderboard</h1>
 
         {/* Time range selector */}
-        <div className="flex justify-center gap-4 mb-8 pt-4 px-4">
+        <div className="flex justify-center gap-4 mb-8">
           <button
             onClick={() => setTimeRange("weekly")}
             className={`px-4 py-2 rounded-full ${
@@ -78,9 +98,7 @@ const Leaderboard = () => {
           <button
             onClick={() => setTimeRange("monthly")}
             className={`px-4 py-2 rounded-full ${
-              timeRange === "monthly"
-                ? "bg-amber text-white"
-                : "bg-gray-200"
+              timeRange === "monthly" ? "bg-amber text-white" : "bg-gray-200"
             }`}
           >
             Monthly
@@ -88,9 +106,7 @@ const Leaderboard = () => {
           <button
             onClick={() => setTimeRange("all-time")}
             className={`px-4 py-2 rounded-full ${
-              timeRange === "all-time"
-                ? "bg-amber text-white"
-                : "bg-gray-200"
+              timeRange === "all-time" ? "bg-amber text-white" : "bg-gray-200"
             }`}
           >
             All Time
@@ -98,7 +114,7 @@ const Leaderboard = () => {
         </div>
 
         {/* Leaderboard table */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden">
+        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
           {users.length === 0 ? (
             <div className="text-center p-8">No users found</div>
           ) : (
@@ -106,47 +122,64 @@ const Leaderboard = () => {
               {users.map((user, index) => (
                 <li
                   key={user.id}
-                  className="p-4 hover:bg-gray-50 transition-colors"
+                  className={`relative flex items-center py-4 px-6 transition-colors
+    ${user.id === auth.currentUser?.uid ? "bg-amber-50" : "hover:bg-gray-50"}`}
                 >
-                  <div className="flex items-center">
-                    {/* Rank indicator */}
-                    <div className="w-10 flex-shrink-0">
-                      {index === 0 ? (
-                        <FaCrown className="text-yellow-500 text-2xl" />
-                      ) : index === 1 ? (
-                        <FaTrophy className="text-gray-400 text-2xl" />
-                      ) : index === 2 ? (
-                        <FaMedal className="text-amber-600 text-2xl" />
+                  {/* Vertical line (timeline effect) - centered on avatar */}
+                  {index !== users.length - 1 && (
+                    <span className="absolute left-16 top-full h-8 w-0.5 bg-gray-200 transform -translate-y-1/2"></span>
+                  )}
+
+                  {/* Rank Badge - Moved to the right */}
+                  <div className="flex-shrink-0 mr-4">
+                    {index === 0 ? (
+                      <FaCrown className="text-yellow-500 text-2xl" />
+                    ) : index === 1 ? (
+                      <FaTrophy className="text-gray-400 text-2xl" />
+                    ) : index === 2 ? (
+                      <FaMedal className="text-amber-600 text-2xl" />
+                    ) : (
+                      <span className="text-gray-500 font-bold text-lg">
+                        #{index + 1}
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Avatar with centered shadow line */}
+                  <div className="relative flex-shrink-0 mx-4">
+                    <div className="w-16 h-16 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-2 border-white shadow-md">
+                      {user.avatar ? (
+                        <img
+                          src={user.avatar}
+                          alt={user.username}
+                          className="w-full h-full object-cover"
+                        />
                       ) : (
-                        <span className="text-gray-500 font-medium">
-                          {index + 1}
-                        </span>
+                        <FaUserAlt className="text-gray-500 text-xl" />
                       )}
                     </div>
+                  </div>
 
-                    {/* User info */}
-                    <div className="flex items-center flex-grow">
-                      <div className="w-10 h-10 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden mr-4">
-                        {user.avatar ? (
-                          <img
-                            src={user.avatar}
-                            alt={user.username}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <FaUserAlt className="text-gray-500" />
-                        )}
-                      </div>
-                      <div className="flex-grow">
-                        <h3 className="font-semibold">
+                  {/* User Info - Moved to the right of avatar */}
+                  <div className="flex-grow ml-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <h3 className="font-semibold text-gray-800 text-lg">
                           {user.username || "Anonymous"}
+                          {user.id === auth.currentUser?.uid && (
+                            <span className="ml-2 text-amber-500 text-sm">
+                              (You)
+                            </span>
+                          )}
                         </h3>
                         <p className="text-sm text-gray-500">
                           {user.title || "Beginner"}
                         </p>
                       </div>
-                      <div className="text-right">
-                        <p className="font-bold">
+
+                      {/* XP and Level - Moved to the far right */}
+                      <div className="text-right min-w-[100px]">
+                        <p className="font-bold text-gray-800 text-lg">
                           {timeRange === "weekly"
                             ? user.weeklyXP || 0
                             : timeRange === "monthly"
@@ -154,9 +187,14 @@ const Leaderboard = () => {
                             : user.total_xp || 0}{" "}
                           XP
                         </p>
-                        <p className="text-sm text-gray-500">
-                          Level {user.level || 1}
-                        </p>
+                        <div className="flex items-center justify-end">
+                          <p className="text-sm text-gray-500 mr-1">
+                            Lvl {user.level || 1}
+                          </p>
+                          {user.current_streak > 3 && (
+                            <FaFire className="text-amber-500 text-sm" />
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -167,19 +205,32 @@ const Leaderboard = () => {
         </div>
 
         {/* Current user's position */}
-        <div className="mt-8 bg-amber-50 p-4 rounded-xl border border-amber-200">
+        <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
           <h2 className="text-xl font-semibold mb-2">Your Position</h2>
-          {/* You'll need to fetch current user's position */}
-          <p className="text-gray-700">
-            {users.findIndex((u) => u.id === auth.currentUser?.uid) >= 0
-              ? `You're ranked #${
-                  users.findIndex((u) => u.id === auth.currentUser?.uid) + 1
-                }`
-              : "You're not on the leaderboard yet. Keep learning!"}
-          </p>
+          {currentUserPosition ? (
+            <div className="flex items-center justify-between">
+              <p className="text-gray-700">
+                You're ranked{" "}
+                <span className="font-bold">#{currentUserPosition}</span>
+              </p>
+              {users[currentUserPosition - 1]?.current_streak > 3 && (
+                <div className="flex items-center text-amber-600">
+                  <FaFire className="mr-1" />
+                  <span>
+                    {users[currentUserPosition - 1].current_streak}-day streak
+                  </span>
+                </div>
+              )}
+            </div>
+          ) : (
+            <p className="text-gray-700">
+              You're not on the leaderboard yet. Complete lessons to earn XP!
+            </p>
+          )}
         </div>
       </div>
     </DashboardLayout>
   );
 };
+
 export default Leaderboard;
