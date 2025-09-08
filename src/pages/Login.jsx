@@ -11,7 +11,7 @@ import { doc, setDoc, updateDoc, getDoc, increment } from "firebase/firestore";
 import { auth, db } from "../firebase/config/firebase";
 import { useNavigate } from "react-router-dom";
 import { NavBar } from "../components/Welcome/NavBar";
-import { defaultUser, LEVEL_CONFIG } from "../data/defaultUser"; // Import the new defaults
+import { defaultUser } from "../data/defaultUser"; // Import the new defaults
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -83,25 +83,8 @@ const Login = () => {
           newStreak > userData.current_streak ? 1 : -userData.current_streak
         );
 
-        // Check for level up based on streak
-        const currentLevel = LEVEL_CONFIG.find(
-          (l) => l.level === userData.level
-        );
-        const nextLevel = LEVEL_CONFIG.find(
-          (l) => l.level === userData.level + 1
-        );
-
-        if (
-          nextLevel &&
-          userData.xp >= nextLevel.xp_required &&
-          newStreak >= nextLevel.streak_required
-        ) {
-          updates.level = nextLevel.level;
-          updates.level_name = nextLevel.name;
-          updates.title = nextLevel.title;
-          updates.xp_to_next_level =
-            LEVEL_CONFIG[nextLevel.level + 1]?.xp_required || 0;
-        }
+        // The level up logic is now handled in Dashboard.jsx via updateUserProgress
+        // We will just update the streak here.
       }
 
       await updateDoc(userRef, updates);

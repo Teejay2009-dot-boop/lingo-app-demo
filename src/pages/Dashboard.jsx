@@ -3,6 +3,9 @@ import DashboardLayout from "../components/dashboard/DashboardLayout";
 import Badge from "../components/dashboard/Badges";
 import NavBar from "../components/dashboard/NavBar";
 import { LevelUpModal } from "../components/LevelUpModal";
+import { RankUpScreen } from "../components/RankUpScreen";
+import { useNavigate } from "react-router-dom";
+import { addNotification } from "../firebase/utils/notifications";
 import {
   FaStar,
   FaSteam,
@@ -14,8 +17,21 @@ import {
 import { Link } from "react-router-dom";
 import avatar from "../assets/girlwithbg.jpg";
 import { auth, db } from "../firebase/config/firebase";
-import { doc, onSnapshot, updateDoc, increment } from "firebase/firestore";
-import { LEVEL_CONFIG } from "../data/defaultUser";
+import {
+  doc,
+  onSnapshot,
+  updateDoc,
+  increment,
+  query,
+  collection,
+  where,
+} from "firebase/firestore";
+import {
+  xpTable,
+  getNextXP,
+  getRank,
+  updateUserProgress,
+} from "../data/defaultUser";
 
 const Dashboard = () => {
   const [width, setWidth] = useState(window.innerWidth);
@@ -23,18 +39,22 @@ const Dashboard = () => {
   const [loading, setLoading] = useState(true);
   const [showDevTools, setShowDevTools] = useState(false);
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
+  const [showRankUpScreen, setShowRankUpScreen] = useState(false);
   const [testLevel, setTestLevel] = useState(1);
+  const [testRank, setTestRank] = useState("Beginner");
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0); // New state for unread notifications
+  const navigate = useNavigate();
 
   // Calculate level progress based on XP
   const getLevelProgress = (xp) => {
-    const currentLevel =
-      LEVEL_CONFIG.find((level) => level.level === userData?.level) ||
-      LEVEL_CONFIG[0];
-    const nextLevel = LEVEL_CONFIG.find(
-      (level) => level.level === userData?.level + 1
-    );
+    const currentLevel = userData?.level || 1;
+    const currentLevelXPThreshold = xpTable[currentLevel - 1] || 0;
+    const nextLevelXPThreshold =
+      xpTable[currentLevel] || xpTable[xpTable.length - 1];
 
-    if (!nextLevel) {
+    const isMaxLevel = currentLevel >= xpTable.length;
+
+    if (isMaxLevel) {
       return {
         currentLevel,
         nextLevel: null,
@@ -45,9 +65,8 @@ const Dashboard = () => {
       };
     }
 
-    const xpNeededForNextLevel =
-      nextLevel.xp_required - currentLevel.xp_required;
-    const xpTowardsNextLevel = xp - currentLevel.xp_required;
+    const xpNeededForNextLevel = nextLevelXPThreshold - currentLevelXPThreshold;
+    const xpTowardsNextLevel = xp - currentLevelXPThreshold;
     const progressPercentage = Math.min(
       100,
       (xpTowardsNextLevel / xpNeededForNextLevel) * 100
@@ -55,7 +74,7 @@ const Dashboard = () => {
 
     return {
       currentLevel,
-      nextLevel,
+      nextLevel: { level: currentLevel + 1, name: `Level ${currentLevel + 1}` }, // Simplified nextLevel for display
       xpTowardsNextLevel,
       xpNeededForNextLevel,
       progressPercentage,
@@ -68,27 +87,47 @@ const Dashboard = () => {
   useEffect(() => {
     if (!userData) return;
 
-    // Check if user has leveled up
-    const currentLevelConfig = LEVEL_CONFIG.find(
-      (l) => l.level === userData.level
-    );
-    const nextLevelConfig = LEVEL_CONFIG.find(
-      (l) => l.level === userData.level + 1
-    );
+    // Check if user has leveled up based on new logic
+    const userCurrentLevel = userData.level;
+    const userCurrentRank = userData.rank; // Get current rank
+    const userCurrentXP = userData.xp;
 
-    if (
-      nextLevelConfig &&
-      userData.xp >= nextLevelConfig.xp_required &&
-      userData.current_streak >= nextLevelConfig.streak_required
-    ) {
-      // Level up!
-      setTestLevel(userData.level + 1);
+    const updatedUser = updateUserProgress({
+      ...userData,
+      xp: userCurrentXP,
+      level: userCurrentLevel,
+    });
+
+    if (updatedUser.level > userCurrentLevel) {
+      // Level up! Push notification to Firestore
+      setTestLevel(updatedUser.level);
       setShowLevelUpModal(true);
+      addNotification(auth.currentUser.uid, {
+        type: "level-up",
+        message: `You reached Level ${updatedUser.level}! 🎉`,
+        level: updatedUser.level,
+      });
+    }
 
-      // Update level in Firestore
+    if (updatedUser.rank !== userCurrentRank) {
+      // Rank up! Push notification to Firestore
+      setTestRank(updatedUser.rank);
+      setShowRankUpScreen(true);
+      addNotification(auth.currentUser.uid, {
+        type: "rank-up",
+        message: `You’ve been promoted to ${updatedUser.rank}! 🏆`,
+        rank: updatedUser.rank,
+      });
+    }
+
+    // Only update Firestore if there's a change in level or rank
+    if (
+      updatedUser.level !== userCurrentLevel ||
+      updatedUser.rank !== userCurrentRank
+    ) {
       updateDoc(doc(db, "users", auth.currentUser.uid), {
-        level: increment(1),
-        title: nextLevelConfig.title,
+        level: updatedUser.level,
+        rank: updatedUser.rank,
       });
     }
   }, [userData]);
@@ -125,6 +164,23 @@ const Dashboard = () => {
     };
   }, []);
 
+  // New useEffect to listen for unread notifications
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    const notificationsRef = collection(
+      db,
+      `users/${auth.currentUser.uid}/notifications`
+    );
+    const q = query(notificationsRef, where("read", "==", false));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setUnreadNotificationCount(snapshot.size);
+    });
+
+    return unsubscribe;
+  }, [userData]);
+
   if (loading) {
     return (
       <DashboardLayout>
@@ -155,13 +211,15 @@ const Dashboard = () => {
   // Add these test functions
   const simulateLevelUp = async (level) => {
     const userRef = doc(db, "users", auth.currentUser.uid);
-    const nextLevel = LEVEL_CONFIG.find((l) => l.level === level);
+    // Determine the XP required for the target level
+    const targetXP = xpTable[level - 1] || 0;
 
     await updateDoc(userRef, {
       level: level,
-      xp: nextLevel.xp_required,
-      current_streak: nextLevel.streak_required,
-      title: nextLevel.title,
+      xp: targetXP,
+      rank: getRank(level),
+      // current_streak: nextLevel.streak_required, // Streak requirement removed from level up
+      // title: nextLevel.title,
     });
 
     setTestLevel(level);
@@ -174,7 +232,7 @@ const Dashboard = () => {
       level: 1,
       xp: 0,
       current_streak: 0,
-      title: "Moonstone Beginner",
+      title: "Beginner", // Updated title to match new rank system
     });
     setShowLevelUpModal(false);
   };
@@ -184,7 +242,14 @@ const Dashboard = () => {
       <div className="hidden lg:block bg-gray-50">
         <div className="">
           <div className="flex gap-10 pt-4 items-center justify-end mr-9">
-            <FaBell className="text-3xl hover:translate-y-[-2px] transition-transform duration-500 cursor-pointer pt-1 text-amber" />
+            <Link to="/notifications" className="relative">
+              <FaBell className="text-3xl hover:translate-y-[-2px] transition-transform duration-500 cursor-pointer pt-1 text-amber" />
+              {unreadNotificationCount > 0 && (
+                <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                  {unreadNotificationCount}
+                </span>
+              )}
+            </Link>
             <div className="text-xl flex justify-center gap-2">
               <div className="flex items-center justify-center gap-2">
                 <div>👩‍🦰</div>
@@ -210,7 +275,7 @@ const Dashboard = () => {
               <h1 className="text-4xl font-bold text-amber pt-2">
                 Hi, {userData?.username || "Learner"}!
               </h1>
-              <p className="text-amber py-1 text-lg">{userData?.title}</p>
+              <p className="text-amber py-1 text-lg">{userData?.rank}</p>
             </div>
           </div>
           <Link to={"/lessons"}>
@@ -266,7 +331,6 @@ const Dashboard = () => {
               <p className="text-3xl font-bold text-amber">
                 {userData?.current_streak || 0}
               </p>
-              <p className="text-sm">Current</p>
             </div>
             <div className="text-center">
               <p className="text-3xl font-bold">
@@ -359,13 +423,13 @@ const Dashboard = () => {
           <div className="mb-4">
             <h4 className="font-semibold mb-1">Test Level Up</h4>
             <div className="grid grid-cols-3 gap-2">
-              {LEVEL_CONFIG.map((level) => (
+              {xpTable.map((xpThreshold, index) => (
                 <button
-                  key={level.level}
-                  onClick={() => simulateLevelUp(level.level)}
-                  className={`py-1 px-2 rounded text-xs ${level.color}`}
+                  key={index + 1}
+                  onClick={() => simulateLevelUp(index + 1)}
+                  className={`py-1 px-2 rounded text-xs bg-gray-200`}
                 >
-                  {level.name}
+                  Level {index + 1}
                 </button>
               ))}
             </div>
@@ -413,8 +477,16 @@ const Dashboard = () => {
       {/* Level Up Modal */}
       {showLevelUpModal && (
         <LevelUpModal
-          newLevel={testLevel}
+          level={testLevel}
           onClose={() => setShowLevelUpModal(false)}
+        />
+      )}
+
+      {/* Rank Up Screen */}
+      {showRankUpScreen && (
+        <RankUpScreen
+          rank={testRank}
+          onClose={() => setShowRankUpScreen(false)}
         />
       )}
     </DashboardLayout>

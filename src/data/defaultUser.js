@@ -57,56 +57,51 @@ export const defaultUser = {
   },
   title: "Moonstone Beginner",
   lessons: 5,
-  level_thresholds: [0, 600, 1500, 3000, 5000],
-  streak_requirements: [0, 3, 7, 14, 21],
-  rank_history: [],
-  purchases: [],
 };
 
-export const LEVEL_CONFIG = [
-  {
-    level: 1,
-    name: "Moonstone",
-    xp_required: 0,
-    streak_required: 0,
-    color: "bg-gray-200",
-    title: "Moonstone Beginner",
-    icon: "🌑",
-  },
-  {
-    level: 2,
-    name: "Topaz",
-    xp_required: 600,
-    streak_required: 3,
-    color: "bg-amber-200",
-    title: "Topaz Explorer",
-    icon: "🔶",
-  },
-  {
-    level: 3,
-    name: "Sapphire",
-    xp_required: 1500,
-    streak_required: 7,
-    color: "bg-blue-200",
-    title: "Sapphire Scholar",
-    icon: "🔷",
-  },
-  {
-    level: 4,
-    name: "Ruby",
-    xp_required: 3000,
-    streak_required: 14,
-    color: "bg-red-200",
-    title: "Ruby Master",
-    icon: "♦️",
-  },
-  {
-    level: 5,
-    name: "Diamond",
-    xp_required: 5000,
-    streak_required: 21,
-    color: "bg-purple-200",
-    title: "Diamond Legend",
-    icon: "💎",
-  },
+export const xpTable = [0, 100, 250, 500, 1000, 2000, 3500, 5000];
+
+export const rankTable = [
+  { minLevel: 1, rank: "Beginner" },
+  { minLevel: 3, rank: "Intermediate" },
+  { minLevel: 5, rank: "Advanced" },
+  { minLevel: 7, rank: "Master" },
 ];
+
+export const getNextXP = (currentXP) => {
+  for (let i = 0; i < xpTable.length; i++) {
+    if (currentXP < xpTable[i]) {
+      return xpTable[i];
+    }
+  }
+  return xpTable[xpTable.length - 1]; // Max XP reached
+};
+
+export const getRank = (level) => {
+  let userRank = "Beginner";
+  for (const rankInfo of rankTable) {
+    if (level >= rankInfo.minLevel) {
+      userRank = rankInfo.rank;
+    }
+  }
+  return userRank;
+};
+
+export const updateUserProgress = (user) => {
+  let newLevel = user.level;
+  for (let i = xpTable.length - 1; i >= 0; i--) {
+    if (user.xp >= xpTable[i]) {
+      newLevel = i + 1;
+      break;
+    }
+  }
+
+  const newRank = getRank(newLevel);
+
+  return {
+    ...user,
+    level: newLevel,
+    rank: newRank,
+    xp_to_next_level: getNextXP(user.xp) - user.xp,
+  };
+};

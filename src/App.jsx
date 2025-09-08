@@ -16,6 +16,7 @@ import Shop from "./pages/Shop";
 import "../node_modules/aos/dist/aos.css";
 import FLashCards from "./pages/FLashCards";
 import Aos from "aos";
+import Feed from "./pages/Feed";
 import Profile from "./pages/Profile";
 function App() {
   Aos.init();
@@ -36,6 +37,7 @@ function App() {
           <Route path="/chat" element={<ChatBotUI />} />
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />
+          <Route path="/notifications" element={<Feed />} />
 
           {/* Dynamic route for lesson sections */}
           <Route path="/lessons/shop" element={<Shop />} />
