@@ -5,47 +5,66 @@ import {
   orderBy,
   limit,
   onSnapshot,
+  where, // Added where for rank filtering
 } from "firebase/firestore";
 import { db, auth } from "../../firebase/config/firebase";
 import { FaTrophy, FaCrown, FaMedal, FaUserAlt, FaFire } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../dashboard/DashboardLayout";
+import { getRank } from "../../data/defaultUser"; // Import getRank
 
 const Leaderboard = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState("all-time");
+  const [leaderboardMode, setLeaderboardMode] = useState("general"); // "general" or "rank"
   const [currentUserPosition, setCurrentUserPosition] = useState(null);
+  const [currentUserData, setCurrentUserData] = useState(null); // To store current user's data
+
+  // Fetch current user's data
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    const userRef = collection(db, "users");
+    const q = query(userRef, where("id", "==", auth.currentUser.uid), limit(1));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!snapshot.empty) {
+        setCurrentUserData(snapshot.docs[0].data());
+      }
+    });
+    return unsubscribe;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [auth.currentUser?.uid]); // Depend on auth.currentUser.uid
 
   useEffect(() => {
     let unsubscribe;
     const fetchLeaderboard = async () => {
       try {
         setLoading(true);
+        let q;
 
-        // Determine the field to sort by
-        let sortField;
-        switch (timeRange) {
-          case "weekly":
-            sortField = "weeklyXP";
-            break;
-          case "monthly":
-            sortField = "monthlyXP";
-            break;
-          default:
-            sortField = "total_xp";
+        if (leaderboardMode === "general") {
+          q = query(collection(db, "users"), orderBy("xp", "desc"), limit(50)); // Order by xp
+        } else if (leaderboardMode === "rank") {
+          if (!currentUserData?.rank) {
+            setUsers([]);
+            setCurrentUserPosition(null);
+            setLoading(false);
+            return;
+          }
+          q = query(
+            collection(db, "users"),
+            where("rank", "==", currentUserData.rank),
+            orderBy("xp", "desc"),
+            limit(50)
+          ); // Filter by current user's rank
         }
-
-        const q = query(
-          collection(db, "users"),
-          orderBy(sortField, "desc"),
-          limit(50)
-        );
 
         unsubscribe = onSnapshot(q, (querySnapshot) => {
           const usersData = querySnapshot.docs.map((doc) => ({
             id: doc.id,
             ...doc.data(),
+            rank: getRank(doc.data().level), // Ensure rank is calculated and available
           }));
 
           setUsers(usersData);
@@ -65,12 +84,17 @@ const Leaderboard = () => {
       }
     };
 
+    if (leaderboardMode === "rank" && !currentUserData) {
+      // Wait for currentUserData to be fetched before fetching rank leaderboard
+      return;
+    }
+
     fetchLeaderboard();
 
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [timeRange]);
+  }, [leaderboardMode, currentUserData]); // Depend on leaderboardMode and currentUserData
 
   if (loading) {
     return (
@@ -85,38 +109,36 @@ const Leaderboard = () => {
       <div className="max-w-4xl mx-auto bg-gray-50 px-4 pt-24 md:pt-0 pb-8">
         <h1 className="text-3xl font-bold text-center mb-6">Leaderboard</h1>
 
-        {/* Time range selector */}
+        {/* Leaderboard mode selector */}
         <div className="flex justify-center gap-4 mb-8">
           <button
-            onClick={() => setTimeRange("weekly")}
+            onClick={() => setLeaderboardMode("general")}
             className={`px-4 py-2 rounded-full ${
-              timeRange === "weekly" ? "bg-amber text-white" : "bg-gray-200"
+              leaderboardMode === "general"
+                ? "bg-amber text-white"
+                : "bg-gray-200"
             }`}
           >
-            Weekly
+            General
           </button>
           <button
-            onClick={() => setTimeRange("monthly")}
+            onClick={() => setLeaderboardMode("rank")}
             className={`px-4 py-2 rounded-full ${
-              timeRange === "monthly" ? "bg-amber text-white" : "bg-gray-200"
+              leaderboardMode === "rank" ? "bg-amber text-white" : "bg-gray-200"
             }`}
           >
-            Monthly
-          </button>
-          <button
-            onClick={() => setTimeRange("all-time")}
-            className={`px-4 py-2 rounded-full ${
-              timeRange === "all-time" ? "bg-amber text-white" : "bg-gray-200"
-            }`}
-          >
-            All Time
+            My Rank
           </button>
         </div>
 
         {/* Leaderboard table */}
         <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
           {users.length === 0 ? (
-            <div className="text-center p-8">No users found</div>
+            <div className="text-center p-8">
+              {leaderboardMode === "rank" && !currentUserData?.rank
+                ? "Log in to see your rank leaderboard."
+                : "No users found for this leaderboard."}
+            </div>
           ) : (
             <ul className="divide-y divide-gray-200">
               {users.map((user, index) => (
@@ -173,24 +195,16 @@ const Leaderboard = () => {
                           )}
                         </h3>
                         <p className="text-sm text-gray-500">
-                          {user.title || "Beginner"}
+                          {user.rank || "Beginner"} (Lvl {user.level || 1})
                         </p>
                       </div>
 
                       {/* XP and Level - Moved to the far right */}
                       <div className="text-right min-w-[100px]">
                         <p className="font-bold text-gray-800 text-lg">
-                          {timeRange === "weekly"
-                            ? user.weeklyXP || 0
-                            : timeRange === "monthly"
-                            ? user.monthlyXP || 0
-                            : user.total_xp || 0}{" "}
-                          XP
+                          {user.xp || 0} XP
                         </p>
                         <div className="flex items-center justify-end">
-                          <p className="text-sm text-gray-500 mr-1">
-                            Lvl {user.level || 1}
-                          </p>
                           {user.current_streak > 3 && (
                             <FaFire className="text-amber-500 text-sm" />
                           )}
@@ -205,29 +219,32 @@ const Leaderboard = () => {
         </div>
 
         {/* Current user's position */}
-        <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
-          <h2 className="text-xl font-semibold mb-2">Your Position</h2>
-          {currentUserPosition ? (
-            <div className="flex items-center justify-between">
+        {auth.currentUser && currentUserData && (
+          <div className="bg-amber-50 p-4 rounded-xl border border-amber-200">
+            <h2 className="text-xl font-semibold mb-2">Your Position</h2>
+            {currentUserPosition !== null ? (
+              <div className="flex items-center justify-between">
+                <p className="text-gray-700">
+                  {leaderboardMode === "general"
+                    ? `You are #${currentUserPosition} globally.`
+                    : `You are #${currentUserPosition} in ${currentUserData.rank} Rank.`}
+                </p>
+                {currentUserData?.current_streak > 3 && (
+                  <div className="flex items-center text-amber-600">
+                    <FaFire className="mr-1" />
+                    <span>{currentUserData.current_streak}-day streak</span>
+                  </div>
+                )}
+              </div>
+            ) : (
               <p className="text-gray-700">
-                You're ranked{" "}
-                <span className="font-bold">#{currentUserPosition}</span>
+                {leaderboardMode === "rank"
+                  ? `You are not yet ranked in ${currentUserData.rank} Rank. Complete lessons to earn XP!`
+                  : `You are not on the leaderboard yet. Complete lessons to earn XP!`}
               </p>
-              {users[currentUserPosition - 1]?.current_streak > 3 && (
-                <div className="flex items-center text-amber-600">
-                  <FaFire className="mr-1" />
-                  <span>
-                    {users[currentUserPosition - 1].current_streak}-day streak
-                  </span>
-                </div>
-              )}
-            </div>
-          ) : (
-            <p className="text-gray-700">
-              You're not on the leaderboard yet. Complete lessons to earn XP!
-            </p>
-          )}
-        </div>
+            )}
+          </div>
+        )}
       </div>
     </DashboardLayout>
   );
