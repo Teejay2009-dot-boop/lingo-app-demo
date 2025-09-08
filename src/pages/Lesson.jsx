@@ -33,7 +33,9 @@ export const Lesson = () => {
 
     const userData = userSnap.data();
     let lastActive = userData.last_active_date
-      ? new Date(userData.last_active_date.toDate())
+      ? typeof userData.last_active_date === "string"
+        ? new Date(userData.last_active_date)
+        : userData.last_active_date.toDate()
       : null;
     if (lastActive) lastActive.setHours(0, 0, 0, 0);
 

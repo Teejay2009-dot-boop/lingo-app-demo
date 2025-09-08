@@ -1,4 +1,4 @@
-export const getLocalLessons = {
+export const getAllLessons = {
   lesson_1: {
     title: "Basic Greetings",
     lesson_id: "YOR-A1-1",
@@ -137,6 +137,7 @@ export const getLocalLessons = {
         audio_path: "asset/audio/father.wav",
         correct_answer: "Bàbá",
         options: ["Bàbá", "Ìyá", "Ọmọ", "Ẹ̀gbọ́n"],
+        // image: "asset/A1/father.png", // No image for tap_what_you_hear
       },
       {
         type: "fill_gap_best_option",
@@ -382,4 +383,20 @@ export const getLocalLessons = {
       },
     ],
   },
+};
+
+export const getModules = () => {
+  const lessonsArray = Object.values(getAllLessons);
+  const modules = [];
+  for (let i = 0; i < lessonsArray.length; i += 4) {
+    const moduleLessons = lessonsArray.slice(i, i + 4);
+    modules.push({
+      module_id: `module_${Math.floor(i / 4) + 1}`,
+      title: `Module ${Math.floor(i / 4) + 1}: ${moduleLessons[0].title} - ${
+        moduleLessons[moduleLessons.length - 1].title
+      }`,
+      lessons: moduleLessons.map((lesson) => lesson.lesson_id),
+    });
+  }
+  return modules;
 };

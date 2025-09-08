@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { VocabularyCard } from "../components/LessonCards/VocabularyCard";
 import AudioChoiceCard from "../components/LessonCards/AudioChoiceCard";
 import GoBackBtn from "../components/GoBackBtn";
-import lessonData from "../data/lesson.json";
-import { Link } from "react-router-dom";
+import { getAllLessons, getModules } from "../data/lessons"; // Updated import
+import { useNavigate, useParams, Link } from "react-router-dom"; // Added Link to imports
 import RolePlayTypeYourself from "../components/LessonCards/RolePlayTypeYourself";
 import MatchImageToWord from "../components/LessonCards/MatchImageToWord";
 import mascot from "../assets/IMG-20250724-WA0115-removebg-preview.png";
@@ -28,12 +28,19 @@ import {
   getDoc,
   onSnapshot,
   arrayUnion,
+  setDoc,
 } from "firebase/firestore";
+import { ModuleCompletionModal } from "../components/ModuleCompletionModal"; // Import the new modal
 
 const LessonDisplay = () => {
-  const lesson = lessonData.lesson_1;
-  const exercises = lesson.exercises;
-  const baseXp = lesson.base_xp || 10;
+  const { moduleId, lessonIndex: lessonIndexParam } = useParams();
+  const navigate = useNavigate();
+  const currentLessonIndex = parseInt(lessonIndexParam, 10) || 0;
+
+  const [currentModule, setCurrentModule] = useState(null);
+  const [lesson, setLesson] = useState(null);
+  const [exercises, setExercises] = useState([]);
+  const [baseXp, setBaseXp] = useState(10);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [lives, setLives] = useState(5);
@@ -46,6 +53,8 @@ const LessonDisplay = () => {
   const [startTime, setStartTime] = useState(null);
   const [earnedXPPerQuestion, setEarnedXPPerQuestion] = useState([]);
   const [lessonCompleted, setLessonCompleted] = useState(false);
+  const [showModuleCompletionModal, setShowModuleCompletionModal] =
+    useState(false); // New state
   const [xpBreakdown, setXpBreakdown] = useState({
     base: 0,
     accuracy: 0,
@@ -59,19 +68,28 @@ const LessonDisplay = () => {
   const PERFECT_LESSON_BONUS = 5;
 
   const currentExercise = exercises[currentIndex];
-  const progressPercent = Math.round((currentIndex / exercises.length) * 100);
+  const progressPercent =
+    exercises.length > 0
+      ? Math.round((currentIndex / exercises.length) * 100)
+      : 0;
 
   // Reset timer when question changes
   useEffect(() => {
     setStartTime(Date.now());
   }, [currentIndex]);
 
-  // Fetch user data
+  // Fetch user data and module progress
   useEffect(() => {
-    if (!auth.currentUser) return;
-    const userRef = doc(db, "users", auth.currentUser.uid);
+    if (!auth.currentUser || !moduleId) {
+      navigate("/login"); // Redirect if not logged in or no module selected
+      return;
+    }
 
-    const unsub = onSnapshot(userRef, (snap) => {
+    const uid = auth.currentUser.uid;
+    const userRef = doc(db, "users", uid);
+    const moduleProgressRef = doc(db, `users/${uid}/progress`, moduleId);
+
+    const unsubUser = onSnapshot(userRef, (snap) => {
       if (snap.exists()) {
         setLives(snap.data().lives ?? 5);
         setXp(snap.data().xp ?? 0);
@@ -80,8 +98,91 @@ const LessonDisplay = () => {
       }
     });
 
-    return () => unsub();
-  }, []);
+    // Fetch module-specific progress and set initial exercise index
+    const unsubModuleProgress = onSnapshot(moduleProgressRef, (snap) => {
+      if (snap.exists()) {
+        const progressData = snap.data();
+        const allAvailableLessons =
+          getModules().find((m) => m.module_id === moduleId)?.lessons || [];
+        const lastCompletedLessonId = progressData.lastLesson;
+
+        // When module progress loads, we need to decide which lesson to show initially.
+        // If the URL specifies a lessonIndex, use that. Otherwise, infer from lastCompletedLessonId.
+        let initialLessonIndex = currentLessonIndex;
+        if (currentLessonIndex === 0 && lastCompletedLessonId) {
+          const inferredIndex =
+            allAvailableLessons.indexOf(lastCompletedLessonId) + 1;
+          initialLessonIndex = Math.min(
+            inferredIndex,
+            allAvailableLessons.length - 1
+          );
+        }
+
+        // This block is for handling initial load or when Firestore progress updates.
+        // The actual lesson data and exercises are loaded in the next useEffect.
+        // We should not be resetting currentIndex here based on currentLessonIndex change.
+        // The responsibility of resetting exercise index (currentIndex) and related states
+        // for a *new lesson* in the module should be handled when the lesson data actually changes.
+
+        // We will reset exercise-specific states only if no progress exists for this module or if explicitly starting fresh.
+        if (currentLessonIndex === 0 && !snap.exists()) {
+          setCurrentIndex(0);
+          setAnsweredMap({});
+          setEarnedXPPerQuestion([]);
+          setLessonCompleted(false);
+        }
+      } else {
+        // No progress yet, ensure all states are reset to start from the beginning of the module
+        setCurrentIndex(0); // Start from the first exercise of the first lesson
+        setAnsweredMap({});
+        setEarnedXPPerQuestion([]);
+        setLessonCompleted(false);
+      }
+    });
+
+    return () => {
+      unsubUser();
+      unsubModuleProgress();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moduleId, navigate, currentLessonIndex]); // Keep currentLessonIndex in dependencies
+
+  // Load lesson data based on current module and index
+  useEffect(() => {
+    if (!moduleId) return;
+
+    const modules = getModules();
+    const module = modules.find((m) => m.module_id === moduleId);
+
+    if (module) {
+      setCurrentModule(module);
+      // CORRECTED: Use currentLessonIndex (from URL) to get the lessonId from the module's lessons array
+      const lessonId = module.lessons[currentLessonIndex];
+      // Find the lesson by its lesson_id within getAllLessons values
+      const fetchedLesson = Object.values(getAllLessons).find(
+        (l) => l.lesson_id === lessonId
+      );
+
+      if (fetchedLesson) {
+        setLesson(fetchedLesson);
+        setExercises(fetchedLesson.exercises);
+        setBaseXp(fetchedLesson.base_xp || 10);
+
+        // Unconditionally reset exercise-related states when a new lesson (within a module) is loaded
+        setCurrentIndex(0);
+        setAnsweredMap({});
+        setEarnedXPPerQuestion([]);
+        setLessonCompleted(false);
+      } else {
+        console.error("Lesson not found:", lessonId);
+        // Only navigate to 404 if lessonId is not undefined, otherwise it means currentLessonIndex is out of bounds for the module
+        if (lessonId !== undefined) {
+          navigate("/404"); // Or appropriate error page
+        }
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [moduleId, currentLessonIndex, navigate]); // currentLessonIndex is key to re-fetching lesson
 
   const calculateQuestionXP = (isCorrect, timeTaken) => {
     const base = Math.min(baseXp, 2);
@@ -132,9 +233,13 @@ const LessonDisplay = () => {
   };
 
   const completeLesson = async () => {
-    if (!auth.currentUser || lessonCompleted) return;
+    if (!auth.currentUser || lessonCompleted || !lesson || !currentModule)
+      return;
 
-    const userRef = doc(db, "users", auth.currentUser.uid);
+    const uid = auth.currentUser.uid;
+    const userRef = doc(db, "users", uid);
+    const moduleProgressRef = doc(db, `users/${uid}/progress`, moduleId);
+
     const correctAnswers = Object.values(answeredMap).filter(
       (a) => a.isCorrect
     ).length;
@@ -150,6 +255,7 @@ const LessonDisplay = () => {
     const coinsEarned = Math.floor(finalXP / 3) + (perfectBonus ? 2 : 0);
 
     try {
+      // Update user's general XP, coins, etc.
       await updateDoc(userRef, {
         xp: increment(finalXP),
         total_xp: increment(finalXP),
@@ -157,11 +263,10 @@ const LessonDisplay = () => {
         monthlyXP: increment(finalXP),
         coins: increment(coinsEarned),
         total_lessons: increment(1),
-        completed_lessons: arrayUnion(lesson.id),
         last_active_date: new Date().toISOString(),
       });
 
-      // Update streak
+      // Update streak - existing logic
       const userSnap = await getDoc(userRef);
       if (userSnap.exists()) {
         const lastActive = userSnap.data().last_active_date?.toDate();
@@ -181,25 +286,66 @@ const LessonDisplay = () => {
         }
       }
 
+      // Update module progress
+      const moduleProgressSnap = await getDoc(moduleProgressRef);
+      let completedLessonsInModule = 0;
+      if (moduleProgressSnap.exists()) {
+        completedLessonsInModule =
+          moduleProgressSnap.data().completedLessons || 0;
+      }
+
+      const nextCompletedLessons = completedLessonsInModule + 1;
+
+      await setDoc(
+        moduleProgressRef,
+        {
+          completedLessons: nextCompletedLessons,
+          lastLesson: lesson.lesson_id,
+          moduleTitle: currentModule.title, // Store module title for display if needed
+        },
+        { merge: true }
+      );
+
       setLessonCompleted(true);
+
+      // Module progression logic
+      const currentModuleLessons = currentModule.lessons;
+      const nextLessonIndexInModule =
+        currentModuleLessons.indexOf(lesson.lesson_id) + 1;
+
+      if (nextCompletedLessons >= currentModuleLessons.length) {
+        // All lessons in module completed
+        setShowModuleCompletionModal(true);
+      } else {
+        // Move to the next lesson in the module
+        navigate(`/lessons/module/${moduleId}/${nextLessonIndexInModule}`);
+      }
     } catch (error) {
       console.error("Error completing lesson:", error);
     }
   };
 
   useEffect(() => {
-    if (currentIndex >= exercises.length && !lessonCompleted) {
+    if (
+      currentIndex >= exercises.length &&
+      !lessonCompleted &&
+      lesson &&
+      currentModule
+    ) {
       completeLesson();
     }
-  }, [currentIndex, lessonCompleted]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentIndex, lessonCompleted, lesson, currentModule]); // Added lesson and currentModule as dependencies
 
   const handleNext = () => {
     setShowModal(false);
+    // This will trigger the useEffect for lesson completion or next exercise
     setCurrentIndex((prev) => prev + 1);
     setLastAnswerCorrect(null);
   };
 
   const renderCard = () => {
+    if (!currentExercise) return <p>Loading exercise...</p>;
     const isAnswered = answeredMap[currentIndex];
     const shouldDisable = showModal || !!isAnswered;
 
@@ -355,14 +501,21 @@ const LessonDisplay = () => {
       {renderCard()}
       <div className="flex justify-between mt-6 max-w-[700px] mx-auto">
         <button
-          onClick={() => setCurrentIndex((prev) => Math.max(prev - 1, 0))}
-          disabled={currentIndex === 0}
+          onClick={() =>
+            navigate(
+              `/lessons/module/${moduleId}/${Math.max(
+                0,
+                currentLessonIndex - 1
+              )}`
+            )
+          }
+          disabled={currentLessonIndex === 0}
           className="bg-gray-300 text-gray-700 px-4 py-2 rounded disabled:opacity-50"
         >
           <FaArrowCircleLeft /> Previous
         </button>
         <button
-          onClick={() => setCurrentIndex((prev) => prev + 1)}
+          onClick={handleNext}
           disabled={currentIndex >= exercises.length}
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
         >

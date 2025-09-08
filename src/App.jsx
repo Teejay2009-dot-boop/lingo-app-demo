@@ -42,9 +42,9 @@ function App() {
           {/* Dynamic route for lesson sections */}
           <Route path="/lessons/shop" element={<Shop />} />
 
-          {/* Dynamic route for lesson display */}
+          {/* Dynamic route for module and lesson display */}
           <Route
-            path="/lessons/section/learn/:lessonId"
+            path="/lessons/module/:moduleId/:lessonIndex"
             element={<LessonDisplay />}
           />
         </Routes>
