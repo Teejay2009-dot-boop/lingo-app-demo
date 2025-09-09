@@ -2,7 +2,7 @@
 export const defaultUser = {
   username: "",
   avatar: "../assets/Girlremovebg-preview.png",
-  rank: "Moonstone",
+  rank: "Beginner", // Default rank
   learning_reason: "",
   proficiency_level: "A1",
   xp: 0,
@@ -10,9 +10,9 @@ export const defaultUser = {
   total_lessons: 0,
   total_xp: 0,
   level: 1,
-  level_name: "Moonstone",
-  xp_to_next_level: 50,
-  streak_required: 3,
+  level_name: "Beginner", // Default level name
+  xp_to_next_level: 100, // Default for level 1
+  streak_required: 0,
   lesson_history: [],
   streak_days: 0,
   current_streak: 0,
@@ -55,53 +55,8 @@ export const defaultUser = {
       listening: {},
     },
   },
-  title: "Moonstone Beginner",
+  title: "Beginner",
   lessons: 5,
 };
 
-export const xpTable = [0, 100, 250, 500, 1000, 2000, 3500, 5000];
-
-export const rankTable = [
-  { minLevel: 1, rank: "Beginner" },
-  { minLevel: 3, rank: "Intermediate" },
-  { minLevel: 5, rank: "Advanced" },
-  { minLevel: 7, rank: "Master" },
-];
-
-export const getNextXP = (currentXP) => {
-  for (let i = 0; i < xpTable.length; i++) {
-    if (currentXP < xpTable[i]) {
-      return xpTable[i];
-    }
-  }
-  return xpTable[xpTable.length - 1]; // Max XP reached
-};
-
-export const getRank = (level) => {
-  let userRank = "Beginner";
-  for (const rankInfo of rankTable) {
-    if (level >= rankInfo.minLevel) {
-      userRank = rankInfo.rank;
-    }
-  }
-  return userRank;
-};
-
-export const updateUserProgress = (user) => {
-  let newLevel = user.level;
-  for (let i = xpTable.length - 1; i >= 0; i--) {
-    if (user.xp >= xpTable[i]) {
-      newLevel = i + 1;
-      break;
-    }
-  }
-
-  const newRank = getRank(newLevel);
-
-  return {
-    ...user,
-    level: newLevel,
-    rank: newRank,
-    xp_to_next_level: getNextXP(user.xp) - user.xp,
-  };
-};
+// Removed xpTable, rankTable, getNextXP, getRank, and updateUserProgress as they are now in progression.js

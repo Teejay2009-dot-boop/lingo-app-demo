@@ -6,7 +6,7 @@ import GoBackBtn from "../components/GoBackBtn";
 import { FaArrowAltCircleLeft, FaLock } from "react-icons/fa";
 import { getModules } from "../data/lessons";
 import { auth, db } from "../firebase/config/firebase";
-import { collection, doc, onSnapshot, query } from "firebase/firestore";
+import { collection, onSnapshot } from "firebase/firestore"; // Removed doc and query
 import DashboardLayout from "../components/dashboard/DashboardLayout"; // Using DashboardLayout for consistency
 
 const LessonMap = () => {
@@ -39,8 +39,40 @@ const LessonMap = () => {
   }, [navigate]);
 
   const handleClick = (moduleId) => {
+    const module = modules.find((m) => m.module_id === moduleId);
+    if (!module) return;
+
+    const progress = moduleProgress[moduleId] || {
+      completedLessons: 0,
+      lastLesson: null,
+    };
+    const allModuleLessons = module.lessons;
+    let nextLessonIndex = 0; // Default to the first lesson
+
+    if (progress.lastLesson) {
+      const lastCompletedIndex = allModuleLessons.indexOf(progress.lastLesson);
+      if (
+        lastCompletedIndex !== -1 &&
+        lastCompletedIndex < allModuleLessons.length - 1
+      ) {
+        nextLessonIndex = lastCompletedIndex + 1;
+      } else if (progress.completedLessons === allModuleLessons.length) {
+        // All lessons completed, navigate to the first lesson (for review) or last for completed view.
+        // For now, let's navigate to the last completed lesson for review.
+        nextLessonIndex = allModuleLessons.length - 1;
+      }
+    }
+
+    console.log(
+      `handleClick for Module ${moduleId}: nextLessonIndex = ${nextLessonIndex}, progress = `,
+      progress
+    );
+
     // Module locking logic can be added here if needed
-    setTimeout(() => navigate(`/lessons/module/${moduleId}/0`), 400);
+    setTimeout(
+      () => navigate(`/lessons/module/${moduleId}/${nextLessonIndex}`),
+      400
+    );
   };
 
   if (loading) {
@@ -53,12 +85,12 @@ const LessonMap = () => {
 
   return (
     <DashboardLayout>
-      <section className="min-h-screen bg-[#fff8e1] pb-12 pt-7 px-4">
+    <section className="min-h-screen bg-[#fff8e1] pb-12 pt-7 px-4">
         <GoBackBtn />
-        <h2 className="text-3xl font-bold text-center mb-10 text-amber-600 font-fredoka">
+      <h2 className="text-3xl font-bold text-center mb-10 text-amber-600 font-fredoka">
           Choose a Module
-        </h2>
-        <div className="relative max-w-md mx-auto flex flex-col items-center space-y-4">
+      </h2>
+      <div className="relative max-w-md mx-auto flex flex-col items-center space-y-4">
           {modules.map((module, idx) => {
             const progress = moduleProgress[module.module_id] || {
               completedLessons: 0,
@@ -72,56 +104,56 @@ const LessonMap = () => {
             return (
               <div
                 key={module.module_id}
-                className="w-full relative flex flex-col items-center"
-              >
-                {/* Connector line above (except for the first item) */}
-                {idx !== 0 && (
-                  <div className="absolute top-[-32px] h-8 w-1 bg-amber-400 z-0" />
-                )}
+            className="w-full relative flex flex-col items-center"
+          >
+            {/* Connector line above (except for the first item) */}
+            {idx !== 0 && (
+              <div className="absolute top-[-32px] h-8 w-1 bg-amber-400 z-0" />
+            )}
 
                 {/* Module button */}
-                <div
+            <div
                   onClick={() => !isLocked && handleClick(module.module_id)}
-                  className={`z-10 relative flex ${
-                    idx % 2 === 0 ? "justify-start" : "justify-end"
-                  } w-full`}
-                >
-                  <div
+              className={`z-10 relative flex ${
+                idx % 2 === 0 ? "justify-start" : "justify-end"
+              } w-full`}
+            >
+              <div
                     className={`rounded-full w-28 h-28 flex flex-col items-center justify-center text-white font-bold shadow-md cursor-pointer transition-all duration-300 
                       ${
                         isLocked
-                          ? "bg-gray-300 cursor-not-allowed"
-                          : "bg-amber-500 hover:bg-amber-600 hover:scale-105"
+                    ? "bg-gray-300 cursor-not-allowed"
+                    : "bg-amber-500 hover:bg-amber-600 hover:scale-105"
                       }
                     `}
                   >
-                    <div className="w-20 h-20">
+                    <div className="w-24 h-24 p-1">
                       <CircularProgressbar
                         value={percentage}
                         text={`${Math.round(percentage)}%`}
                         styles={buildStyles({
                           pathColor: isModuleCompleted ? "#22C55E" : "#F59E0B", // Green if complete, amber otherwise
-                          textColor: "#ffffff",
+                          textColor: "#111", // Dark text color
                           trailColor: "#e0e0e0",
                         })}
                       />
                     </div>
                     {/* Moved title outside and below the progress bar for better visibility */}
-                    <span className="text-xs font-normal text-white mt-1">
+                    <span className="text-xs font-normal text-gray-800 mt-1">
                       {module.title}
-                    </span>
-                  </div>
-                </div>
-
-                {/* Connector line below (except last item) */}
-                {idx < modules.length - 1 && (
-                  <div className="w-1 h-10 bg-amber-400 mt-2 mb-2 z-0" />
-                )}
+                </span>
               </div>
+            </div>
+
+            {/* Connector line below (except last item) */}
+                {idx < modules.length - 1 && (
+              <div className="w-1 h-10 bg-amber-400 mt-2 mb-2 z-0" />
+            )}
+          </div>
             );
           })}
-        </div>
-      </section>
+      </div>
+    </section>
     </DashboardLayout>
   );
 };

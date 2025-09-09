@@ -19,6 +19,7 @@ import Aos from "aos";
 import Feed from "./pages/Feed";
 import Profile from "./pages/Profile";
 function App() {
+  console.log("App component rendered.");
   Aos.init();
   return (
     <>

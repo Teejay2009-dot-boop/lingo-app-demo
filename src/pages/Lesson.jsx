@@ -14,51 +14,14 @@ import {
 } from "react-icons/fa";
 import { auth, db } from "../firebase/config/firebase";
 import { doc, onSnapshot, updateDoc, getDoc } from "firebase/firestore";
+import { updateStreak } from "../utils/streak"; // Import updateStreak utility
 
 export const Lesson = () => {
   const [showDropdown, setShowDropdown] = useState(false);
   const [userData, setUserData] = useState(null);
-  const [streakUpdated, setStreakUpdated] = useState(false);
+  // Removed streakUpdated state as it's no longer needed
 
-  // NEW: Streak update function
-  const updateStreak = async () => {
-    if (!auth.currentUser || streakUpdated) return;
-
-    const userRef = doc(db, "users", auth.currentUser.uid);
-    const userSnap = await getDoc(userRef);
-    if (!userSnap.exists()) return;
-
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    const userData = userSnap.data();
-    let lastActive = userData.last_active_date
-      ? typeof userData.last_active_date === "string"
-        ? new Date(userData.last_active_date)
-        : userData.last_active_date.toDate()
-      : null;
-    if (lastActive) lastActive.setHours(0, 0, 0, 0);
-
-    let newStreak = userData.current_streak || 0;
-    let longestStreak = userData.longest_streak || 0;
-
-    if (!lastActive) {
-      newStreak = 1; // First activity
-    } else {
-      const diffDays = Math.floor((today - lastActive) / (1000 * 60 * 60 * 24));
-      if (diffDays === 1) newStreak += 1;
-      else if (diffDays > 1) newStreak = 1;
-    }
-
-    await updateDoc(userRef, {
-      current_streak: newStreak,
-      longest_streak: Math.max(longestStreak, newStreak),
-      last_active_date: today,
-      streak_days: newStreak, // Update the displayed streak
-    });
-
-    setStreakUpdated(true);
-  };
+  // Removed local updateStreak function, now using the utility function
 
   // Updated Firestore listener
   useEffect(() => {
@@ -68,15 +31,13 @@ export const Lesson = () => {
     const unsubscribe = onSnapshot(userRef, (docSnap) => {
       if (docSnap.exists()) {
         setUserData(docSnap.data());
-        // NEW: Update streak on first load if needed
-        if (!streakUpdated) {
-          updateStreak();
-        }
+        // Call updateStreak on component mount/user data load
+        updateStreak(auth.currentUser.uid); // Use the global updateStreak
       }
     });
 
     return () => unsubscribe();
-  }, []);
+  }, []); // Empty dependency array to run once on mount for streak update
 
   if (!userData) {
     return (

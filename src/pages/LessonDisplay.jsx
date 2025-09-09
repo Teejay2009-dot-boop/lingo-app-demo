@@ -21,6 +21,7 @@ import MatchWords from "../components/LessonCards/MatchWords";
 import TypeWhatYouHear from "../components/LessonCards/TypeWhatYouHear";
 import RolePlayOptions from "../components/LessonCards/RolePlayOptions";
 import { auth, db } from "../firebase/config/firebase";
+import { updateStreak } from "../utils/streak"; // Import updateStreak
 import {
   doc,
   updateDoc,
@@ -55,6 +56,7 @@ const LessonDisplay = () => {
   const [lessonCompleted, setLessonCompleted] = useState(false);
   const [showModuleCompletionModal, setShowModuleCompletionModal] =
     useState(false); // New state
+  const [showLessonCompleteModal, setShowLessonCompleteModal] = useState(false); // New state for post-lesson prompt
   const [xpBreakdown, setXpBreakdown] = useState({
     base: 0,
     accuracy: 0,
@@ -263,28 +265,11 @@ const LessonDisplay = () => {
         monthlyXP: increment(finalXP),
         coins: increment(coinsEarned),
         total_lessons: increment(1),
-        last_active_date: new Date().toISOString(),
+        // Removed last_active_date update here, now handled by updateStreak
       });
 
-      // Update streak - existing logic
-      const userSnap = await getDoc(userRef);
-      if (userSnap.exists()) {
-        const lastActive = userSnap.data().last_active_date?.toDate();
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        let newStreak = userSnap.data().current_streak || 0;
-        if (!lastActive || lastActive < today) {
-          newStreak += 1;
-          await updateDoc(userRef, {
-            current_streak: newStreak,
-            longest_streak: Math.max(
-              userSnap.data().longest_streak || 0,
-              newStreak
-            ),
-          });
-        }
-      }
+      // Update streak using the new utility function
+      await updateStreak(uid);
 
       // Update module progress
       const moduleProgressSnap = await getDoc(moduleProgressRef);
@@ -313,12 +298,22 @@ const LessonDisplay = () => {
       const nextLessonIndexInModule =
         currentModuleLessons.indexOf(lesson.lesson_id) + 1;
 
+      console.log(
+        "Lesson completed. nextCompletedLessons:",
+        nextCompletedLessons
+      );
+      console.log("Lesson completed. lesson.lesson_id:", lesson.lesson_id);
+      console.log(
+        "Lesson completed. nextLessonIndexInModule:",
+        nextLessonIndexInModule
+      );
+
       if (nextCompletedLessons >= currentModuleLessons.length) {
         // All lessons in module completed
         setShowModuleCompletionModal(true);
       } else {
-        // Move to the next lesson in the module
-        navigate(`/lessons/module/${moduleId}/${nextLessonIndexInModule}`);
+        // Lesson completed, show prompt to continue or go back to map
+        setShowLessonCompleteModal(true);
       }
     } catch (error) {
       console.error("Error completing lesson:", error);
@@ -332,10 +327,12 @@ const LessonDisplay = () => {
       lesson &&
       currentModule
     ) {
-      completeLesson();
+      // Instead of calling completeLesson directly, set lessonCompleted state
+      // The completion modal will trigger the next action (continue or exit)
+      setLessonCompleted(true);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, lessonCompleted, lesson, currentModule]); // Added lesson and currentModule as dependencies
+  }, [currentIndex, lesson, currentModule]); // Removed lessonCompleted from dependencies to prevent infinite loop
 
   const handleNext = () => {
     setShowModal(false);
@@ -412,6 +409,13 @@ const LessonDisplay = () => {
     );
     const coinsEarned = Math.floor(finalXP / 3) + (perfectLesson ? 2 : 0);
 
+    // Call completeLesson here, instead of useEffect, once the lesson is deemed complete
+    // This ensures Firestore update and modal display are handled after all exercises.
+    if (!lessonCompleted) {
+      // Only call once
+      completeLesson();
+    }
+
     return (
       <div className="min-h-screen flex flex-col items-center justify-around px-3 text-center py-6">
         <img src={mascot} alt="Completed" className="w-28 mb-6" />
@@ -480,6 +484,61 @@ const LessonDisplay = () => {
               Go to Shop
             </button>
           </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // New Lesson Complete Modal
+  if (
+    lessonCompleted &&
+    !showModuleCompletionModal &&
+    showLessonCompleteModal
+  ) {
+    const currentModuleLessons = currentModule?.lessons || [];
+    const nextLessonIndexInModule =
+      currentModuleLessons.indexOf(lesson?.lesson_id) + 1;
+    const hasNextLesson = nextLessonIndexInModule < currentModuleLessons.length;
+
+    const handleContinueLesson = () => {
+      setShowLessonCompleteModal(false);
+      console.log(
+        "Navigating to next lesson:",
+        `/lessons/module/${moduleId}/${nextLessonIndexInModule}`
+      );
+      navigate(`/lessons/module/${moduleId}/${nextLessonIndexInModule}`);
+    };
+
+    const handleReturnToMap = () => {
+      setShowLessonCompleteModal(false);
+      navigate("/lessons");
+    };
+
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
+        <div className="bg-white p-8 rounded-lg shadow-xl text-center">
+          <h2 className="text-3xl font-bold text-green-600 mb-4">
+            Lesson Completed! 🎉
+          </h2>
+          <p className="text-lg text-gray-700 mb-6">
+            You've finished this lesson. What would you like to do next?
+          </p>
+          <div className="flex flex-col gap-4">
+            {hasNextLesson && (
+              <button
+                onClick={handleContinueLesson}
+                className="bg-amber text-white px-6 py-3 rounded-full text-lg font-semibold hover:bg-amber-600 transition-all"
+              >
+                Continue to Next Lesson
+              </button>
+            )}
+            <button
+              onClick={handleReturnToMap}
+              className="bg-gray-300 text-gray-800 px-6 py-3 rounded-full text-lg font-semibold hover:bg-gray-400 transition-all"
+            >
+              Return to Lesson Map
+            </button>
+          </div>
         </div>
       </div>
     );

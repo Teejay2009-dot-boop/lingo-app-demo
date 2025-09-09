@@ -12,6 +12,7 @@ import { auth, db } from "../firebase/config/firebase";
 import { useNavigate } from "react-router-dom";
 import { NavBar } from "../components/Welcome/NavBar";
 import { defaultUser } from "../data/defaultUser"; // Import the new defaults
+import { updateStreak } from "../utils/streak"; // Import updateStreak
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -35,63 +36,7 @@ const Login = () => {
     return unsubscribe;
   }, [navigate]);
 
-  // Updated streak system with level progression
-  const updateStreakOnLogin = async (user) => {
-    if (!user) return;
-
-    const userRef = doc(db, "users", user.uid);
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-
-    try {
-      const snap = await getDoc(userRef);
-      if (!snap.exists()) return;
-
-      const userData = snap.data();
-      let lastActive = userData.last_active_date
-        ? new Date(userData.last_active_date)
-        : null;
-      if (lastActive) lastActive.setHours(0, 0, 0, 0);
-
-      let newStreak = userData.current_streak || 0;
-      let streakChanged = false;
-
-      if (!lastActive) {
-        // First login
-        newStreak = 1;
-        streakChanged = true;
-      } else {
-        const diffDays = Math.floor(
-          (today - lastActive) / (1000 * 60 * 60 * 24)
-        );
-        if (diffDays === 1) {
-          newStreak += 1;
-          streakChanged = true;
-        } else if (diffDays > 1) {
-          newStreak = 1;
-          streakChanged = true;
-        }
-      }
-
-      const updates = {
-        last_active_date: today.toISOString(),
-      };
-
-      if (streakChanged) {
-        updates.current_streak = newStreak;
-        updates.streak_days = increment(
-          newStreak > userData.current_streak ? 1 : -userData.current_streak
-        );
-
-        // The level up logic is now handled in Dashboard.jsx via updateUserProgress
-        // We will just update the streak here.
-      }
-
-      await updateDoc(userRef, updates);
-    } catch (err) {
-      console.error("Error updating streak:", err);
-    }
-  };
+  // Removed old updateStreakOnLogin, now using utility function
 
   // Initialize new user with level progression data
   const initializeNewUser = async (user, additionalData = {}) => {
@@ -101,7 +46,7 @@ const Login = () => {
       ...additionalData,
       email: user.email,
       username: additionalData.username || user.displayName || "New User",
-      last_active_date: new Date().toISOString(),
+      // Removed last_active_date and streak defaults as updateStreak handles initialization
       avatar: user.photoURL || defaultUser.avatar,
     });
   };
@@ -123,7 +68,8 @@ const Login = () => {
         });
       }
 
-      await updateStreakOnLogin(result.user);
+      // Always update streak on login for existing or new users
+      await updateStreak(result.user.uid);
     } catch (error) {
       console.error("Google auth error:", error);
       setError(getFriendlyAuthError(error));
@@ -153,7 +99,7 @@ const Login = () => {
     try {
       if (isLogin) {
         await signInWithEmailAndPassword(auth, email, password);
-        await updateStreakOnLogin(auth.currentUser);
+        await updateStreak(auth.currentUser.uid); // Use new updateStreak utility
       } else {
         const userCredential = await createUserWithEmailAndPassword(
           auth,
@@ -169,6 +115,7 @@ const Login = () => {
         await updateProfile(userCredential.user, { displayName: name });
 
         alert("Account created! Please verify your email.");
+        await updateStreak(userCredential.user.uid); // Initialize streak for new user
       }
     } catch (err) {
       setError(getFriendlyAuthError(err));

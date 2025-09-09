@@ -21,3 +21,4 @@ export const ModuleCompletionModal = ({ onClose }) => {
     </div>
   );
 };
+
