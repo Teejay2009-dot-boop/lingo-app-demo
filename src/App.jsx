@@ -18,6 +18,8 @@ import FLashCards from "./pages/FLashCards";
 import Aos from "aos";
 import Feed from "./pages/Feed";
 import Profile from "./pages/Profile";
+import Challenge from "./pages/Challenge";
+import PracticeSection from "./pages/PracticeSection";
 function App() {
   console.log("App component rendered.");
   Aos.init();
@@ -39,6 +41,8 @@ function App() {
           <Route path="/leaderboard" element={<Leaderboard />} />
           <Route path="/profile" element={<Profile />} />
           <Route path="/notifications" element={<Feed />} />
+          <Route path="/lessons/section/practice" element={<PracticeSection />} />
+          <Route path="/lessons/section/challenge" element={<Challenge />} />
 
           {/* Dynamic route for lesson sections */}
           <Route path="/lessons/shop" element={<Shop />} />

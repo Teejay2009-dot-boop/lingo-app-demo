@@ -43,11 +43,12 @@
 
 .sliding-underline {
   display: inline-block;
-  position: relative;font-weight: 700;
-  transition: all .3s ease-in ;
+  position: relative;
+  font-weight: 700;
+  transition: all 0.3s ease-in;
 }
 
-.sliding-underline:hover{
+.sliding-underline:hover {
   transform: translateY(-1px);
 }
 
@@ -71,10 +72,10 @@
 .text-underline {
   display: inline-block;
   position: relative;
-  transition: all .3s ease-in ;
+  transition: all 0.3s ease-in;
 }
 
-.text-underline:hover{
+.text-underline:hover {
   transform: translateY(-1px);
 }
 
@@ -84,19 +85,25 @@
   width: 50px;
   height: 2px;
   margin: 2px 4px;
-  background-color: #E1B300;
+  background-color: #e1b300;
   bottom: 3;
-  
+
   left: 3;
   transform: scaleX(0);
   transform-origin: bottom right;
   transition: transform 0.3s ease;
 }
 
-.profile-background{
-  background-image: url('./assets/girlwithbg.jpg');
+.profile-background {
+  background-image: url("./assets/girlwithbg.jpg");
   background-size: cover;
   background-position: center;
+}
+
+.bg-profile-wave {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1200 120' preserveAspectRatio='none'%3E%3Cpath d='M321.39,56.44c58-10.79,114.16-30.13,172-41.86,82.39-16.72,168.19-17.73,250.45-.39C823.7,31,906.67,72,985.66,92.83c70.05,18.8,112.79,32,165.74,31.19,77.21-.4,138.8-24.4,184.62-47.38V0H0V27.35A600.21,600.21,0,0,0,321.39,56.44Z' class='shape-fill' fill='%23FBBF24'%3E%3C/path%3E%3C/svg%3E");
+  background-size: cover;
+  background-position: bottom;
 }
 
 .text-underline:hover::after {
@@ -104,6 +111,17 @@
   transform-origin: bottom left;
 }
 
-html{
+html {
   scroll-behavior: smooth;
+}
+
+.practice-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: top;
+}
+
+.challenge-container{
+  display: flex;
+  justify-content: center;
 }
