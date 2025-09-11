@@ -10,7 +10,7 @@ const Challenge = () => {
   return (
     <>
       <DashboardLayout>
-        <div className="pt-14 md:pt-0">
+        <div className="pt-14 lg:pt-0">
           <button
             onClick={() => navigate(-1)}
             className="p-3 text-amber text-2xl rounded-lg "

@@ -8,7 +8,7 @@ const PracticeSection = () => {
   return (
     <>
       <DashboardLayout>
-        <div className="pt-14 md:pt-0">
+        <div className="pt-14 lg:pt-0">
           <button
             onClick={() => navigate(-1)}
             className="p-3 text-amber text-2xl rounded-lg "
@@ -18,7 +18,7 @@ const PracticeSection = () => {
 
           <p className="flex align-top justify-center text-amber text-3xl font-bold">
             Practice
-          </p>
+          </p> 
 
           <div className="practice-container">
             <p className="text-lg font-semibold pt-7 pl-3">

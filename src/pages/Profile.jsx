@@ -3,9 +3,43 @@ import { doc, onSnapshot } from "firebase/firestore";
 import { useEffect, useState } from "react";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
 import profilePic from "../assets/IMG-20250724-WA0123.jpg";
+import { Link } from "react-router-dom";
 
 export default function Profile() {
   const [user, setUser] = useState(null);
+
+  // Placeholder for recent badges and achievements
+  const recentBadges = [
+    {
+      id: "b1",
+      icon: "🥇",
+      name: "First Lesson",
+      description: "Completed your first lesson!",
+    },
+    {
+      id: "b2",
+      icon: "🌟",
+      name: "7-Day Streak",
+      description: "Maintained a streak for 7 days!",
+    },
+    // ... more badges
+  ];
+
+  const recentAchievements = [
+    {
+      id: "a1",
+      icon: "🔥",
+      name: "Fire Streak",
+      description: "Completed 30 consecutive lessons!",
+    },
+    {
+      id: "a2",
+      icon: "🧠",
+      name: "Grammar Guru",
+      description: "Mastered all grammar modules!",
+    },
+    // ... more achievements
+  ];
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -50,7 +84,7 @@ export default function Profile() {
           className="absolute left-1/2 transform -translate-x-1/2"
           style={{ top: "100px" }}
         >
-          <img
+        <img
             src={user?.photoURL || profilePic}
             className="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover"
             alt="Profile"
@@ -88,59 +122,50 @@ export default function Profile() {
             <p className="text-amber-500 font-bold text-lg mb-2">XP</p>
             <p className="text-gray-800 text-3xl font-bold">
               {user?.xp || 800}
-            </p>
+              </p>
+            </div>
           </div>
-        </div>
 
         {/* Badges Section */}
         <div className="px-4 mt-12">
-          <h2 className="text-2xl font-bold text-yellow-600 mb-4">Badges</h2>
+          <Link to="/badges" className="flex justify-between items-center mb-4">
+            <h2 className="text-2xl font-bold text-yellow-600">Badges</h2>
+            <span className="text-amber-500 hover:underline">See all &gt;</span>
+          </Link>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-            {/* Example Badge 1 */}
-            <div className="flex flex-col items-center p-4 bg-white rounded-xl shadow-md border border-yellow-100">
-              <img
-                src="/path/to/librarian-badge.png"
-                alt="Librarian"
-                className="w-16 h-16 mb-2"
-              />{" "}
-              {/* Replace with actual badge image */}
-              <p className="text-gray-700 font-medium text-center">Librarain</p>
-            </div>
-            {/* Example Badge 2 */}
-            <div className="flex flex-col items-center p-4 bg-white rounded-xl shadow-md border border-yellow-100">
-              <img
-                src="/path/to/most-searches-badge.png"
-                alt="Most Searches"
-                className="w-16 h-16 mb-2"
-              />{" "}
-              {/* Replace with actual badge image */}
-              <p className="text-gray-700 font-medium text-center">
-                Most Searches
-              </p>
-            </div>
-            {/* Add more badges dynamically */}
+            {recentBadges.slice(0, 2).map((badge) => (
+              <div
+                key={badge.id}
+                className="flex flex-col items-center p-4 bg-white rounded-xl shadow-md border border-yellow-100"
+              >
+                <span className="text-4xl mb-2">{badge.icon}</span>
+                <p className="text-gray-700 font-medium text-center">
+                  {badge.name}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
 
         {/* Achievements Section */}
         <div className="px-4 mt-12">
-          <h2 className="text-2xl font-bold text-yellow-600 mb-4">
-            Achievements
-          </h2>
+          <Link
+            to="/achievements"
+            className="flex justify-between items-center mb-4"
+          >
+            <h2 className="text-2xl font-bold text-yellow-600">Achievements</h2>
+            <span className="text-amber-500 hover:underline">See all &gt;</span>
+          </Link>
           <div className="space-y-4">
-            {/* Example Achievement 1 */}
-            <div className="flex items-center p-4 bg-white rounded-xl shadow-md border border-yellow-100">
-              <img
-                src="/path/to/first-leaderboard-achievement.png"
-                alt="First on Leaderboard"
-                className="w-16 h-16 mr-4"
-              />{" "}
-              {/* Replace with actual achievement image */}
-              <p className="text-gray-700 font-medium">
-                First on the leader board
-              </p>
-            </div>
-            {/* Add more achievements dynamically */}
+            {recentAchievements.slice(0, 2).map((achievement) => (
+              <div
+                key={achievement.id}
+                className="flex items-center p-4 bg-white rounded-xl shadow-md border border-yellow-100"
+              >
+                <span className="text-4xl mr-4">{achievement.icon}</span>
+                <p className="text-gray-700 font-medium">{achievement.name}</p>
+              </div>
+            ))}
           </div>
         </div>
       </div>

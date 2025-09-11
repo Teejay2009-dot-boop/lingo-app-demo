@@ -1,60 +1,40 @@
-import "./App.css";
-import { HashRouter as Router, Routes, Route } from "react-router-dom";
-
-import Welcome from "./pages/Welcome";
-import { NotFound } from "./pages/NotFound";
+import React, { useEffect } from "react";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
-import { Lesson } from "./pages/Lesson";
-import { Progress } from "./pages/Progress";
-import Leaderboard from "./components/LeaderBoard/Leaderboard";
 import Section from "./pages/Section";
-import LessonDisplay from "./pages/LessonDisplay";
 import LessonMap from "./pages/LessonMap";
-import ChatBotUI from "./pages/ChatBotUi";
-import Shop from "./pages/Shop";
-import "../node_modules/aos/dist/aos.css";
-import FLashCards from "./pages/FLashCards";
-import Aos from "aos";
-import Feed from "./pages/Feed";
+import LessonDisplay from "./pages/LessonDisplay";
+import Leaderboard from "./components/LeaderBoard/Leaderboard";
 import Profile from "./pages/Profile";
-import Challenge from "./pages/Challenge";
+import Feed from "./components/NotificationFeed";
 import PracticeSection from "./pages/PracticeSection";
+import Badges from "./pages/Badges";
+import Achievements from "./pages/Achievements";
+
 function App() {
-  console.log("App component rendered.");
-  Aos.init();
+  useEffect(() => {
+    console.log("App component rendered.");
+  }, []);
   return (
-    <>
-      <Router>
-        <Routes>
-          <Route path="/" element={<Welcome />} />
-          <Route path="/login" element={<Login />} />
-
-          <Route path="/lessons" element={<Lesson />} />
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/progress" element={<Progress />} />
-          <Route path="/flashcards" element={<FLashCards />} />
-          <Route path="*" element={<NotFound />} />
-          <Route path="/lessons/section" element={<Section />}></Route>
-          <Route path="/lessons/section/learn" element={<LessonMap />} />
-          <Route path="/chat" element={<ChatBotUI />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
-          <Route path="/profile" element={<Profile />} />
-          <Route path="/notifications" element={<Feed />} />
-          <Route path="/lessons/section/practice" element={<PracticeSection />} />
-          <Route path="/lessons/section/challenge" element={<Challenge />} />
-
-          {/* Dynamic route for lesson sections */}
-          <Route path="/lessons/shop" element={<Shop />} />
-
-          {/* Dynamic route for module and lesson display */}
-          <Route
-            path="/lessons/module/:moduleId/:lessonIndex"
-            element={<LessonDisplay />}
-          />
-        </Routes>
-      </Router>
-    </>
+    <Router>
+      <Routes>
+        <Route path="/" element={<Login />} />
+        <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/section" element={<Section />} />
+        <Route path="/lesson-map/:moduleId" element={<LessonMap />} />
+        <Route
+          path="/lessons/module/:moduleId/:lessonIndex"
+          element={<LessonDisplay />}
+        />
+        <Route path="/leaderboard" element={<Leaderboard />} />
+        <Route path="/profile" element={<Profile />} />
+        <Route path="/notifications" element={<Feed />} />
+        <Route path="/practice" element={<PracticeSection />} />
+        <Route path="/badges" element={<Badges />} />
+        <Route path="/achievements" element={<Achievements />} />
+      </Routes>
+    </Router>
   );
 }
 
