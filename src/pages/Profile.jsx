@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
 import profilePic from "../assets/IMG-20250724-WA0123.jpg";
 import { Link } from "react-router-dom";
+import { FaChartBar, FaKeyboard, FaTree, FaHome, FaProcedures } from "react-icons/fa";
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -168,6 +169,30 @@ export default function Profile() {
             ))}
           </div>
         </div>
+
+        <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-amber justify-around bg-gray-900 md:hidden">
+                <Link to={"/lessons"} className="flex flex-col items-center pt-3">
+                  <FaHome className="text-2xl" />
+                  <p className="text-amber text-sm">Home</p>
+                </Link>
+                <Link to={"/leaderboard"} className="flex flex-col items-center pt-3">
+                  <FaChartBar className="text-2xl" />
+                  <p className="text-amber text-sm">Ranking</p>
+                </Link>
+                <Link to={"/dashboard"} className="flex flex-col items-center pt-3">
+                  <FaKeyboard className="text-2xl " />
+                   <p className="text-amber text-sm">Dashboard</p>
+                </Link>
+                <Link to={"/notifications"} className="flex flex-col items-center pt-3">
+                  <FaTree className="text-2xl" />
+                  <p className="text-amber text-sm">Feed</p>
+                </Link>
+        
+                <Link to={"/profile"} className="flex flex-col items-center pt-3">
+                  <FaProcedures className="text-2xl" />
+                  <p className="text-amber text-sm">Profile</p>
+                </Link>
+              </div>
       </div>
     </DashboardLayout>
   );

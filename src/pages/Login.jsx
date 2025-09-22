@@ -31,7 +31,7 @@ const Login = () => {
 
   useEffect(() => {
     const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) navigate("/dashboard");
+      if (user) navigate("/lessons");
     });
     return unsubscribe;
   }, [navigate]);

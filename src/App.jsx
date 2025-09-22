@@ -26,7 +26,7 @@ function App() {
         <Route path="/" element={<Welcome />} />
         <Route path="/lessons/section/challenge" element={<Challenge />} />
         <Route path="/login" element={<Login />} />
-        <Route path="/lessons/" element={<Lesson />} />
+        <Route path="/lessons" element={<Lesson />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/lesson-map/:moduleId" element={<LessonMap />} />
         <Route

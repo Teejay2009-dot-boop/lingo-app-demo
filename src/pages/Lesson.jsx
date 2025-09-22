@@ -114,55 +114,66 @@ export const Lesson = () => {
       </div>
 
       <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-amber justify-around bg-gray-900 md:hidden">
-        <Link to={"/learn"}>
+        <Link to={"/lessons"} className="flex flex-col items-center pt-3">
           <FaHome className="text-2xl" />
+          <p className="text-amber text-sm">Home</p>
         </Link>
-        <Link to={"/leaderboard"}>
+        <Link to={"/leaderboard"} className="flex flex-col items-center pt-3">
           <FaChartBar className="text-2xl" />
+          <p className="text-amber text-sm">Ranking</p>
         </Link>
-        <Link to={"/dashboard"}>
-          <FaKeyboard className="text-2xl" />
+        <Link to={"/dashboard"} className="flex flex-col items-center pt-3">
+          <FaKeyboard className="text-2xl " />
+           <p className="text-amber text-sm">Dashboard</p>
         </Link>
-        <Link to={"/notifications"}>
+        <Link to={"/notifications"} className="flex flex-col items-center pt-3">
           <FaTree className="text-2xl" />
+          <p className="text-amber text-sm">Feed</p>
         </Link>
 
-        <Link to={"/profile"}>
+        <Link to={"/profile"} className="flex flex-col items-center pt-3">
           <FaProcedures className="text-2xl" />
+          <p className="text-amber text-sm">Profile</p>
         </Link>
       </div>
 
       {/* Sidebar */}
-      <div className="fixed top-1/2 -translate-y-1/2 left-0 border border-amber bg-gray-900 flex-col py-3 h-auto px-2 text-3xl rounded-r-full ml-2 lg:ml-6 justify-around text-amber z-30 hidden md:flex lg:flex">
+      <div className="fixed top-1/2 -translate-y-1/2 left-0 border border-amber bg-gray-900 flex-col py-3 h-auto px-2 text-3xl rounded-r-full ml-2 lg:ml-6 justify-around text-amber z-30 hidden md:flex lg:flex py-5">
         <Link
           to={"/learn"}
-          className="p-2 hover:text-white transition ease-in duration-300"
+          className="p-2 hover:text-white transition ease-in duration-300 flex flex-col items-center gap-3"
         >
           <FaHome className="cursor-pointer" />
+          <p className="text-sm text-amber">Home</p>
         </Link>
         <Link
           to={"/leaderboard"}
-          className="p-2 hover:text-white transition ease-in duration-300"
+          className="p-2 hover:text-white transition ease-in duration-300 flex flex-col items-center gap-3"
         >
-          <FaChartBar className="cursor-pointer" />
+          <FaChartBar className="cursor-pointer" /> 
+          <p className="text-sm text-amber">Ranking</p>
         </Link>
         <Link
           to={"/dashboard"}
-          className="p-2 hover:text-white transition ease-in duration-300"
+          className="p-2 hover:text-white transition  items-center gap-3 flex flex-col ease-in duration-300"
         >
           <FaKeyboard className="cursor-pointer" />
+        <p className="text-sm text-amber">Dashboard</p>
         </Link>
+       
         <Link
           to={"/notifications"}
-          className="p-2 hover:text-white transition ease-in duration-300"
+          className="p-2 hover:text-white transition ease-in duration-300 flex flex-col items-center gap-3"
         >
           <FaTree className="cursor-pointer" />
+          <p className="text-sm text-amber">Feed</p>
         </Link>
         <Link
           to={"/profile"}
-          className="p-2 hover:text-white transition ease-in duration-300"
+          className="p-2 hover:text-white transition ease-in duration-300 flex flex-col items-center gap-3"
         >
           <FaProcedures className="cursor-pointer" />
+          <p className="text-sm text-amber">Profile</p>
         </Link>
       </div>
 

@@ -13,6 +13,7 @@ import {
   FaCoins,
   FaHeart,
   FaFire,
+  FaExpand,
 } from "react-icons/fa";
 import { MainIdea } from "../components/LessonCards/MainIdea";
 import { FillintheGapBestOption } from "../components/LessonCards/FillintheGapBestOption";
@@ -62,6 +63,9 @@ const LessonDisplay = () => {
     speed: 0,
     total: 0,
   });
+  const [showCompletionSummary, setShowCompletionSummary] = useState(false); // New state for completion summary
+  const [finalLessonXp, setFinalLessonXp] = useState(0); // State to store final XP
+  const [finalLessonCoins, setFinalLessonCoins] = useState(0); // State to store final coins
 
   const MAX_XP_PER_LESSON = 30;
   const IDEAL_TIME_PER_QUESTION = 10;
@@ -290,6 +294,11 @@ const LessonDisplay = () => {
 
       setLessonCompleted(true);
 
+      // Set final XP and coins for display in the completion summary
+      setFinalLessonXp(finalXP);
+      setFinalLessonCoins(coinsEarned);
+      setShowCompletionSummary(true); // Show the completion summary
+
       // Module progression logic
       const currentModuleLessons = currentModule.lessons;
       const nextLessonIndexInModule =
@@ -311,7 +320,7 @@ const LessonDisplay = () => {
         // Lesson completed - will just navigate back to map
       }
 
-      navigate("/lessons"); // Navigate directly back to LessonMap after completing a lesson
+      // navigate("/lessons"); // Navigate directly back to LessonMap after completing a lesson
     } catch (error) {
       console.error("Error completing lesson:", error);
     }
@@ -330,9 +339,9 @@ const LessonDisplay = () => {
   }, [currentIndex, lesson, currentModule, lessonCompleted, completeLesson]);
 
   const handleNext = () => {
-    // setShowModal(false); // Removed showModal
+    setShowModal(false); // Make sure modal closes
     setCurrentIndex((prev) => prev + 1);
-    // setLastAnswerCorrect(null); // Removed lastAnswerCorrect
+    setLastAnswerCorrect(null); // Reset last answer status
   };
 
   const renderCard = () => {
@@ -394,9 +403,59 @@ const LessonDisplay = () => {
     );
   }
 
-  // Removed the lesson complete rendering block here
-  // The lesson completion is handled by `completeLesson` and navigates away.
-  // if (isLessonComplete) { ... return ... } block is removed.
+  // Lesson Completion Summary
+  if (showCompletionSummary) {
+    return (
+      <div className="p-6 h-screen flex flex-col items-center justify-center text-center bg-gray-100">
+        <img src={mascot} style={{ width: "10rem" }} alt="" className="mb-6" />
+        <h2 className="text-3xl font-bold mb-4 text-green-600">
+          Lesson Complete!
+        </h2>
+        <p className="text-xl text-gray-800 mb-2">we</p>
+        <div className="flex justify-between item-center gap-6">
+          <div className="px-6 rounded-xl border border-amber flex flex-col justify-center items-center">
+            <div className="text-xl text-amber">
+              <FaExpand />
+            </div>
+            <p className="text-2xl font-bold text-black py-2">
+              +{finalLessonXp} XP
+            </p>
+            <p className="text-amber">gained</p>
+          </div>
+          <div className="px-6 rounded-xl border border-amber flex flex-col justify-center items-center">
+            <div className="text-4xl text-red-600">
+              <FaHeart />
+            </div>
+            <div className="flex-col">
+              <p className="text-xl font-bold text-black py-2">
+                +{finalLessonXp} XP
+              </p>
+              <p className="text-amber">gained</p>
+            </div>
+          </div>
+          <div className="px-6 rounded-xl border border-amber flex flex-col justify-center items-center">
+            <div className="text-xl text-amber">
+              <FaCoins />
+            </div>
+           
+            <div className="flex-col">
+               <p className="text-2xl text-yellow-600 flex items-center">
+              +{finalLessonCoins} <FaCoins className="ml-2 text-amber" />
+            </p>
+              <p className="text-amber">gained</p>
+            </div>
+          </div>
+        </div>
+
+        <button
+          onClick={() => navigate("/lessons")}
+          className="bg-amber-500 text-amber font-semibold flex items-center px-8 py-3 text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105"
+        >
+          Go to Lesson Map <FaArrowAltCircleRight className="ml-2" />
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 relative">
@@ -451,68 +510,6 @@ const LessonDisplay = () => {
             >
               {lastAnswerCorrect ? "✔ Correct!" : "❌ Incorrect!"}
             </h2>
-
-            {lastAnswerCorrect && (
-              <div className="xp-breakdown mb-4 text-left p-2 bg-white rounded-md shadow-inner">
-                <div className="flex justify-between items-center text-lg font-semibold mb-2">
-                  <span>XP Gained:</span>
-                  <span className="text-amber-500">
-                    +{xpBreakdown.total} XP
-                  </span>
-                </div>
-                <div className="border-t border-gray-200 pt-2 space-y-1">
-                  <div className="flex justify-between text-sm text-gray-700">
-                    <span>Base:</span>
-                    <span>{xpBreakdown.base} XP</span>
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-700">
-                    <span>Accuracy:</span>
-                    <span
-                      className={`${
-                        xpBreakdown.accuracy > 0
-                          ? "text-green-500"
-                          : "text-red-500"
-                      }`}
-                    >
-                      {xpBreakdown.accuracy > 0
-                        ? `+${xpBreakdown.accuracy}`
-                        : xpBreakdown.accuracy}{" "}
-                      XP
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-700">
-                    <span>Streak Bonus:</span>
-                    <span
-                      className={`${
-                        xpBreakdown.streak > 0
-                          ? "text-green-500"
-                          : "text-red-500"
-                      }`}
-                    >
-                      {xpBreakdown.streak > 0
-                        ? `+${xpBreakdown.streak}`
-                        : xpBreakdown.streak}{" "}
-                      XP
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-sm text-gray-700">
-                    <span>Speed Bonus:</span>
-                    <span
-                      className={`${
-                        xpBreakdown.speed > 0
-                          ? "text-green-500"
-                          : "text-red-500"
-                      }`}
-                    >
-                      {xpBreakdown.speed > 0
-                        ? `+${xpBreakdown.speed}`
-                        : xpBreakdown.speed}{" "}
-                      XP
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
 
             <button
               onClick={handleNext}

@@ -12,6 +12,13 @@ import {
   where,
   serverTimestamp,
 } from "firebase/firestore";
+import {FaCoins,
+  FaFire,
+  FaChartBar,
+  FaProcedures,
+  FaKeyboard,
+  FaTree,
+  FaHome,} from "react-icons/fa";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
 import NavBar from "../components/dashboard/NavBar";
 import { useNavigate } from "react-router-dom";
@@ -120,6 +127,30 @@ const Feed = () => {
           </button>
         </div>
         <NotificationFeed notifications={notifications} />
+      </div>
+
+      <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-amber justify-around bg-gray-900 md:hidden">
+        <Link to={"/lessons"} className="flex flex-col items-center pt-3">
+          <FaHome className="text-2xl" />
+          <p className="text-amber text-sm">Home</p>
+        </Link>
+        <Link to={"/leaderboard"} className="flex flex-col items-center pt-3">
+          <FaChartBar className="text-2xl" />
+          <p className="text-amber text-sm">Ranking</p>
+        </Link>
+        <Link to={"/dashboard"} className="flex flex-col items-center pt-3">
+          <FaKeyboard className="text-2xl " />
+           <p className="text-amber text-sm">Dashboard</p>
+        </Link>
+        <Link to={"/notifications"} className="flex flex-col items-center pt-3">
+          <FaTree className="text-2xl" />
+          <p className="text-amber text-sm">Feed</p>
+        </Link>
+
+        <Link to={"/profile"} className="flex flex-col items-center pt-3">
+          <FaProcedures className="text-2xl" />
+          <p className="text-amber text-sm">Profile</p>
+        </Link>
       </div>
     </DashboardLayout>
   );
