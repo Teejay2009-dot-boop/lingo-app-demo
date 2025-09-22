@@ -2,8 +2,8 @@ import React, { useEffect, useState } from "react";
 import { VocabularyCard } from "../components/LessonCards/VocabularyCard";
 import AudioChoiceCard from "../components/LessonCards/AudioChoiceCard";
 import GoBackBtn from "../components/GoBackBtn";
-import { getAllLessons, getModules } from "../data/lessons"; // Updated import
-import { useNavigate, useParams, Link } from "react-router-dom"; // Added Link to imports
+import { getAllLessons, getSections } from "../data/lessons"; // Updated import to getSections
+import { useNavigate, useParams, Link } from "react-router-dom";
 import RolePlayTypeYourself from "../components/LessonCards/RolePlayTypeYourself";
 import MatchImageToWord from "../components/LessonCards/MatchImageToWord";
 import mascot from "../assets/IMG-20250724-WA0115-removebg-preview.png";
@@ -21,7 +21,7 @@ import MatchWords from "../components/LessonCards/MatchWords";
 import TypeWhatYouHear from "../components/LessonCards/TypeWhatYouHear";
 import RolePlayOptions from "../components/LessonCards/RolePlayOptions";
 import { auth, db } from "../firebase/config/firebase";
-import { updateStreak } from "../utils/streak"; // Import updateStreak
+import { updateStreak } from "../utils/streak";
 import {
   doc,
   updateDoc,
@@ -31,7 +31,7 @@ import {
   arrayUnion,
   setDoc,
 } from "firebase/firestore";
-import { ModuleCompletionModal } from "../components/ModuleCompletionModal"; // Import the new modal
+// import { ModuleCompletionModal } from "../components/ModuleCompletionModal"; // Removed ModuleCompletionModal
 
 const LessonDisplay = () => {
   const { moduleId, lessonIndex: lessonIndexParam } = useParams();
@@ -54,9 +54,7 @@ const LessonDisplay = () => {
   const [startTime, setStartTime] = useState(null);
   const [earnedXPPerQuestion, setEarnedXPPerQuestion] = useState([]);
   const [lessonCompleted, setLessonCompleted] = useState(false);
-  const [showModuleCompletionModal, setShowModuleCompletionModal] =
-    useState(false); // New state
-  const [showLessonCompleteModal, setShowLessonCompleteModal] = useState(false); // New state for post-lesson prompt
+  // Removed showModuleCompletionModal and showLessonCompleteModal states
   const [xpBreakdown, setXpBreakdown] = useState({
     base: 0,
     accuracy: 0,
@@ -104,12 +102,23 @@ const LessonDisplay = () => {
     const unsubModuleProgress = onSnapshot(moduleProgressRef, (snap) => {
       if (snap.exists()) {
         const progressData = snap.data();
-        const allAvailableLessons =
-          getModules().find((m) => m.module_id === moduleId)?.lessons || [];
+        const allAvailableLessons = [];
+        // Adapted to new sections structure
+        const sections = getSections();
+        for (const section of sections) {
+          const foundModule = section.modules.find(
+            (m) => m.module_id === moduleId
+          );
+          if (foundModule) {
+            allAvailableLessons.push(
+              ...foundModule.lessons.map((lesson) => lesson.lesson_id)
+            );
+            break;
+          }
+        }
+
         const lastCompletedLessonId = progressData.lastLesson;
 
-        // When module progress loads, we need to decide which lesson to show initially.
-        // If the URL specifies a lessonIndex, use that. Otherwise, infer from lastCompletedLessonId.
         let initialLessonIndex = currentLessonIndex;
         if (currentLessonIndex === 0 && lastCompletedLessonId) {
           const inferredIndex =
@@ -119,14 +128,6 @@ const LessonDisplay = () => {
             allAvailableLessons.length - 1
           );
         }
-
-        // This block is for handling initial load or when Firestore progress updates.
-        // The actual lesson data and exercises are loaded in the next useEffect.
-        // We should not be resetting currentIndex here based on currentLessonIndex change.
-        // The responsibility of resetting exercise index (currentIndex) and related states
-        // for a *new lesson* in the module should be handled when the lesson data actually changes.
-
-        // We will reset exercise-specific states only if no progress exists for this module or if explicitly starting fresh.
         if (currentLessonIndex === 0 && !snap.exists()) {
           setCurrentIndex(0);
           setAnsweredMap({});
@@ -134,8 +135,7 @@ const LessonDisplay = () => {
           setLessonCompleted(false);
         }
       } else {
-        // No progress yet, ensure all states are reset to start from the beginning of the module
-        setCurrentIndex(0); // Start from the first exercise of the first lesson
+        setCurrentIndex(0);
         setAnsweredMap({});
         setEarnedXPPerQuestion([]);
         setLessonCompleted(false);
@@ -146,21 +146,22 @@ const LessonDisplay = () => {
       unsubUser();
       unsubModuleProgress();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moduleId, navigate, currentLessonIndex]); // Keep currentLessonIndex in dependencies
+  }, [moduleId, navigate, currentLessonIndex]);
 
   // Load lesson data based on current module and index
   useEffect(() => {
     if (!moduleId) return;
 
-    const modules = getModules();
-    const module = modules.find((m) => m.module_id === moduleId);
+    const sections = getSections(); // Changed to getSections
+    let module = null;
+    for (const section of sections) {
+      module = section.modules.find((m) => m.module_id === moduleId);
+      if (module) break;
+    }
 
     if (module) {
       setCurrentModule(module);
-      // CORRECTED: Use currentLessonIndex (from URL) to get the lessonId from the module's lessons array
-      const lessonId = module.lessons[currentLessonIndex];
-      // Find the lesson by its lesson_id within getAllLessons values
+      const lessonId = module.lessons[currentLessonIndex]?.lesson_id; // Access lesson_id property
       const fetchedLesson = Object.values(getAllLessons).find(
         (l) => l.lesson_id === lessonId
       );
@@ -169,22 +170,18 @@ const LessonDisplay = () => {
         setLesson(fetchedLesson);
         setExercises(fetchedLesson.exercises);
         setBaseXp(fetchedLesson.base_xp || 10);
-
-        // Unconditionally reset exercise-related states when a new lesson (within a module) is loaded
         setCurrentIndex(0);
         setAnsweredMap({});
         setEarnedXPPerQuestion([]);
         setLessonCompleted(false);
       } else {
         console.error("Lesson not found:", lessonId);
-        // Only navigate to 404 if lessonId is not undefined, otherwise it means currentLessonIndex is out of bounds for the module
         if (lessonId !== undefined) {
-          navigate("/404"); // Or appropriate error page
+          navigate("/404");
         }
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [moduleId, currentLessonIndex, navigate]); // currentLessonIndex is key to re-fetching lesson
+  }, [moduleId, currentLessonIndex, navigate]);
 
   const calculateQuestionXP = (isCorrect, timeTaken) => {
     const base = Math.min(baseXp, 2);
@@ -309,12 +306,12 @@ const LessonDisplay = () => {
       );
 
       if (nextCompletedLessons >= currentModuleLessons.length) {
-        // All lessons in module completed
-        setShowModuleCompletionModal(true);
+        // All lessons in module completed - will just navigate back to map
       } else {
-        // Lesson completed, show prompt to continue or go back to map
-        setShowLessonCompleteModal(true);
+        // Lesson completed - will just navigate back to map
       }
+
+      navigate("/lessons"); // Navigate directly back to LessonMap after completing a lesson
     } catch (error) {
       console.error("Error completing lesson:", error);
     }
@@ -327,24 +324,22 @@ const LessonDisplay = () => {
       lesson &&
       currentModule
     ) {
-      // Instead of calling completeLesson directly, set lessonCompleted state
-      // The completion modal will trigger the next action (continue or exit)
       setLessonCompleted(true);
+      completeLesson(); // Call completeLesson here when lesson is finished
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentIndex, lesson, currentModule]); // Removed lessonCompleted from dependencies to prevent infinite loop
+  }, [currentIndex, lesson, currentModule, lessonCompleted, completeLesson]);
 
   const handleNext = () => {
-    setShowModal(false);
-    // This will trigger the useEffect for lesson completion or next exercise
+    // setShowModal(false); // Removed showModal
     setCurrentIndex((prev) => prev + 1);
-    setLastAnswerCorrect(null);
+    // setLastAnswerCorrect(null); // Removed lastAnswerCorrect
   };
 
   const renderCard = () => {
     if (!currentExercise) return <p>Loading exercise...</p>;
     const isAnswered = answeredMap[currentIndex];
-    const shouldDisable = showModal || !!isAnswered;
+    const shouldDisable = // showModal || // Removed showModal
+      !!isAnswered;
 
     const props = {
       data: currentExercise,
@@ -390,159 +385,18 @@ const LessonDisplay = () => {
             <FaArrowCircleLeft style={{ fontSize: "1rem" }} /> Go Back
           </button>
         </Link>
+        <Link to="/dashboard">
+          <button className="bg-amber text-white font-semibold flex gap-4 items-center px-6 py-2 text-lg rounded-full my-3">
+            <FaArrowCircleLeft style={{ fontSize: "1rem" }} /> Go to dashboard
+          </button>
+        </Link>
       </div>
     );
   }
 
-  const isLessonComplete = currentIndex >= exercises.length;
-  if (isLessonComplete) {
-    const correctAnswers = Object.values(answeredMap).filter(
-      (a) => a.isCorrect
-    ).length;
-    const perfectLesson = correctAnswers === exercises.length;
-    const totalRawXP = earnedXPPerQuestion.reduce((sum, xp) => sum + xp, 0);
-    const finalXP = Math.min(
-      totalRawXP +
-        (perfectLesson ? PERFECT_LESSON_BONUS : 0) +
-        Math.floor(currentStreak / 7),
-      MAX_XP_PER_LESSON
-    );
-    const coinsEarned = Math.floor(finalXP / 3) + (perfectLesson ? 2 : 0);
-
-    // Call completeLesson here, instead of useEffect, once the lesson is deemed complete
-    // This ensures Firestore update and modal display are handled after all exercises.
-    if (!lessonCompleted) {
-      // Only call once
-      completeLesson();
-    }
-
-    return (
-      <div className="min-h-screen flex flex-col items-center justify-around px-3 text-center py-6">
-        <img src={mascot} alt="Completed" className="w-28 mb-6" />
-        <h2 className="text-3xl font-bold text-amber mb-3">
-          Lesson Complete 🎉
-        </h2>
-
-        <div className="streak-badge bg-white p-3 rounded-full shadow-md mb-4">
-          🔥 {currentStreak}-day streak! | Earned: {finalXP}/30 XP
-          {perfectLesson && (
-            <span className="block text-green-500">+ Perfect Lesson!</span>
-          )}
-        </div>
-
-        <div className="xp-details w-full max-w-md p-4 bg-white rounded-lg mb-6">
-          <h3 className="font-bold mb-2">XP Breakdown</h3>
-          <div className="flex justify-between">
-            <span>Questions:</span>
-            <span>{totalRawXP} XP</span>
-          </div>
-          {perfectLesson && (
-            <div className="flex justify-between text-green-500">
-              <span>Perfect Lesson:</span>
-              <span>+{PERFECT_LESSON_BONUS} XP</span>
-            </div>
-          )}
-          <div className="flex justify-between">
-            <span>Streak Bonus:</span>
-            <span>+{Math.floor(currentStreak / 7)} XP</span>
-          </div>
-          <div className="flex justify-between font-bold border-t pt-2">
-            <span>Total Earned:</span>
-            <span>{finalXP} XP</span>
-          </div>
-        </div>
-
-        <div className="flex justify-center gap-5 rounded-full">
-          <div className="border border-amber rounded-lg h-28 w-28 lg:h-32 lg:w-32 flex flex-col items-center justify-center">
-            <p className="text-xl pb-5">XP</p>
-            <p className="flex items-center text-amber justify-center text-2xl">
-              {finalXP} <FaFire />
-            </p>
-          </div>
-          <div className="p-8 items-center border border-amber h-28 w-28 lg:h-32 lg:w-32 rounded-lg justify-center flex flex-col gap-5">
-            <p className="text-xl">Coins</p>
-            <p className="flex items-center gap-1 text-amber justify-center text-2xl">
-              {coins + coinsEarned} <FaCoins />
-            </p>
-          </div>
-          <div className="py-7 px-4 border border-amber h-28 w-28 lg:h-32 lg:w-32 justify-center rounded-md flex flex-col gap-5">
-            <p className="text-xl">Lives</p>
-            <p className="flex items-center text-amber gap-1 justify-center text-2xl">
-              {lives} <FaHeart />
-            </p>
-          </div>
-        </div>
-
-        <div className="flex justify-between gap-4 mt-6">
-          <Link to="/dashboard">
-            <button className="bg-amber text-white px-6 py-2 rounded-full hover:bg-amber-600 transition-all">
-              Go to Dashboard
-            </button>
-          </Link>
-          <Link to="/lessons/shop">
-            <button className="bg-amber text-white px-6 py-2 rounded-full hover:bg-amber-600 transition-all">
-              Go to Shop
-            </button>
-          </Link>
-        </div>
-      </div>
-    );
-  }
-
-  // New Lesson Complete Modal
-  if (
-    lessonCompleted &&
-    !showModuleCompletionModal &&
-    showLessonCompleteModal
-  ) {
-    const currentModuleLessons = currentModule?.lessons || [];
-    const nextLessonIndexInModule =
-      currentModuleLessons.indexOf(lesson?.lesson_id) + 1;
-    const hasNextLesson = nextLessonIndexInModule < currentModuleLessons.length;
-
-    const handleContinueLesson = () => {
-      setShowLessonCompleteModal(false);
-      console.log(
-        "Navigating to next lesson:",
-        `/lessons/module/${moduleId}/${nextLessonIndexInModule}`
-      );
-      navigate(`/lessons/module/${moduleId}/${nextLessonIndexInModule}`);
-    };
-
-    const handleReturnToMap = () => {
-      setShowLessonCompleteModal(false);
-      navigate("/lessons");
-    };
-
-    return (
-      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-        <div className="bg-white p-8 rounded-lg shadow-xl text-center">
-          <h2 className="text-3xl font-bold text-green-600 mb-4">
-            Lesson Completed! 🎉
-          </h2>
-          <p className="text-lg text-gray-700 mb-6">
-            You've finished this lesson. What would you like to do next?
-          </p>
-          <div className="flex flex-col gap-4">
-            {hasNextLesson && (
-              <button
-                onClick={handleContinueLesson}
-                className="bg-amber text-white px-6 py-3 rounded-full text-lg font-semibold hover:bg-amber-600 transition-all"
-              >
-                Continue to Next Lesson
-              </button>
-            )}
-            <button
-              onClick={handleReturnToMap}
-              className="bg-gray-300 text-gray-800 px-6 py-3 rounded-full text-lg font-semibold hover:bg-gray-400 transition-all"
-            >
-              Return to Lesson Map
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  }
+  // Removed the lesson complete rendering block here
+  // The lesson completion is handled by `completeLesson` and navigates away.
+  // if (isLessonComplete) { ... return ... } block is removed.
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 relative">
@@ -582,65 +436,87 @@ const LessonDisplay = () => {
         </button>
       </div>
       {showModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4">
           <div
-            className={`p-6 rounded-lg shadow-md text-center w-11/12 max-w-md border ${
+            className={`p-6 rounded-lg shadow-md text-center w-full max-w-sm mx-auto border ${
               lastAnswerCorrect
-                ? "bg-green-300 border-green-500"
-                : "bg-red-300 border-red-500"
+                ? "bg-green-100 border-green-300 text-green-800"
+                : "bg-red-100 border-red-300 text-red-800"
             }`}
           >
             <h2
-              className={`text-2xl font-bold mb-4 ${
+              className={`text-3xl font-bold mb-4 ${
                 lastAnswerCorrect ? "text-green-600" : "text-red-600"
               }`}
             >
-              {lastAnswerCorrect ? "✔ Correct" : "❌ Incorrect!"}
+              {lastAnswerCorrect ? "✔ Correct!" : "❌ Incorrect!"}
             </h2>
 
             {lastAnswerCorrect && (
-              <div className="xp-breakdown mb-4 text-left">
-                <div className="flex justify-between">
-                  <span>Base:</span>
-                  <span>{xpBreakdown.base} XP</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Accuracy:</span>
-                  <span>
-                    {xpBreakdown.accuracy > 0
-                      ? `+${xpBreakdown.accuracy}`
-                      : xpBreakdown.accuracy}{" "}
-                    XP
+              <div className="xp-breakdown mb-4 text-left p-2 bg-white rounded-md shadow-inner">
+                <div className="flex justify-between items-center text-lg font-semibold mb-2">
+                  <span>XP Gained:</span>
+                  <span className="text-amber-500">
+                    +{xpBreakdown.total} XP
                   </span>
                 </div>
-                <div className="flex justify-between">
-                  <span>Streak Bonus:</span>
-                  <span>
-                    {xpBreakdown.streak > 0
-                      ? `+${xpBreakdown.streak}`
-                      : xpBreakdown.streak}{" "}
-                    XP
-                  </span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Speed Bonus:</span>
-                  <span>
-                    {xpBreakdown.speed > 0
-                      ? `+${xpBreakdown.speed}`
-                      : xpBreakdown.speed}{" "}
-                    XP
-                  </span>
-                </div>
-                <div className="flex justify-between font-bold mt-2 pt-2 border-t">
-                  <span>Total:</span>
-                  <span>+{xpBreakdown.total} XP</span>
+                <div className="border-t border-gray-200 pt-2 space-y-1">
+                  <div className="flex justify-between text-sm text-gray-700">
+                    <span>Base:</span>
+                    <span>{xpBreakdown.base} XP</span>
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-700">
+                    <span>Accuracy:</span>
+                    <span
+                      className={`${
+                        xpBreakdown.accuracy > 0
+                          ? "text-green-500"
+                          : "text-red-500"
+                      }`}
+                    >
+                      {xpBreakdown.accuracy > 0
+                        ? `+${xpBreakdown.accuracy}`
+                        : xpBreakdown.accuracy}{" "}
+                      XP
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-700">
+                    <span>Streak Bonus:</span>
+                    <span
+                      className={`${
+                        xpBreakdown.streak > 0
+                          ? "text-green-500"
+                          : "text-red-500"
+                      }`}
+                    >
+                      {xpBreakdown.streak > 0
+                        ? `+${xpBreakdown.streak}`
+                        : xpBreakdown.streak}{" "}
+                      XP
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-sm text-gray-700">
+                    <span>Speed Bonus:</span>
+                    <span
+                      className={`${
+                        xpBreakdown.speed > 0
+                          ? "text-green-500"
+                          : "text-red-500"
+                      }`}
+                    >
+                      {xpBreakdown.speed > 0
+                        ? `+${xpBreakdown.speed}`
+                        : xpBreakdown.speed}{" "}
+                      XP
+                    </span>
+                  </div>
                 </div>
               </div>
             )}
 
             <button
               onClick={handleNext}
-              className={`px-6 py-2 mt-4 rounded text-white shadow-lg transition duration-300 ${
+              className={`px-8 py-3 mt-4 rounded-full text-white font-bold text-lg shadow-lg transition duration-300 transform hover:scale-105 ${
                 lastAnswerCorrect
                   ? "bg-green-600 hover:bg-green-700"
                   : "bg-red-600 hover:bg-red-700"

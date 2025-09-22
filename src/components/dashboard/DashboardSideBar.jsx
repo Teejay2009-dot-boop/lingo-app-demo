@@ -12,6 +12,7 @@ import {
   FaSignOutAlt,
   FaBell,
   FaDotCircle,
+  FaUser, // Added FaUser
 } from "react-icons/fa";
 import { FaShop } from "react-icons/fa6";
 import { Dropdown } from "./DropDown";
@@ -29,11 +30,10 @@ const DashboardSidebar = () => {
   const [isOpen, setIsOpen] = useState(false);
 
   const navItems = [
+    { label: "Learn", icon: <FaBook />, to: "/lessons" }, // New landing page
     { label: "Dashboard", icon: <FaHome />, to: "/dashboard" },
-    { label: "Learn", icon: <FaBook />, to: "/lessons" },
-    // { label: "Flashcards", icon: <FaBrain />, to: "/flashcards" },
+    { label: "Profile", icon: <FaUser />, to: "/profile" }, // Changed to FaUser
     { label: "Shop", icon: <FaShop />, to: "/lessons/shop" },
-    { label: "Profile", icon: <FaCog />, to: "/profile" },
     { label: "Feed", icon: <FaBell />, to: "/notifications" },
   ];
 
@@ -88,7 +88,7 @@ const DashboardSidebar = () => {
 
       {/* Mobile Sidebar */}
       <div
-        className={`lg:hidden fixed top-0 left-0 w-[50%] h-screen bg-amber text-white p-6 z-50 transition-transform duration-300 ${
+        className={`lg:hidden fixed top-0 left-0 w-3/4 sm:w-1/2 h-screen bg-amber text-white p-6 z-50 transition-transform duration-300 ${
           isOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >

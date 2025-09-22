@@ -11,6 +11,10 @@ import Feed from "./components/NotificationFeed";
 import PracticeSection from "./pages/PracticeSection";
 import Badges from "./pages/Badges";
 import Achievements from "./pages/Achievements";
+import Shop from "./pages/Shop";
+import { Lesson } from "./pages/Lesson";
+import Welcome from "./pages/Welcome";
+import Challenge from "./pages/Challenge";
 
 function App() {
   useEffect(() => {
@@ -19,9 +23,11 @@ function App() {
   return (
     <Router>
       <Routes>
-        <Route path="/" element={<Login />} />
+        <Route path="/" element={<Welcome />} />
+        <Route path="/lessons/section/challenge" element={<Challenge />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/lessons/" element={<Lesson />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/section" element={<Section />} />
         <Route path="/lesson-map/:moduleId" element={<LessonMap />} />
         <Route
           path="/lessons/module/:moduleId/:lessonIndex"
@@ -30,9 +36,11 @@ function App() {
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/notifications" element={<Feed />} />
-        <Route path="/practice" element={<PracticeSection />} />
+        <Route path="/lessons/section/practice" element={<PracticeSection />} />
         <Route path="/badges" element={<Badges />} />
+        <Route path="/lessons/section" element={<Section />} />
         <Route path="/achievements" element={<Achievements />} />
+        <Route path="/lessons/shop" element={<Shop />} />
       </Routes>
     </Router>
   );

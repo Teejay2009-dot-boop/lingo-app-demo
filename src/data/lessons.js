@@ -383,20 +383,620 @@ export const getAllLessons = {
       },
     ],
   },
+  // Placeholder Lessons to complete a section (16 lessons total for 4 modules of 4 lessons each)
+  lesson_6: {
+    title: "Placeholder Lesson 6",
+    lesson_id: "YOR-A1-6",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_7: {
+    title: "Placeholder Lesson 7",
+    lesson_id: "YOR-A1-7",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_8: {
+    title: "Placeholder Lesson 8",
+    lesson_id: "YOR-A1-8",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_9: {
+    title: "Placeholder Lesson 9",
+    lesson_id: "YOR-A1-9",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_10: {
+    title: "Placeholder Lesson 10",
+    lesson_id: "YOR-A1-10",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_11: {
+    title: "Placeholder Lesson 11",
+    lesson_id: "YOR-A1-11",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_12: {
+    title: "Placeholder Lesson 12",
+    lesson_id: "YOR-A1-12",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_13: {
+    title: "Placeholder Lesson 13",
+    lesson_id: "YOR-A1-13",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_14: {
+    title: "Placeholder Lesson 14",
+    lesson_id: "YOR-A1-14",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_15: {
+    title: "Placeholder Lesson 15",
+    lesson_id: "YOR-A1-15",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_16: {
+    title: "Placeholder Lesson 16",
+    lesson_id: "YOR-A1-16",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_17: {
+    title: "Placeholder Lesson 17",
+    lesson_id: "YOR-A1-17",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_18: {
+    title: "Placeholder Lesson 18",
+    lesson_id: "YOR-A1-18",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_19: {
+    title: "Placeholder Lesson 19",
+    lesson_id: "YOR-A1-19",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_20: {
+    title: "Placeholder Lesson 20",
+    lesson_id: "YOR-A1-20",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_21: {
+    title: "Placeholder Lesson 21",
+    lesson_id: "YOR-A1-21",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_22: {
+    title: "Placeholder Lesson 22",
+    lesson_id: "YOR-A1-22",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_23: {
+    title: "Placeholder Lesson 23",
+    lesson_id: "YOR-A1-23",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_24: {
+    title: "Placeholder Lesson 24",
+    lesson_id: "YOR-A1-24",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_25: {
+    title: "Placeholder Lesson 25",
+    lesson_id: "YOR-A1-25",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_26: {
+    title: "Placeholder Lesson 26",
+    lesson_id: "YOR-A1-26",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_27: {
+    title: "Placeholder Lesson 27",
+    lesson_id: "YOR-A1-27",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_28: {
+    title: "Placeholder Lesson 28",
+    lesson_id: "YOR-A1-28",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_29: {
+    title: "Placeholder Lesson 29",
+    lesson_id: "YOR-A1-29",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_30: {
+    title: "Placeholder Lesson 30",
+    lesson_id: "YOR-A1-30",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_31: {
+    title: "Placeholder Lesson 31",
+    lesson_id: "YOR-A1-31",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_32: {
+    title: "Placeholder Lesson 32",
+    lesson_id: "YOR-A1-32",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_33: {
+    title: "Placeholder Lesson 33",
+    lesson_id: "YOR-A1-33",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_34: {
+    title: "Placeholder Lesson 34",
+    lesson_id: "YOR-A1-34",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_35: {
+    title: "Placeholder Lesson 35",
+    lesson_id: "YOR-A1-35",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_36: {
+    title: "Placeholder Lesson 36",
+    lesson_id: "YOR-A1-36",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_37: {
+    title: "Placeholder Lesson 37",
+    lesson_id: "YOR-A1-37",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_38: {
+    title: "Placeholder Lesson 38",
+    lesson_id: "YOR-A1-38",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_39: {
+    title: "Placeholder Lesson 39",
+    lesson_id: "YOR-A1-39",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_40: {
+    title: "Placeholder Lesson 40",
+    lesson_id: "YOR-A1-40",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_41: {
+    title: "Placeholder Lesson 41",
+    lesson_id: "YOR-A1-41",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_42: {
+    title: "Placeholder Lesson 42",
+    lesson_id: "YOR-A1-42",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_43: {
+    title: "Placeholder Lesson 43",
+    lesson_id: "YOR-A1-43",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_44: {
+    title: "Placeholder Lesson 44",
+    lesson_id: "YOR-A1-44",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_45: {
+    title: "Placeholder Lesson 45",
+    lesson_id: "YOR-A1-45",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_46: {
+    title: "Placeholder Lesson 46",
+    lesson_id: "YOR-A1-46",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_47: {
+    title: "Placeholder Lesson 47",
+    lesson_id: "YOR-A1-47",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
+  lesson_48: {
+    title: "Placeholder Lesson 48",
+    lesson_id: "YOR-A1-48",
+    base_xp: 20,
+    exercises: [
+      {
+        type: "vocabulary",
+        question: "Hello",
+        answer: "Hello",
+        options: ["Hello"],
+      },
+    ],
+  },
 };
 
-export const getModules = () => {
+export const getSections = () => {
   const lessonsArray = Object.values(getAllLessons);
-  const modules = [];
-  for (let i = 0; i < lessonsArray.length; i += 4) {
-    const moduleLessons = lessonsArray.slice(i, i + 4);
-    modules.push({
-      module_id: `module_${Math.floor(i / 4) + 1}`,
-      title: `Module ${Math.floor(i / 4) + 1}: ${moduleLessons[0].title} - ${
-        moduleLessons[moduleLessons.length - 1].title
-      }`,
-      lessons: moduleLessons.map((lesson) => lesson.lesson_id),
-    });
+  const sections = [];
+  const lessonsPerModule = 4;
+  const modulesPerSection = 4;
+  let lessonIndex = 0;
+
+  const sectionTitles = [
+    "Section 1: Basic Conversations",
+    "Section 2: Daily Life",
+    "Section 3: Travel & Culture",
+    "Section 4: Advanced Topics",
+    "Section 5: Advanced Topics",
+    "Section 6: Advanced Topics",
+  ];
+
+  for (let s = 0; s < sectionTitles.length; s++) {
+    const sectionModules = [];
+    // Define module types for the current section
+    const moduleTypes = ["vocabulary", "listening", "mixed", "practice"];
+
+    for (let m = 0; m < modulesPerSection; m++) {
+      if (lessonIndex >= lessonsArray.length) break; // Stop if no more lessons
+
+      const moduleLessons = lessonsArray.slice(
+        lessonIndex,
+        lessonIndex + lessonsPerModule
+      );
+      if (moduleLessons.length === 0) break;
+
+      const module_id = `module_${s * modulesPerSection + m + 1}`;
+      const moduleType = moduleTypes[m]; // Assign the type based on the module index
+      const moduleTitle = `Module ${s * modulesPerSection + m + 1}`;
+
+      sectionModules.push({
+        module_id,
+        title: moduleTitle,
+        type: moduleType, // Add the type to the module object
+        lessons: moduleLessons.map((lesson) => ({
+          lesson_id: lesson.lesson_id,
+          title: lesson.title,
+        })),
+      });
+      lessonIndex += lessonsPerModule;
+    }
+    if (sectionModules.length > 0) {
+      sections.push({
+        section_id: `section_${s + 1}`,
+        title: sectionTitles[s],
+        modules: sectionModules,
+      });
+    }
   }
-  return modules;
+  return sections;
 };

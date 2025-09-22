@@ -4,7 +4,7 @@ const NotificationFeed = ({ notifications }) => {
   return (
     <div className="bg-white p-4 rounded-lg shadow-md mt-8">
       <h3 className="font-bold text-lg mb-4 text-gray-800">Notifications</h3>
-      {notifications.length === 0 ? (
+      {(notifications || []).length === 0 ? (
         <p className="text-gray-500">No new notifications.</p>
       ) : (
         <ul className="space-y-3">

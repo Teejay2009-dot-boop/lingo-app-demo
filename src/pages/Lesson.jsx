@@ -11,6 +11,11 @@ import {
   FaGamepad,
   FaCoins,
   FaFire,
+  FaChartBar,
+  FaProcedures,
+  FaKeyboard,
+  FaTree,
+  FaHome,
 } from "react-icons/fa";
 import { auth, db } from "../firebase/config/firebase";
 import { doc, onSnapshot, updateDoc, getDoc } from "firebase/firestore";
@@ -50,15 +55,15 @@ export const Lesson = () => {
   return (
     <div className="bg-cover bg-center lesson-container">
       {/* Top Navbar */}
-      <div className="text-amber fixed top-0 left-0 w-full z-50 p-4 flex justify-between items-center bg-gray-900 bg-opacity-70 backdrop-blur-sm shadow-md">
+      <div className="text-amber fixed top-0 left-0 w-full z-50 p-2 sm:p-4 flex justify-between items-center bg-gray-900 bg-opacity-70 backdrop-blur-sm shadow-md">
         <Link to="/dashboard">
-          <FaArrowCircleLeft className="text-2xl cursor-pointer" />
+          <FaArrowCircleLeft className="text-xl sm:text-2xl cursor-pointer" />
         </Link>
 
-        <div className="flex items-center gap-4">
-          <div className="text-md font-semibold flex items-center gap-3">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <div className="text-xs sm:text-md font-semibold flex items-center gap-2 sm:gap-3">
             ⭐ {userData.xp} XP
-            <p className="hidden md:flex gap-2 items-center">
+            <p className="hidden sm:flex gap-2 items-center">
               Coins: <FaCoins /> {userData.coins}
             </p>
             <p className="flex gap-2 items-center">
@@ -77,7 +82,7 @@ export const Lesson = () => {
             <img
               src={avatar}
               alt="avatar"
-              className="w-10 text-lg h-10 rounded-full border border-amber shadow"
+              className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-amber shadow"
             />
           </button>
         </div>
@@ -108,26 +113,60 @@ export const Lesson = () => {
         </Link>
       </div>
 
+      <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-amber justify-around bg-gray-900 md:hidden">
+        <Link to={"/learn"}>
+          <FaHome className="text-2xl" />
+        </Link>
+        <Link to={"/leaderboard"}>
+          <FaChartBar className="text-2xl" />
+        </Link>
+        <Link to={"/dashboard"}>
+          <FaKeyboard className="text-2xl" />
+        </Link>
+        <Link to={"/notifications"}>
+          <FaTree className="text-2xl" />
+        </Link>
+
+        <Link to={"/profile"}>
+          <FaProcedures className="text-2xl" />
+        </Link>
+      </div>
+
       {/* Sidebar */}
-      <div className="fixed top-[350px] md:top-[250px] lg:top-[300px] left-0 border border-amber bg-gray-900 flex flex-col py-3 h-64 px-2 text-3xl rounded-full ml-2 lg:ml-6 justify-around text-amber z-30">
-        <Link to={"/chat"}>
-          <FaRobot className="cursor-pointer hover:text-white transition ease-in duration-300" />
+      <div className="fixed top-1/2 -translate-y-1/2 left-0 border border-amber bg-gray-900 flex-col py-3 h-auto px-2 text-3xl rounded-r-full ml-2 lg:ml-6 justify-around text-amber z-30 hidden md:flex lg:flex">
+        <Link
+          to={"/learn"}
+          className="p-2 hover:text-white transition ease-in duration-300"
+        >
+          <FaHome className="cursor-pointer" />
         </Link>
-        <Link to={"/lessons/shop"}>
-          <FaShopify className="cursor-pointer hover:text-white transition ease-in duration-300" />
+        <Link
+          to={"/leaderboard"}
+          className="p-2 hover:text-white transition ease-in duration-300"
+        >
+          <FaChartBar className="cursor-pointer" />
         </Link>
-        <FaGamepad className="cursor-pointer hover:text-white transition ease-in duration-300" />
-        <FaCog className="text-2xl cursor-pointer" />
+        <Link
+          to={"/dashboard"}
+          className="p-2 hover:text-white transition ease-in duration-300"
+        >
+          <FaKeyboard className="cursor-pointer" />
+        </Link>
+        <Link
+          to={"/notifications"}
+          className="p-2 hover:text-white transition ease-in duration-300"
+        >
+          <FaTree className="cursor-pointer" />
+        </Link>
+        <Link
+          to={"/profile"}
+          className="p-2 hover:text-white transition ease-in duration-300"
+        >
+          <FaProcedures className="cursor-pointer" />
+        </Link>
       </div>
 
       {/* Bottom Mascot */}
-      <div className="text-amber fixed bottom-0 right-0 items-start">
-        <Link to={"/chat"}>
-          <button className="ease-in duration-100 hover:scale-110 transition-transform">
-            <img src={mascot} style={{ width: "10rem" }} alt="" />
-          </button>
-        </Link>
-      </div>
     </div>
   );
 };

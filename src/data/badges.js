@@ -106,3 +106,4 @@ const BADGES = {
 };
 
 export default BADGES;
+

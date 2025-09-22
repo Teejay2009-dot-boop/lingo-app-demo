@@ -4,10 +4,72 @@
 
 .lesson-container {
   background-image: url("../src/assets/Lesson-Night.jpg");
-  /* height: 100vh;
-    background-repeat: no-repeat;
-    background-position: center;
-    background-size: cover; */
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: cover;
+  position: relative; /* Added for star positioning */
+}
+
+/* Starry Background for Lesson.jsx */
+.star-background::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: transparent; /* Changed to transparent, stars will be box-shadow */
+  pointer-events: none;
+  animation: twinkle 50s infinite;
+  /* Generate stars with box-shadow */
+  box-shadow: 0px 0px 2px 1px rgba(255, 255, 255, 0.8),
+    /* Center glow */ 0 0 500px 1px rgba(255, 255, 255, 0.8),
+    /* Larger glow */ 0 0 1000px 1px rgba(255, 255, 255, 0.8),
+    /* Even larger glow */ /* Small stars */ 20px 30px 0px 0px
+      rgba(255, 255, 255, 0.8),
+    100px 80px 0px 0px rgba(255, 255, 255, 0.8),
+    150px 120px 0px 0px rgba(255, 255, 255, 0.8),
+    220px 150px 0px 0px rgba(255, 255, 255, 0.8),
+    300px 70px 0px 0px rgba(255, 255, 255, 0.8),
+    350px 180px 0px 0px rgba(255, 255, 255, 0.8),
+    420px 90px 0px 0px rgba(255, 255, 255, 0.8),
+    480px 200px 0px 0px rgba(255, 255, 255, 0.8),
+    550px 40px 0px 0px rgba(255, 255, 255, 0.8),
+    600px 130px 0px 0px rgba(255, 255, 255, 0.8),
+    680px 60px 0px 0px rgba(255, 255, 255, 0.8),
+    750px 220px 0px 0px rgba(255, 255, 255, 0.8),
+    820px 100px 0px 0px rgba(255, 255, 255, 0.8),
+    880px 190px 0px 0px rgba(255, 255, 255, 0.8),
+    950px 20px 0px 0px rgba(255, 255, 255, 0.8),
+    1020px 110px 0px 0px rgba(255, 255, 255, 0.8),
+    1100px 230px 0px 0px rgba(255, 255, 255, 0.8),
+    1150px 50px 0px 0px rgba(255, 255, 255, 0.8),
+    /* Medium stars */ 50px 200px 0px 0px rgba(255, 255, 255, 0.7),
+    180px 50px 0px 0px rgba(255, 255, 255, 0.7),
+    280px 220px 0px 0px rgba(255, 255, 255, 0.7),
+    380px 100px 0px 0px rgba(255, 255, 255, 0.7),
+    450px 250px 0px 0px rgba(255, 255, 255, 0.7),
+    580px 80px 0px 0px rgba(255, 255, 255, 0.7),
+    650px 280px 0px 0px rgba(255, 255, 255, 0.7),
+    780px 150px 0px 0px rgba(255, 255, 255, 0.7),
+    850px 300px 0px 0px rgba(255, 255, 255, 0.7),
+    980px 120px 0px 0px rgba(255, 255, 255, 0.7),
+    /* Large stars */ 120px 10px 0px 0px rgba(255, 255, 255, 0.9),
+    250px 280px 0px 0px rgba(255, 255, 255, 0.9),
+    400px 10px 0px 0px rgba(255, 255, 255, 0.9),
+    500px 300px 0px 0px rgba(255, 255, 255, 0.9),
+    700px 20px 0px 0px rgba(255, 255, 255, 0.9),
+    900px 250px 0px 0px rgba(255, 255, 255, 0.9);
+}
+
+@keyframes twinkle {
+  0%,
+  100% {
+    opacity: 0.8;
+  }
+  50% {
+    opacity: 0.2;
+  }
 }
 
 .section-one {
@@ -121,7 +183,7 @@ html {
   align-items: top;
 }
 
-.challenge-container{
+.challenge-container {
   display: flex;
   justify-content: center;
 }
