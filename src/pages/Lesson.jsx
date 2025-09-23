@@ -113,7 +113,7 @@ export const Lesson = () => {
         </Link>
       </div>
 
-      <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-amber justify-around bg-gray-900 md:hidden">
+      <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-amber justify-around bg-gray-900 lg:hidden">
         <Link to={"/lessons"} className="flex flex-col items-center pt-3">
           <FaHome className="text-2xl" />
           <p className="text-amber text-sm">Home</p>
@@ -138,7 +138,7 @@ export const Lesson = () => {
       </div>
 
       {/* Sidebar */}
-      <div className="fixed top-1/2 -translate-y-1/2 left-0 border border-amber bg-gray-900 flex-col py-3 h-auto px-2 text-3xl rounded-r-full ml-2 lg:ml-6 justify-around text-amber z-30 hidden md:flex lg:flex py-5">
+      <div className="fixed top-1/2 -translate-y-1/2 left-0 border border-amber bg-gray-900 flex-col  h-auto px-2 text-3xl rounded-r-full ml-2 lg:ml-6 justify-around text-amber z-30 hidden  lg:flex py-5">
         <Link
           to={"/learn"}
           className="p-2 hover:text-white transition ease-in duration-300 flex flex-col items-center gap-3"

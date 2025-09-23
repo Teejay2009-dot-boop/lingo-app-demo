@@ -129,7 +129,7 @@ const Feed = () => {
         <NotificationFeed notifications={notifications} />
       </div>
 
-      <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-amber justify-around bg-gray-900 md:hidden">
+      <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-amber justify-around bg-gray-100 lg:hidden">
         <Link to={"/lessons"} className="flex flex-col items-center pt-3">
           <FaHome className="text-2xl" />
           <p className="text-amber text-sm">Home</p>

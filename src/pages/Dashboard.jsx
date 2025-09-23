@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 
 import DashboardLayout from "../components/dashboard/DashboardLayout";
 
@@ -8,12 +8,15 @@ import NavBar from "../components/dashboard/NavBar";
 
 import { LevelUpModal } from "../components/LevelUpModal";
 
-import { RankUpScreen } from "../components/RankUpScreen";
+import { } from "../utils/progression";
+import {RankUpScreen} from '../components/RankUpScreen'
 import { addNotification } from "../firebase/utils/notifications";
 import {
   getLevelProgress,
   getLevel,
-  LEVELS, // Import LEVELS for developer tools
+  LEVELS,
+   getRankUpData,
+    // Import LEVELS for developer tools
 } from "../utils/progression";
 import { updateStreak } from "../utils/streak"; // Import updateStreak
 import {
@@ -59,6 +62,8 @@ const Dashboard = () => {
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
 
   const [showRankUpScreen, setShowRankUpScreen] = useState(false);
+  const [rankUpData, setRankUpData] = useState(null)
+  const lastComputedRef = useRef(null)
   const [currentStreak, setCurrentStreak] = useState(0); // New state for current streak
   const [longestStreak, setLongestStreak] = useState(0); // New state for longest streak
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0); // New state for unread notifications
@@ -91,21 +96,36 @@ const Dashboard = () => {
       });
     }
 
-    if (updatedUserLevelInfo.rank !== userCurrentRank) {
-      // Rank up! Push notification to Firestore
-      setShowRankUpScreen(true);
-      addNotification(auth.currentUser.uid, {
-        type: "rank-up",
-        message: `You’ve been promoted to ${updatedUserLevelInfo.rank}! 🏆`,
-        rank: updatedUserLevelInfo.rank,
+    const rankChange = getRankUpData(
+      lastComputedRef.current?.xp || 0, userCurrentXP
+    );
+
+    if (rankChange.leveledUp) {
+      setRankUpData({
+        ...rankChange, userXp: userCurrentXP
       });
-      // If rank changed, ensure it's updated in Firestore as well (level up already updates both)
-      if (updatedUserLevelInfo.level === userCurrentLevel) {
-        // Only update if level didn't change (which would already update rank)
-        updateDoc(doc(db, "users", auth.currentUser.uid), {
-          rank: updatedUserLevelInfo.rank,
-        });
-      }
+      setShowRankUpScreen(true);
+
+      addNotification(auth.currentUser.uid, {
+        type: 'rankup',
+        message: `You've been promoted to ${rankChange.newRank}! 🏆`,
+        rank: rankChange.newRank,
+      })
+
+      // Update Firestore
+
+      updateDoc(doc(db, 'users', auth.currentUser.uid), {
+        rank: rankChange.newRank,
+        level: rankChange.level
+      })
+    }
+
+    // Update last computed snapshot
+
+    lastComputedRef.current = {
+      level: updatedUserLevelInfo.level,
+      rank:updatedUserLevelInfo.rank,
+      xp:userCurrentXP
     }
   }, [userData]);
 
@@ -442,7 +462,7 @@ const Dashboard = () => {
         <Badge />
       </div>
 
-      <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-amber justify-around bg-gray-900 md:hidden">
+      <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-amber justify-around bg-gray-100 lg:hidden">
         <Link to={"/lessons"} className="flex flex-col items-center pt-3">
           <FaHome className="text-2xl" />
           <p className="text-amber text-sm">Home</p>
@@ -550,8 +570,10 @@ const Dashboard = () => {
       )}
 
       {/* Rank Up Screen */}
-      {showRankUpScreen && (
-        <RankUpScreen rank={rank} onClose={() => setShowRankUpScreen(false)} />
+      {showRankUpScreen && rankUpData && (
+        <RankUpScreen isOpen={showRankUpScreen}
+        onClose={() => setShowRankUpScreen(false)}
+        rankData={rankUpData}/>
       )}
     </DashboardLayout>
   );
