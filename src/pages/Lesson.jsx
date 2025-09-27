@@ -46,7 +46,7 @@ export const Lesson = () => {
 
   if (!userData) {
     return (
-      <div className="flex items-center justify-center h-screen text-xl text-white">
+      <div className="flex items-center justify-center h-screen text-xl text-black">
         Loading user data...
       </div>
     );

@@ -5,18 +5,18 @@ import DashboardLayout from "../components/dashboard/DashboardLayout";
 import Badge from "../components/dashboard/Badges";
 
 import NavBar from "../components/dashboard/NavBar";
-
+import { checkForNewBadges, awardBadge } from "../utils/badges";
 import { LevelUpModal } from "../components/LevelUpModal";
 
-import { } from "../utils/progression";
-import {RankUpScreen} from '../components/RankUpScreen'
+import { getUserRank } from "../utils/rankSystem";
+import { RankUpScreen } from "../components/RankUpScreen";
 import { addNotification } from "../firebase/utils/notifications";
 import {
   getLevelProgress,
   getLevel,
   LEVELS,
-   getRankUpData,
-    // Import LEVELS for developer tools
+  getRankUpData,
+  // Import LEVELS for developer tools
 } from "../utils/progression";
 import { updateStreak } from "../utils/streak"; // Import updateStreak
 import {
@@ -27,7 +27,6 @@ import {
   FaBell,
   FaFire,
   FaCoins,
-  
   FaChartBar,
   FaProcedures,
   FaKeyboard,
@@ -62,26 +61,36 @@ const Dashboard = () => {
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
 
   const [showRankUpScreen, setShowRankUpScreen] = useState(false);
-  const [rankUpData, setRankUpData] = useState(null)
-  const lastComputedRef = useRef(null)
+  const [rankUpData, setRankUpData] = useState(null);
+  const lastComputedRef = useRef(null);
   const [currentStreak, setCurrentStreak] = useState(0); // New state for current streak
   const [longestStreak, setLongestStreak] = useState(0); // New state for longest streak
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0); // New state for unread notifications
   // Refactored level progress calculation using progression utility
-  const { currentLevel, rank, progress } = getLevelProgress(userData?.xp || 0);
+  const { currentLevel, progress } = getLevelProgress(userData?.xp || 0);
+  // Get real rank using rank system
+  const realRank = userData
+    ? getUserRank({
+        level: userData.level,
+        accuracy: userData.progress?.accuracy || 0,
+        streak: userData.current_streak || 0,
+        lessons: userData.lessons || 0,
+      })
+    : "Moonstone";
 
   useEffect(() => {
     if (!userData) return;
 
-    // Check if user has leveled up based on new logic
+    // Prevent re-running if we already processed this data
+    if (lastComputedRef.current?.xp === userData.xp) return;
+
     const userCurrentLevel = userData.level;
-    const userCurrentRank = userData.rank; // Get current rank
     const userCurrentXP = userData.xp;
 
-    const updatedUserLevelInfo = getLevel(userCurrentXP); // Use new getLevel utility
+    const updatedUserLevelInfo = getLevel(userCurrentXP);
 
+    // Check for level up
     if (updatedUserLevelInfo.level > userCurrentLevel) {
-      // Level up! Push notification to Firestore
       setShowLevelUpModal(true);
 
       addNotification(auth.currentUser.uid, {
@@ -89,43 +98,64 @@ const Dashboard = () => {
         message: `You reached Level ${updatedUserLevelInfo.level}! 🎉`,
         level: updatedUserLevelInfo.level,
       });
-      // Update user document in Firestore
+
+      // Update user document - this will trigger userData change
       updateDoc(doc(db, "users", auth.currentUser.uid), {
         level: updatedUserLevelInfo.level,
         rank: updatedUserLevelInfo.rank,
       });
     }
 
+    // Check for rank up - only if XP changed significantly
     const rankChange = getRankUpData(
-      lastComputedRef.current?.xp || 0, userCurrentXP
+      lastComputedRef.current?.xp || 0,
+      userCurrentXP
     );
 
-    if (rankChange.leveledUp) {
+    if (rankChange.leveledUp && rankChange.newRank !== userData.rank) {
       setRankUpData({
-        ...rankChange, userXp: userCurrentXP
+        ...rankChange,
+        userXp: userCurrentXP,
       });
       setShowRankUpScreen(true);
 
       addNotification(auth.currentUser.uid, {
-        type: 'rankup',
+        type: "rankup",
         message: `You've been promoted to ${rankChange.newRank}! 🏆`,
         rank: rankChange.newRank,
-      })
+      });
 
-      // Update Firestore
-
-      updateDoc(doc(db, 'users', auth.currentUser.uid), {
+      // Update Firestore - this will trigger userData change
+      updateDoc(doc(db, "users", auth.currentUser.uid), {
         rank: rankChange.newRank,
-        level: rankChange.level
-      })
+        level: rankChange.level,
+      });
     }
 
-    // Update last computed snapshot
-
+    // Update last computed snapshot to prevent re-processing
     lastComputedRef.current = {
       level: updatedUserLevelInfo.level,
-      rank:updatedUserLevelInfo.rank,
-      xp:userCurrentXP
+      rank: updatedUserLevelInfo.rank,
+      xp: userCurrentXP,
+    };
+  }, [userData]); // Keep the dependency, but add guards
+
+  // Add this useEffect to your Dashboard component
+  useEffect(() => {
+    if (!userData || !auth.currentUser) return;
+
+    // Check for new badges
+    const newBadges = checkForNewBadges(userData);
+
+    if (newBadges.length > 0) {
+      // Award each new badge
+      newBadges.forEach(async (badge) => {
+        const success = await awardBadge(auth.currentUser.uid, badge.id);
+        if (success) {
+          console.log(`🎉 Earned badge: ${badge.name}`);
+          // You can add a notification here if you want
+        }
+      });
     }
   }, [userData]);
 
@@ -305,7 +335,7 @@ const Dashboard = () => {
                 Hi, {userData?.username || "Learner"}!
               </h1>
 
-              <p className="text-amber py-1 text-lg">{rank}</p>
+              <p className="text-amber py-1 text-lg">{realRank}</p>
             </div>
           </div>
 
@@ -537,6 +567,19 @@ const Dashboard = () => {
               </button>
 
               <button
+                onClick={() =>
+                  addNotification(auth.currentUser.uid, {
+                    title: "Test Notification",
+                    message: "This is only a test 🔔",
+                    type: "test",
+                  })
+                }
+                className="bg-purple-500 text-white px-2 py-1 rounded text-xs"
+              >
+                Send Test Notification
+              </button>
+
+              <button
                 onClick={async () => {
                   await updateStreak(auth.currentUser.uid);
                 }}
@@ -571,9 +614,11 @@ const Dashboard = () => {
 
       {/* Rank Up Screen */}
       {showRankUpScreen && rankUpData && (
-        <RankUpScreen isOpen={showRankUpScreen}
-        onClose={() => setShowRankUpScreen(false)}
-        rankData={rankUpData}/>
+        <RankUpScreen
+          isOpen={showRankUpScreen}
+          onClose={() => setShowRankUpScreen(false)}
+          rankData={rankUpData}
+        />
       )}
     </DashboardLayout>
   );

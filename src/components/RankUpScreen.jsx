@@ -1,8 +1,6 @@
 import React from "react";
 import { Swiper, SwiperSlide } from "swiper/react";
 import "swiper/css";
-import { CircularProgressbar, buildStyles } from "react-circular-progressbar";
-import "react-circular-progressbar/dist/styles.css";
 import { LEVELS, getLevelProgress } from "../utils/progression";
 
 export const RankUpScreen = ({ isOpen, onClose, rankData }) => {
@@ -15,51 +13,51 @@ export const RankUpScreen = ({ isOpen, onClose, rankData }) => {
   const { progress } = getLevelProgress(userXp);
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50 p-4">
-      <div className="bg-gradient-to-br from-purple-600 to-blue-700 rounded-2xl p-6 text-center max-w-md w-full mx-4 text-white shadow-2xl relative">
-        <h2 className="text-3xl font-bold mb-4">🏆 Rank Up!</h2>
+    <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+      <div className="bg-white rounded-2xl p-6 text-center max-w-sm w-full mx-4 shadow-2xl relative">
+        <h2 className="text-xl font-bold text-gray-800 mb-4">Ranks</h2>
 
         <Swiper spaceBetween={20} slidesPerView={1}>
           {/* Current Rank Slide */}
           <SwiperSlide>
-            <div className="p-4">
-              <p className="text-xl mb-2">You’ve ranked up!</p>
-              <div className="flex justify-center items-center gap-2 mb-4">
-                <span className="line-through text-gray-300">{oldRank}</span>
-                <span className="text-2xl">→</span>
-                <span className="text-yellow-300 font-bold">{newRank}</span>
-              </div>
-
-              <div className="bg-white/20 rounded-lg p-4 mb-4">
-                <p className="text-lg font-semibold">Level {level}</p>
-                <p className="text-sm">Total XP: {userXp}</p>
-              </div>
-            </div>
-          </SwiperSlide>
-
-          {/* Progress Slide */}
-          <SwiperSlide>
             <div className="flex flex-col items-center">
-              <p className="text-lg mb-2">Your Progress</p>
-              <div className="w-32 h-32 mb-4">
-                <CircularProgressbar
-                  value={progress}
-                  text={`${Math.round(progress)}%`}
-                  styles={buildStyles({
-                    textColor: "#fff",
-                    pathColor: "#FFD700",
-                    trailColor: "#444",
-                  })}
-                />
-              </div>
+              {/* Rank image placeholder */}
+              <img
+                src="/images/rank-icons/gold.png" // change to your actual rank icon
+                alt="Rank Icon"
+                className="w-24 h-24 mb-4"
+              />
+
+              <h3 className="text-2xl font-bold text-gray-900 mb-1">
+                {newRank}
+              </h3>
+              <p className="text-gray-600 text-sm">Level {level}</p>
+              <p className="text-gray-600 text-sm mb-4">XP {userXp}</p>
+
+              {/* Progress bar */}
               {nextLevelInfo ? (
-                <p className="text-sm">
-                  {userXp - currentLevelInfo.xpRequired}/
-                  {nextLevelInfo.xpRequired - currentLevelInfo.xpRequired} XP
-                  towards <b>{nextLevelInfo.rank}</b>
-                </p>
+                <div className="w-full">
+                  <div className="w-full bg-gray-200 rounded-full h-3 overflow-hidden">
+                    <div
+                      className="h-3 rounded-full"
+                      style={{
+                        width: `${progress}%`,
+                        backgroundColor: "#e1b300",
+                      }}
+                    ></div>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-2">
+                    XP to Next Level:{" "}
+                    <span className="font-semibold text-gray-700">
+                      {userXp - currentLevelInfo.xpRequired}/
+                      {nextLevelInfo.xpRequired - currentLevelInfo.xpRequired}
+                    </span>
+                  </p>
+                </div>
               ) : (
-                <p className="text-sm">🎉 Max level reached!</p>
+                <p className="text-sm text-gray-600 mt-2">
+                  🎉 Max level reached!
+                </p>
               )}
             </div>
           </SwiperSlide>
@@ -67,12 +65,17 @@ export const RankUpScreen = ({ isOpen, onClose, rankData }) => {
           {/* Next Rank Preview Slide */}
           {nextLevelInfo && (
             <SwiperSlide>
-              <div className="p-4">
-                <p className="text-lg mb-2">Next Up:</p>
-                <h3 className="text-2xl font-bold text-yellow-300 mb-2">
+              <div className="flex flex-col items-center">
+                <img
+                  src="/images/rank-icons/next.png"
+                  alt="Next Rank Icon"
+                  className="w-20 h-20 mb-4"
+                />
+                <p className="text-lg text-gray-700 mb-1">Next Up:</p>
+                <h3 className="text-xl font-bold text-[#e1b300] mb-1">
                   {nextLevelInfo.rank}
                 </h3>
-                <p className="text-sm">
+                <p className="text-sm text-gray-600">
                   Reach {nextLevelInfo.xpRequired} XP to unlock this rank.
                 </p>
               </div>
@@ -83,7 +86,7 @@ export const RankUpScreen = ({ isOpen, onClose, rankData }) => {
         {/* Button */}
         <button
           onClick={onClose}
-          className="bg-yellow-400 text-gray-900 mt-6 px-6 py-2 rounded-full text-lg font-bold hover:bg-yellow-300 transition-colors shadow-lg"
+          className="bg-[#e1b300] text-white mt-6 px-6 py-2 rounded-full text-lg font-bold hover:opacity-90 transition"
         >
           Continue
         </button>

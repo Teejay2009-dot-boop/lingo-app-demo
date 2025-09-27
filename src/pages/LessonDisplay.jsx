@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { VocabularyCard } from "../components/LessonCards/VocabularyCard";
 import AudioChoiceCard from "../components/LessonCards/AudioChoiceCard";
 import GoBackBtn from "../components/GoBackBtn";
-import { getAllLessons, getSections } from "../data/lessons"; // Updated import to getSections
+import { getAllLessons, getSections } from "../data/lessons";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import RolePlayTypeYourself from "../components/LessonCards/RolePlayTypeYourself";
 import MatchImageToWord from "../components/LessonCards/MatchImageToWord";
@@ -12,7 +12,6 @@ import {
   FaArrowCircleLeft,
   FaCoins,
   FaHeart,
-  FaFire,
   FaExpand,
 } from "react-icons/fa";
 import { MainIdea } from "../components/LessonCards/MainIdea";
@@ -23,16 +22,16 @@ import TypeWhatYouHear from "../components/LessonCards/TypeWhatYouHear";
 import RolePlayOptions from "../components/LessonCards/RolePlayOptions";
 import { auth, db } from "../firebase/config/firebase";
 import { updateStreak } from "../utils/streak";
+import { getUserRank } from "../utils/rankSystem";
 import {
   doc,
   updateDoc,
   increment,
   getDoc,
   onSnapshot,
-  arrayUnion,
   setDoc,
+  arrayUnion,
 } from "firebase/firestore";
-// import { ModuleCompletionModal } from "../components/ModuleCompletionModal"; // Removed ModuleCompletionModal
 
 const LessonDisplay = () => {
   const { moduleId, lessonIndex: lessonIndexParam } = useParams();
@@ -52,10 +51,20 @@ const LessonDisplay = () => {
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(null);
   const [answeredMap, setAnsweredMap] = useState({});
   const [currentStreak, setCurrentStreak] = useState(0);
+  const [user, setUser] = useState(null);
+
+  // Get real rank using rank system
+  const realRank = user
+    ? getUserRank({
+        level: user.level || 1,
+        accuracy: user.progress?.accuracy || 0,
+        streak: user.current_streak || 0,
+        lessons: user.lessons || 0,
+      })
+    : "Moonstone";
   const [startTime, setStartTime] = useState(null);
   const [earnedXPPerQuestion, setEarnedXPPerQuestion] = useState([]);
   const [lessonCompleted, setLessonCompleted] = useState(false);
-  // Removed showModuleCompletionModal and showLessonCompleteModal states
   const [xpBreakdown, setXpBreakdown] = useState({
     base: 0,
     accuracy: 0,
@@ -63,9 +72,9 @@ const LessonDisplay = () => {
     speed: 0,
     total: 0,
   });
-  const [showCompletionSummary, setShowCompletionSummary] = useState(false); // New state for completion summary
-  const [finalLessonXp, setFinalLessonXp] = useState(0); // State to store final XP
-  const [finalLessonCoins, setFinalLessonCoins] = useState(0); // State to store final coins
+  const [showCompletionSummary, setShowCompletionSummary] = useState(false);
+  const [finalLessonXp, setFinalLessonXp] = useState(0);
+  const [finalLessonCoins, setFinalLessonCoins] = useState(0);
 
   const MAX_XP_PER_LESSON = 30;
   const IDEAL_TIME_PER_QUESTION = 10;
@@ -85,13 +94,12 @@ const LessonDisplay = () => {
   // Fetch user data and module progress
   useEffect(() => {
     if (!auth.currentUser || !moduleId) {
-      navigate("/login"); // Redirect if not logged in or no module selected
+      navigate("/login");
       return;
     }
 
     const uid = auth.currentUser.uid;
     const userRef = doc(db, "users", uid);
-    const moduleProgressRef = doc(db, `users/${uid}/progress`, moduleId);
 
     const unsubUser = onSnapshot(userRef, (snap) => {
       if (snap.exists()) {
@@ -102,12 +110,12 @@ const LessonDisplay = () => {
       }
     });
 
-    // Fetch module-specific progress and set initial exercise index
+    // Fetch module progress
+    const moduleProgressRef = doc(db, `users/${uid}/progress`, moduleId);
     const unsubModuleProgress = onSnapshot(moduleProgressRef, (snap) => {
       if (snap.exists()) {
         const progressData = snap.data();
         const allAvailableLessons = [];
-        // Adapted to new sections structure
         const sections = getSections();
         for (const section of sections) {
           const foundModule = section.modules.find(
@@ -122,7 +130,6 @@ const LessonDisplay = () => {
         }
 
         const lastCompletedLessonId = progressData.lastLesson;
-
         let initialLessonIndex = currentLessonIndex;
         if (currentLessonIndex === 0 && lastCompletedLessonId) {
           const inferredIndex =
@@ -132,17 +139,6 @@ const LessonDisplay = () => {
             allAvailableLessons.length - 1
           );
         }
-        if (currentLessonIndex === 0 && !snap.exists()) {
-          setCurrentIndex(0);
-          setAnsweredMap({});
-          setEarnedXPPerQuestion([]);
-          setLessonCompleted(false);
-        }
-      } else {
-        setCurrentIndex(0);
-        setAnsweredMap({});
-        setEarnedXPPerQuestion([]);
-        setLessonCompleted(false);
       }
     });
 
@@ -154,34 +150,35 @@ const LessonDisplay = () => {
 
   // Load lesson data based on current module and index
   useEffect(() => {
-    if (!moduleId) return;
+    if (moduleId) {
+      // Normal lesson mode
+      const sections = getSections();
+      let module = null;
+      for (const section of sections) {
+        module = section.modules.find((m) => m.module_id === moduleId);
+        if (module) break;
+      }
 
-    const sections = getSections(); // Changed to getSections
-    let module = null;
-    for (const section of sections) {
-      module = section.modules.find((m) => m.module_id === moduleId);
-      if (module) break;
-    }
+      if (module) {
+        setCurrentModule(module);
+        const lessonId = module.lessons[currentLessonIndex]?.lesson_id;
+        const fetchedLesson = Object.values(getAllLessons).find(
+          (l) => l.lesson_id === lessonId
+        );
 
-    if (module) {
-      setCurrentModule(module);
-      const lessonId = module.lessons[currentLessonIndex]?.lesson_id; // Access lesson_id property
-      const fetchedLesson = Object.values(getAllLessons).find(
-        (l) => l.lesson_id === lessonId
-      );
-
-      if (fetchedLesson) {
-        setLesson(fetchedLesson);
-        setExercises(fetchedLesson.exercises);
-        setBaseXp(fetchedLesson.base_xp || 10);
-        setCurrentIndex(0);
-        setAnsweredMap({});
-        setEarnedXPPerQuestion([]);
-        setLessonCompleted(false);
-      } else {
-        console.error("Lesson not found:", lessonId);
-        if (lessonId !== undefined) {
-          navigate("/404");
+        if (fetchedLesson) {
+          setLesson(fetchedLesson);
+          setExercises(fetchedLesson.exercises);
+          setBaseXp(fetchedLesson.base_xp || 10);
+          setCurrentIndex(0);
+          setAnsweredMap({});
+          setEarnedXPPerQuestion([]);
+          setLessonCompleted(false);
+        } else {
+          console.error("Lesson not found:", lessonId);
+          if (lessonId !== undefined) {
+            navigate("/404");
+          }
         }
       }
     }
@@ -212,13 +209,11 @@ const LessonDisplay = () => {
     const timeTaken = (Date.now() - startTime) / 1000;
     const questionXP = calculateQuestionXP(isCorrect, timeTaken);
 
-    // Immediate UI update
     setAnsweredMap((prev) => ({ ...prev, [currentIndex]: { isCorrect } }));
     setEarnedXPPerQuestion((prev) => [...prev, questionXP]);
     setShowModal(true);
     setLastAnswerCorrect(isCorrect);
 
-    // Deferred Firebase update
     setTimeout(async () => {
       const userRef = doc(db, "users", auth.currentUser.uid);
       try {
@@ -239,9 +234,10 @@ const LessonDisplay = () => {
     if (!auth.currentUser || lessonCompleted || !lesson || !currentModule)
       return;
 
+    console.log("Completing lesson...");
+
     const uid = auth.currentUser.uid;
     const userRef = doc(db, "users", uid);
-    const moduleProgressRef = doc(db, `users/${uid}/progress`, moduleId);
 
     const correctAnswers = Object.values(answeredMap).filter(
       (a) => a.isCorrect
@@ -258,7 +254,6 @@ const LessonDisplay = () => {
     const coinsEarned = Math.floor(finalXP / 3) + (perfectBonus ? 2 : 0);
 
     try {
-      // Update user's general XP, coins, etc.
       await updateDoc(userRef, {
         xp: increment(finalXP),
         total_xp: increment(finalXP),
@@ -266,19 +261,16 @@ const LessonDisplay = () => {
         monthlyXP: increment(finalXP),
         coins: increment(coinsEarned),
         total_lessons: increment(1),
-        // Removed last_active_date update here, now handled by updateStreak
+        completed_lessons: arrayUnion(lesson.lesson_id),
       });
 
-      // Update streak using the new utility function
       await updateStreak(uid);
 
-      // Update module progress
+      const moduleProgressRef = doc(db, `users/${uid}/progress`, moduleId);
       const moduleProgressSnap = await getDoc(moduleProgressRef);
-      let completedLessonsInModule = 0;
-      if (moduleProgressSnap.exists()) {
-        completedLessonsInModule =
-          moduleProgressSnap.data().completedLessons || 0;
-      }
+      let completedLessonsInModule = moduleProgressSnap.exists()
+        ? moduleProgressSnap.data().completedLessons || 0
+        : 0;
 
       const nextCompletedLessons = completedLessonsInModule + 1;
 
@@ -287,68 +279,100 @@ const LessonDisplay = () => {
         {
           completedLessons: nextCompletedLessons,
           lastLesson: lesson.lesson_id,
-          moduleTitle: currentModule.title, // Store module title for display if needed
+          moduleTitle: currentModule.title,
         },
         { merge: true }
       );
 
       setLessonCompleted(true);
-
-      // Set final XP and coins for display in the completion summary
       setFinalLessonXp(finalXP);
       setFinalLessonCoins(coinsEarned);
-      setShowCompletionSummary(true); // Show the completion summary
+      setShowCompletionSummary(true);
 
-      // Module progression logic
-      const currentModuleLessons = currentModule.lessons;
-      const nextLessonIndexInModule =
-        currentModuleLessons.indexOf(lesson.lesson_id) + 1;
-
-      console.log(
-        "Lesson completed. nextCompletedLessons:",
-        nextCompletedLessons
-      );
-      console.log("Lesson completed. lesson.lesson_id:", lesson.lesson_id);
-      console.log(
-        "Lesson completed. nextLessonIndexInModule:",
-        nextLessonIndexInModule
-      );
-
-      if (nextCompletedLessons >= currentModuleLessons.length) {
-        // All lessons in module completed - will just navigate back to map
-      } else {
-        // Lesson completed - will just navigate back to map
-      }
-
-      // navigate("/lessons"); // Navigate directly back to LessonMap after completing a lesson
+      console.log("Lesson completed successfully!");
     } catch (error) {
       console.error("Error completing lesson:", error);
     }
   };
 
+  // Single useEffect for lesson completion
   useEffect(() => {
-    if (
-      currentIndex >= exercises.length &&
-      !lessonCompleted &&
-      lesson &&
-      currentModule
-    ) {
+    if (exercises.length === 0 || lessonCompleted) return;
+
+    console.log("=== CHECKING FOR LESSON COMPLETION ===");
+    console.log("Exercises length:", exercises.length);
+    console.log("Current index:", currentIndex);
+    console.log("Answered count:", Object.keys(answeredMap).length);
+    console.log("Lesson completed:", lessonCompleted);
+
+    // Check if we've answered all questions and are at/past the last question
+    const allQuestionsAnswered =
+      Object.keys(answeredMap).length === exercises.length;
+    const isAtOrPastLastQuestion = currentIndex >= exercises.length - 1;
+
+    console.log("All questions answered:", allQuestionsAnswered);
+    console.log("At or past last question:", isAtOrPastLastQuestion);
+
+    if (allQuestionsAnswered && isAtOrPastLastQuestion) {
+      console.log("✅ CONDITIONS MET - COMPLETING LESSON");
       setLessonCompleted(true);
-      completeLesson(); // Call completeLesson here when lesson is finished
+      completeLesson();
     }
-  }, [currentIndex, lesson, currentModule, lessonCompleted, completeLesson]);
+  }, [currentIndex, answeredMap, exercises.length, lessonCompleted]);
 
   const handleNext = () => {
-    setShowModal(false); // Make sure modal closes
-    setCurrentIndex((prev) => prev + 1);
-    setLastAnswerCorrect(null); // Reset last answer status
+    setShowModal(false);
+    setLastAnswerCorrect(null);
+
+    console.log(
+      "HandleNext called - currentIndex:",
+      currentIndex,
+      "exercises.length:",
+      exercises.length
+    );
+
+    if (currentIndex < exercises.length - 1) {
+      // Move to next question
+      setCurrentIndex((prev) => prev + 1);
+    } else {
+      // This is the last question
+      console.log("Last question reached in handleNext");
+
+      // Force a state update to trigger the useEffect
+      setCurrentIndex(exercises.length);
+
+      // Also trigger completion directly as backup
+      const allQuestionsAnswered =
+        Object.keys(answeredMap).length === exercises.length;
+      if (allQuestionsAnswered && !lessonCompleted) {
+        console.log("Direct completion from handleNext");
+        setLessonCompleted(true);
+        completeLesson();
+      }
+    }
   };
+
+  // Debug useEffect
+  useEffect(() => {
+    console.log("=== LESSON DEBUG ===");
+    console.log("Exercises length:", exercises.length);
+    console.log("Current index:", currentIndex);
+    console.log("Answered questions:", Object.keys(answeredMap).length);
+    console.log("Lesson completed:", lessonCompleted);
+    console.log("Show completion summary:", showCompletionSummary);
+    console.log("====================");
+  }, [
+    currentIndex,
+    answeredMap,
+    lessonCompleted,
+    showCompletionSummary,
+    exercises.length,
+  ]);
 
   const renderCard = () => {
     if (!currentExercise) return <p>Loading exercise...</p>;
     const isAnswered = answeredMap[currentIndex];
-    const shouldDisable = // showModal || // Removed showModal
-      !!isAnswered;
+    const shouldDisable = !!isAnswered;
 
     const props = {
       data: currentExercise,
@@ -403,16 +427,27 @@ const LessonDisplay = () => {
     );
   }
 
-  // Lesson Completion Summary
-  if (showCompletionSummary) {
+  // Normal Lesson Completion Summary
+  if (showCompletionSummary && lessonCompleted) {
+    const correctAnswers = Object.values(answeredMap).filter(
+      (a) => a.isCorrect
+    ).length;
+    const totalQuestions = exercises.length;
+    const accuracy =
+      totalQuestions > 0
+        ? Math.round((correctAnswers / totalQuestions) * 100)
+        : 0;
+
     return (
       <div className="p-6 h-screen flex flex-col items-center justify-center text-center bg-gray-100">
         <img src={mascot} style={{ width: "10rem" }} alt="" className="mb-6" />
         <h2 className="text-3xl font-bold mb-4 text-green-600">
           Lesson Complete!
         </h2>
-        <p className="text-xl text-gray-800 mb-2">we</p>
-        <div className="flex justify-between item-center gap-6">
+        <p className="text-xl text-gray-800 mb-4">
+          Accuracy: {correctAnswers}/{totalQuestions} ({accuracy}%)
+        </p>
+        <div className="flex justify-between item-center gap-6 mb-6">
           <div className="px-6 rounded-xl border border-amber flex flex-col justify-center items-center">
             <div className="text-xl text-amber">
               <FaExpand />
@@ -427,29 +462,25 @@ const LessonDisplay = () => {
               <FaHeart />
             </div>
             <div className="flex-col">
-              <p className="text-xl font-bold text-black py-2">
-                +{finalLessonXp} XP
-              </p>
-              <p className="text-amber">gained</p>
+              <p className="text-xl font-bold text-black py-2">{lives} ❤</p>
+              <p className="text-amber">remaining</p>
             </div>
           </div>
           <div className="px-6 rounded-xl border border-amber flex flex-col justify-center items-center">
             <div className="text-xl text-amber">
               <FaCoins />
             </div>
-           
             <div className="flex-col">
-               <p className="text-2xl text-yellow-600 flex items-center">
-              +{finalLessonCoins} <FaCoins className="ml-2 text-amber" />
-            </p>
+              <p className="text-2xl text-yellow-600 flex items-center">
+                +{finalLessonCoins} <FaCoins className="ml-2 text-amber" />
+              </p>
               <p className="text-amber">gained</p>
             </div>
           </div>
         </div>
-
         <button
           onClick={() => navigate("/lessons")}
-          className="bg-amber-500 text-amber font-semibold flex items-center px-8 py-3 text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105"
+          className="bg-amber-500 text-white font-semibold flex items-center px-8 py-3 text-lg rounded-full shadow-lg transition duration-300 transform hover:scale-105"
         >
           Go to Lesson Map <FaArrowAltCircleRight className="ml-2" />
         </button>
@@ -459,6 +490,20 @@ const LessonDisplay = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 relative">
+      {/* Debug button */}
+      {process.env.NODE_ENV === "development" && (
+        <button
+          onClick={() => {
+            console.log("Manual completion trigger");
+            setLessonCompleted(true);
+            completeLesson();
+          }}
+          className="fixed bottom-4 left-4 bg-red-500 text-white p-2 rounded z-50"
+        >
+          Debug: Complete Lesson
+        </button>
+      )}
+
       <GoBackBtn />
       <div className="flex justify-between items-center pt-10 mb-4">
         <p className="font-semibold">❤ Lives: {lives}</p>
@@ -473,16 +518,8 @@ const LessonDisplay = () => {
       {renderCard()}
       <div className="flex justify-between mt-6 max-w-[700px] mx-auto">
         <button
-          onClick={() =>
-            navigate(
-              `/lessons/module/${moduleId}/${Math.max(
-                0,
-                currentLessonIndex - 1
-              )}`
-            )
-          }
-          disabled={currentLessonIndex === 0}
-          className="bg-gray-300 text-gray-700 px-4 py-2 rounded disabled:opacity-50"
+          onClick={() => navigate(-1)}
+          className="bg-gray-300 text-gray-700 px-4 py-2 rounded"
         >
           <FaArrowCircleLeft /> Previous
         </button>
@@ -491,9 +528,11 @@ const LessonDisplay = () => {
           disabled={currentIndex >= exercises.length}
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
         >
-          <FaArrowAltCircleRight /> Skip
+          {currentIndex >= exercises.length - 1 ? "Finish" : "Skip"}{" "}
+          <FaArrowAltCircleRight />
         </button>
       </div>
+
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4">
           <div
@@ -510,7 +549,6 @@ const LessonDisplay = () => {
             >
               {lastAnswerCorrect ? "✔ Correct!" : "❌ Incorrect!"}
             </h2>
-
             <button
               onClick={handleNext}
               className={`px-8 py-3 mt-4 rounded-full text-white font-bold text-lg shadow-lg transition duration-300 transform hover:scale-105 ${
@@ -519,7 +557,9 @@ const LessonDisplay = () => {
                   : "bg-red-600 hover:bg-red-700"
               }`}
             >
-              Continue
+              {currentIndex >= exercises.length - 1
+                ? "Finish Lesson"
+                : "Continue"}
             </button>
           </div>
         </div>

@@ -12,7 +12,7 @@ import { db, auth } from "../../firebase/config/firebase";
 import { FaTrophy, FaCrown, FaMedal, FaUserAlt, FaFire } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../dashboard/DashboardLayout";
-import { getLevel } from "../../utils/progression"; // Import getRank from progression.js
+import { getUserRank } from "../../utils/rankSystem";
 import { BeatLoader } from "react-spinners";
 import { FaChartBar, FaKeyboard, FaTree, FaHome, FaProcedures } from "react-icons/fa";
 
@@ -100,7 +100,12 @@ const Leaderboard = () => {
             const usersData = querySnapshot.docs.map((doc) => ({
               id: doc.id,
               ...doc.data(),
-              rank: getLevel(doc.data().xp || 0).rank, // Get rank from getLevel(xp).rank
+              rank: getUserRank({
+                level: doc.data().level || 1,
+                accuracy: doc.data().progress?.accuracy || 0,
+                streak: doc.data().current_streak || 0,
+                lessons: doc.data().lessons || 0,
+              }),
             }));
 
             console.log("Leaderboard: Fetched users data:", usersData);

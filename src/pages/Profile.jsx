@@ -5,6 +5,7 @@ import DashboardLayout from "../components/dashboard/DashboardLayout";
 import profilePic from "../assets/IMG-20250724-WA0123.jpg";
 import { Link } from "react-router-dom";
 import { FaChartBar, FaKeyboard, FaTree, FaHome, FaProcedures } from "react-icons/fa";
+import { getUserRank } from "../utils/rankSystem";
 
 export default function Profile() {
   const [user, setUser] = useState(null);
@@ -69,6 +70,16 @@ export default function Profile() {
     };
   }, []);
 
+  // Get real rank using rank system
+  const realRank = user
+    ? getUserRank({
+        level: user.level || 1,
+        accuracy: user.progress?.accuracy || 0,
+        streak: user.current_streak || 0,
+        lessons: user.lessons || 0,
+      })
+    : "Moonstone";
+
   return (
     <DashboardLayout>
       <div className="min-h-screen bg-white relative pb-10">
@@ -98,7 +109,7 @@ export default function Profile() {
             Hey {user?.username || "Joxy"}
           </h2>
           <p className="text-amber-600 text-lg flex items-center justify-center gap-1 mt-2">
-            <span className="text-xl">🔶</span> {user?.rank || "Topaz"}
+            <span className="text-xl">🔶</span> {realRank}
           </p>
         </div>
 
@@ -115,7 +126,7 @@ export default function Profile() {
           <div className="flex flex-col items-center justify-center p-4 rounded-xl shadow-md bg-white border border-yellow-200 w-32 h-32">
             <p className="text-4xl mb-1">🔥</p>
             <p className="text-gray-800 text-3xl font-bold">
-              {user?.current_streak || 15} days
+              {user?.streak || 15} day
             </p>
           </div>
           {/* XP Card */}

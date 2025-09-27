@@ -7,7 +7,7 @@ import LessonMap from "./pages/LessonMap";
 import LessonDisplay from "./pages/LessonDisplay";
 import Leaderboard from "./components/LeaderBoard/Leaderboard";
 import Profile from "./pages/Profile";
-import Feed from "./components/NotificationFeed";
+import NotificationFeed from "./pages/Feed";
 import PracticeSection from "./pages/PracticeSection";
 import Badges from "./pages/Badges";
 import Achievements from "./pages/Achievements";
@@ -35,7 +35,7 @@ function App() {
         />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/notifications" element={<Feed />} />
+        <Route path="/notifications" element={<NotificationFeed/>} />
         <Route path="/lessons/section/practice" element={<PracticeSection />} />
         <Route path="/badges" element={<Badges />} />
         <Route path="/lessons/section" element={<Section />} />
