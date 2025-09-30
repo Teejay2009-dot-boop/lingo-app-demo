@@ -15,6 +15,7 @@ import Shop from "./pages/Shop";
 import { Lesson } from "./pages/Lesson";
 import Welcome from "./pages/Welcome";
 import Challenge from "./pages/Challenge";
+import Settings from "./pages/Settings";
 
 function App() {
   useEffect(() => {
@@ -33,6 +34,7 @@ function App() {
           path="/lessons/module/:moduleId/:lessonIndex"
           element={<LessonDisplay />}
         />
+        <Route path="/profile/settings" element={<Settings />} />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/notifications" element={<NotificationFeed />} />

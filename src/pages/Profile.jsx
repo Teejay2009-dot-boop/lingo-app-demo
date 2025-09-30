@@ -4,7 +4,14 @@ import { useEffect, useState } from "react";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
 import profilePic from "../assets/IMG-20250724-WA0123.jpg";
 import { Link } from "react-router-dom";
-import { FaChartBar, FaKeyboard, FaTree, FaHome, FaProcedures } from "react-icons/fa";
+import {
+  FaChartBar,
+  FaKeyboard,
+  FaTree,
+  FaHome,
+  FaProcedures,
+  FaCog,
+} from "react-icons/fa";
 import { getUserRank } from "../utils/rankSystem";
 
 export default function Profile() {
@@ -96,7 +103,7 @@ export default function Profile() {
           className="absolute left-1/2 transform -translate-x-1/2"
           style={{ top: "100px" }}
         >
-        <img
+          <img
             src={user?.photoURL || profilePic}
             className="w-32 h-32 rounded-full border-4 border-white shadow-lg object-cover"
             alt="Profile"
@@ -111,6 +118,17 @@ export default function Profile() {
           <p className="text-amber-600 text-lg flex items-center justify-center gap-1 mt-2">
             <span className="text-xl">🔶</span> {realRank}
           </p>
+        </div>
+
+        {/* Settings Button */}
+        <div className="flex justify-center mt-4">
+          <Link
+            to="/profile/settings"
+            className="flex items-center bg-amber gap-2 bg-amber-500 text-white px-6 py-2 rounded-full hover:bg-amber-600 transition-colors"
+          >
+            <FaCog />
+            Settings
+          </Link>
         </div>
 
         {/* Stats Cards */}
@@ -134,9 +152,9 @@ export default function Profile() {
             <p className="text-amber-500 font-bold text-lg mb-2">XP</p>
             <p className="text-gray-800 text-3xl font-bold">
               {user?.xp || 800}
-              </p>
-            </div>
+            </p>
           </div>
+        </div>
 
         {/* Badges Section */}
         <div className="px-4 mt-12">
@@ -182,28 +200,31 @@ export default function Profile() {
         </div>
 
         <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-amber justify-around bg-gray-100 lg:hidden">
-                <Link to={"/lessons"} className="flex flex-col items-center pt-3">
-                  <FaHome className="text-2xl" />
-                  <p className="text-amber text-sm">Home</p>
-                </Link>
-                <Link to={"/leaderboard"} className="flex flex-col items-center pt-3">
-                  <FaChartBar className="text-2xl" />
-                  <p className="text-amber text-sm">Ranking</p>
-                </Link>
-                <Link to={"/dashboard"} className="flex flex-col items-center pt-3">
-                  <FaKeyboard className="text-2xl " />
-                   <p className="text-amber text-sm">Dashboard</p>
-                </Link>
-                <Link to={"/notifications"} className="flex flex-col items-center pt-3">
-                  <FaTree className="text-2xl" />
-                  <p className="text-amber text-sm">Feed</p>
-                </Link>
-        
-                <Link to={"/profile"} className="flex flex-col items-center pt-3">
-                  <FaProcedures className="text-2xl" />
-                  <p className="text-amber text-sm">Profile</p>
-                </Link>
-              </div>
+          <Link to={"/lessons"} className="flex flex-col items-center pt-3">
+            <FaHome className="text-2xl" />
+            <p className="text-amber text-sm">Home</p>
+          </Link>
+          <Link to={"/leaderboard"} className="flex flex-col items-center pt-3">
+            <FaChartBar className="text-2xl" />
+            <p className="text-amber text-sm">Ranking</p>
+          </Link>
+          <Link to={"/dashboard"} className="flex flex-col items-center pt-3">
+            <FaKeyboard className="text-2xl " />
+            <p className="text-amber text-sm">Dashboard</p>
+          </Link>
+          <Link
+            to={"/notifications"}
+            className="flex flex-col items-center pt-3"
+          >
+            <FaTree className="text-2xl" />
+            <p className="text-amber text-sm">Feed</p>
+          </Link>
+
+          <Link to={"/profile"} className="flex flex-col items-center pt-3">
+            <FaProcedures className="text-2xl" />
+            <p className="text-amber text-sm">Profile</p>
+          </Link>
+        </div>
       </div>
     </DashboardLayout>
   );
