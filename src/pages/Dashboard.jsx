@@ -4,10 +4,16 @@ import DashboardLayout from "../components/dashboard/DashboardLayout";
 
 import Badge from "../components/dashboard/Badges";
 
+import {
+  checkForNewAchievements,
+  awardAchievement,
+} from "../utils/achievements";
+import AchievementEarnedModal from "../components/dashboard/BadgeEarnedModal";
+
 import NavBar from "../components/dashboard/NavBar";
 import { checkForNewBadges, awardBadge } from "../utils/badges";
 import { LevelUpModal } from "../components/LevelUpModal";
-
+import BadgeEarnedModal from "../components/dashboard/BadgeEarnedModal";
 import { getUserRank } from "../utils/rankSystem";
 import { RankUpScreen } from "../components/RankUpScreen";
 import { addNotification } from "../firebase/utils/notifications";
@@ -59,10 +65,14 @@ const Dashboard = () => {
   const [showDevTools, setShowDevTools] = useState(false);
 
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
-
+  const [showAchievementModal, setShowAchievementModal] = useState(false);
+  const [newlyEarnedAchievement, setNewlyEarnedAchievement] = useState(null);
   const [showRankUpScreen, setShowRankUpScreen] = useState(false);
   const [rankUpData, setRankUpData] = useState(null);
   const lastComputedRef = useRef(null);
+  // Add to your Dashboard states
+  const [showBadgeModal, setShowBadgeModal] = useState(false);
+  const [newlyEarnedBadge, setNewlyEarnedBadge] = useState(null);
   const [currentStreak, setCurrentStreak] = useState(0); // New state for current streak
   const [longestStreak, setLongestStreak] = useState(0); // New state for longest streak
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0); // New state for unread notifications
@@ -140,22 +150,111 @@ const Dashboard = () => {
     };
   }, [userData]); // Keep the dependency, but add guards
 
-  // Add this useEffect to your Dashboard component
   useEffect(() => {
     if (!userData || !auth.currentUser) return;
+
+    console.log("🔍 Checking for new achievements...");
+
+    const newAchievements = checkForNewAchievements(userData);
+
+    if (newAchievements.length > 0) {
+      console.log(
+        "🏆 Found new achievements:",
+        newAchievements.map((a) => a.name)
+      );
+
+      // Award each new achievement and show modal for the first one
+      newAchievements.forEach(async (achievement, index) => {
+        const success = await awardAchievement(
+          auth.currentUser.uid,
+          achievement.id
+        );
+        if (success) {
+          console.log(`🎉 Awarded achievement: ${achievement.name}`);
+
+          // Show modal for the first achievement
+          if (index === 0) {
+            setNewlyEarnedAchievement(achievement);
+            setShowAchievementModal(true);
+          }
+
+          // Send notification
+          addNotification(auth.currentUser.uid, {
+            type: "achievement",
+            title: "Achievement Unlocked! 💎",
+            message: `You earned "${achievement.name}"!`,
+            achievementId: achievement.id,
+            timestamp: new Date(),
+          });
+        }
+      });
+    }
+  }, [userData]);
+
+  // UNCOMMENT THIS and replace with the updated version:
+  useEffect(() => {
+    if (!userData || !auth.currentUser) return;
+
+    console.log("🔄 Checking for new badges...");
+
+    const newBadges = checkForNewBadges(userData);
+
+    if (newBadges.length > 0) {
+      console.log(
+        "🏆 Found new badges:",
+        newBadges.map((b) => b.name)
+      );
+
+      // Award each new badge and show modal for the first one
+      newBadges.forEach(async (badge, index) => {
+        const success = await awardBadge(auth.currentUser.uid, badge.id);
+        if (success) {
+          console.log(`🎉 Awarded badge: ${badge.name}`);
+
+          // Show modal for the first badge
+          if (index === 0) {
+            setNewlyEarnedBadge(badge);
+            setShowBadgeModal(true);
+          }
+
+          // Send regular notification
+          addNotification(auth.currentUser.uid, {
+            type: "badge",
+            title: "Badge Earned! 🏆",
+            message: `You unlocked the "${badge.name}" badge!`,
+            badgeId: badge.id,
+            timestamp: new Date(),
+          });
+        }
+      });
+    }
+  }, [userData]);
+
+  // Add this useEffect to your Dashboard component
+  // In your Dashboard, UNCOMMENT and modify the badge useEffect:
+  useEffect(() => {
+    if (!userData || !auth.currentUser) return;
+
+    console.log("🔄 Checking for badges...");
 
     // Check for new badges
     const newBadges = checkForNewBadges(userData);
 
     if (newBadges.length > 0) {
+      console.log(
+        "🏆 Found new badges:",
+        newBadges.map((b) => b.name)
+      );
+
       // Award each new badge
       newBadges.forEach(async (badge) => {
         const success = await awardBadge(auth.currentUser.uid, badge.id);
         if (success) {
-          console.log(`🎉 Earned badge: ${badge.name}`);
-          // You can add a notification here if you want
+          console.log(`🎉 Awarded badge: ${badge.name}`);
         }
       });
+    } else {
+      console.log("📭 No new badges found");
     }
   }, [userData]);
 
@@ -533,7 +632,7 @@ const Dashboard = () => {
             Developer Tools
           </h3>
 
-          <div className="mb-4">
+          {/* <div className="mb-4">
             <h4 className="font-semibold mb-1">Test Level Up</h4>
 
             <div className="grid grid-cols-3 gap-2">
@@ -547,7 +646,7 @@ const Dashboard = () => {
                 </button>
               ))}
             </div>
-          </div>
+          </div> */}
 
           <div className="mb-4">
             <h4 className="font-semibold mb-1">Quick Actions</h4>
@@ -565,7 +664,65 @@ const Dashboard = () => {
               >
                 +100 XP +50 Coins
               </button>
+              // Add to your Developer Tools panel in Dashboard
+              <div className="mb-4">
+                <h4 className="font-semibold mb-1">Test Badges</h4>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={() => {
+                      // Test First Lesson badge
+                      awardBadge(auth.currentUser.uid, "first_lesson").then(
+                        (success) => {
+                          if (success) {
+                            console.log("✅ First lesson badge awarded");
+                            // Manually trigger the modal
+                            setNewlyEarnedBadge(BADGES.first_lesson);
+                            setShowBadgeModal(true);
+                          }
+                        }
+                      );
+                    }}
+                    className="bg-green-500 text-white px-2 py-1 rounded text-xs"
+                  >
+                    First Lesson Badge
+                  </button>
 
+                  <button
+                    onClick={() => {
+                      awardBadge(auth.currentUser.uid, "streak_master_7").then(
+                        (success) => {
+                          if (success) {
+                            console.log("✅ Weekly Warrior badge awarded");
+                            setNewlyEarnedBadge(BADGES.streak_master_7);
+                            setShowBadgeModal(true);
+                          }
+                        }
+                      );
+                    }}
+                    className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
+                  >
+                    Weekly Warrior
+                  </button>
+
+                  <button
+                    onClick={() => {
+                      // Test Perfectionist badge
+                      awardBadge(auth.currentUser.uid, "perfectionist").then(
+                        (success) => {
+                          if (success) {
+                            console.log("✅ Perfectionist badge awarded");
+                            setNewlyEarnedBadge(BADGES.perfectionist);
+                            setShowBadgeModal(true);
+                          }
+                        }
+                      );
+                    }}
+                    className="bg-purple-500 text-white px-2 py-1 rounded text-xs"
+                  >
+                    Perfectionist
+                  </button>
+                </div>
+              </div>
               <button
                 onClick={() =>
                   addNotification(auth.currentUser.uid, {
@@ -578,7 +735,6 @@ const Dashboard = () => {
               >
                 Send Test Notification
               </button>
-
               <button
                 onClick={async () => {
                   await updateStreak(auth.currentUser.uid);
@@ -587,7 +743,6 @@ const Dashboard = () => {
               >
                 +1 Streak
               </button>
-
               <button
                 onClick={resetTestData}
                 className="bg-gray-500 text-white px-2 py-1 rounded text-xs"
@@ -609,6 +764,24 @@ const Dashboard = () => {
         <LevelUpModal
           level={currentLevel}
           onClose={() => setShowLevelUpModal(false)}
+        />
+      )}
+
+      {/* ✅ ADD BADGE EARNED MODAL HERE */}
+      {showBadgeModal && newlyEarnedBadge && (
+        <BadgeEarnedModal
+          badge={newlyEarnedBadge}
+          isOpen={showBadgeModal}
+          onClose={() => setShowBadgeModal(false)}
+        />
+      )}
+
+      {/* Add with other modals in Dashboard return statement */}
+      {showAchievementModal && newlyEarnedAchievement && (
+        <AchievementEarnedModal
+          achievement={newlyEarnedAchievement}
+          isOpen={showAchievementModal}
+          onClose={() => setShowAchievementModal(false)}
         />
       )}
 

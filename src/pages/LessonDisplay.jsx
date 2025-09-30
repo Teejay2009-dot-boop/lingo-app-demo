@@ -174,6 +174,7 @@ const LessonDisplay = () => {
           setAnsweredMap({});
           setEarnedXPPerQuestion([]);
           setLessonCompleted(false);
+          setShowCompletionSummary(false);
         } else {
           console.error("Lesson not found:", lessonId);
           if (lessonId !== undefined) {
@@ -231,18 +232,17 @@ const LessonDisplay = () => {
   };
 
   const completeLesson = async () => {
-    if (!auth.currentUser || lessonCompleted || !lesson || !currentModule)
+    if (!auth.currentUser || lessonCompleted || !lesson || !currentModule) {
+      console.log("❌ CANNOT COMPLETE - Missing requirements");
       return;
+    }
 
-    console.log("Completing lesson...");
+    console.log("🎯 completeLesson() CALLED - Starting...");
 
-    const uid = auth.currentUser.uid;
-    const userRef = doc(db, "users", uid);
-
+    // Calculate values
     const correctAnswers = Object.values(answeredMap).filter(
       (a) => a.isCorrect
     ).length;
-
     const perfectBonus =
       correctAnswers === exercises.length ? PERFECT_LESSON_BONUS : 0;
     const streakBonus = Math.floor(currentStreak / 7);
@@ -253,7 +253,22 @@ const LessonDisplay = () => {
     );
     const coinsEarned = Math.floor(finalXP / 3) + (perfectBonus ? 2 : 0);
 
+    console.log("💰 Calculated:", { finalXP, coinsEarned });
+
+    // ✅ SET STATES FIRST - BEFORE ANY ASYNC OPERATIONS
+    console.log("🎉 SETTING COMPLETION STATES...");
+    setLessonCompleted(true);
+    setFinalLessonXp(finalXP);
+    setFinalLessonCoins(coinsEarned);
+    setShowCompletionSummary(true);
+    console.log("✅ STATES SHOULD BE SET NOW!");
+
+    // Then do Firestore updates (they can happen in background)
+    const uid = auth.currentUser.uid;
     try {
+      console.log("📝 Starting Firestore updates...");
+
+      const userRef = doc(db, "users", uid);
       await updateDoc(userRef, {
         xp: increment(finalXP),
         total_xp: increment(finalXP),
@@ -284,73 +299,83 @@ const LessonDisplay = () => {
         { merge: true }
       );
 
-      setLessonCompleted(true);
-      setFinalLessonXp(finalXP);
-      setFinalLessonCoins(coinsEarned);
-      setShowCompletionSummary(true);
-
-      console.log("Lesson completed successfully!");
+      console.log("✅ All Firestore updates completed");
     } catch (error) {
-      console.error("Error completing lesson:", error);
+      console.error("❌ Firestore error:", error);
     }
   };
-
-  // Single useEffect for lesson completion
-  useEffect(() => {
-    if (exercises.length === 0 || lessonCompleted) return;
-
-    console.log("=== CHECKING FOR LESSON COMPLETION ===");
-    console.log("Exercises length:", exercises.length);
-    console.log("Current index:", currentIndex);
-    console.log("Answered count:", Object.keys(answeredMap).length);
-    console.log("Lesson completed:", lessonCompleted);
-
-    // Check if we've answered all questions and are at/past the last question
-    const allQuestionsAnswered =
-      Object.keys(answeredMap).length === exercises.length;
-    const isAtOrPastLastQuestion = currentIndex >= exercises.length - 1;
-
-    console.log("All questions answered:", allQuestionsAnswered);
-    console.log("At or past last question:", isAtOrPastLastQuestion);
-
-    if (allQuestionsAnswered && isAtOrPastLastQuestion) {
-      console.log("✅ CONDITIONS MET - COMPLETING LESSON");
-      setLessonCompleted(true);
-      completeLesson();
-    }
-  }, [currentIndex, answeredMap, exercises.length, lessonCompleted]);
 
   const handleNext = () => {
     setShowModal(false);
     setLastAnswerCorrect(null);
 
     console.log(
-      "HandleNext called - currentIndex:",
+      "🔄 HandleNext - currentIndex:",
       currentIndex,
-      "exercises.length:",
+      "/",
       exercises.length
     );
 
     if (currentIndex < exercises.length - 1) {
-      // Move to next question
       setCurrentIndex((prev) => prev + 1);
     } else {
-      // This is the last question
-      console.log("Last question reached in handleNext");
-
-      // Force a state update to trigger the useEffect
-      setCurrentIndex(exercises.length);
-
-      // Also trigger completion directly as backup
+      console.log("🏁 Last question - checking completion...");
       const allQuestionsAnswered =
         Object.keys(answeredMap).length === exercises.length;
+
       if (allQuestionsAnswered && !lessonCompleted) {
-        console.log("Direct completion from handleNext");
-        setLessonCompleted(true);
+        console.log("🚀 Calling completeLesson from handleNext");
         completeLesson();
+      } else {
+        console.log("❌ Cannot complete:", {
+          allQuestionsAnswered,
+          lessonCompleted,
+          answeredCount: Object.keys(answeredMap).length,
+          exercisesLength: exercises.length,
+        });
       }
     }
   };
+
+  // Debug state changes
+  useEffect(() => {
+    console.log(
+      "📊 STATE UPDATE - lessonCompleted:",
+      lessonCompleted,
+      "showCompletionSummary:",
+      showCompletionSummary
+    );
+  }, [lessonCompleted, showCompletionSummary]);
+
+  // Debug useEffect - add this to track state changes
+  useEffect(() => {
+    console.log("🔍 LESSON DEBUG:", {
+      showCompletionSummary,
+      lessonCompleted,
+      currentIndex,
+      exercisesLength: exercises.length,
+      answeredCount: Object.keys(answeredMap).length,
+      allQuestionsAnswered:
+        Object.keys(answeredMap).length === exercises.length,
+      isLastQuestion: currentIndex >= exercises.length - 1,
+    });
+  }, [
+    showCompletionSummary,
+    lessonCompleted,
+    currentIndex,
+    exercises.length,
+    answeredMap,
+  ]);
+
+  // Debug when completeLesson is called
+  useEffect(() => {
+    if (lessonCompleted) {
+      console.log(
+        "🎉 LESSON COMPLETED - Show completion should be:",
+        showCompletionSummary
+      );
+    }
+  }, [lessonCompleted, showCompletionSummary]);
 
   // Debug useEffect
   useEffect(() => {
@@ -429,6 +454,7 @@ const LessonDisplay = () => {
 
   // Normal Lesson Completion Summary
   if (showCompletionSummary && lessonCompleted) {
+    console.log("🎉 Rendering completion summary...");
     const correctAnswers = Object.values(answeredMap).filter(
       (a) => a.isCorrect
     ).length;
@@ -490,19 +516,29 @@ const LessonDisplay = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 relative">
+      {/* Test button - ALWAYS show this for now */}
+      <button
+        onClick={() => {
+          console.log("🧪 FORCING completion screen");
+          setShowCompletionSummary(true);
+          setLessonCompleted(true);
+          setFinalLessonXp(25);
+          setFinalLessonCoins(10);
+        }}
+        className="fixed bottom-4 right-4 bg-green-500 text-white p-2 rounded z-50"
+      >
+        Test Completion
+      </button>
       {/* Debug button */}
-      {process.env.NODE_ENV === "development" && (
-        <button
-          onClick={() => {
-            console.log("Manual completion trigger");
-            setLessonCompleted(true);
-            completeLesson();
-          }}
-          className="fixed bottom-4 left-4 bg-red-500 text-white p-2 rounded z-50"
-        >
-          Debug: Complete Lesson
-        </button>
-      )}
+      <button
+        onClick={() => {
+          console.log("🔧 Manual completion trigger");
+          completeLesson();
+        }}
+        className="fixed bottom-4 left-4 bg-red-500 text-white p-2 rounded z-50"
+      >
+        Debug: Complete Lesson
+      </button>
 
       <GoBackBtn />
       <div className="flex justify-between items-center pt-10 mb-4">
@@ -516,22 +552,8 @@ const LessonDisplay = () => {
         />
       </div>
       {renderCard()}
-      <div className="flex justify-between mt-6 max-w-[700px] mx-auto">
-        <button
-          onClick={() => navigate(-1)}
-          className="bg-gray-300 text-gray-700 px-4 py-2 rounded"
-        >
-          <FaArrowCircleLeft /> Previous
-        </button>
-        <button
-          onClick={handleNext}
-          disabled={currentIndex >= exercises.length}
-          className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600 disabled:opacity-50"
-        >
-          {currentIndex >= exercises.length - 1 ? "Finish" : "Skip"}{" "}
-          <FaArrowAltCircleRight />
-        </button>
-      </div>
+
+      {/* REMOVED THE BUTTONS SECTION - No more Skip/Previous buttons */}
 
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4">

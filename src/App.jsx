@@ -35,7 +35,7 @@ function App() {
         />
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/profile" element={<Profile />} />
-        <Route path="/notifications" element={<NotificationFeed/>} />
+        <Route path="/notifications" element={<NotificationFeed />} />
         <Route path="/lessons/section/practice" element={<PracticeSection />} />
         <Route path="/badges" element={<Badges />} />
         <Route path="/lessons/section" element={<Section />} />
