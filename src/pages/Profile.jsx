@@ -121,13 +121,13 @@ export default function Profile() {
         </div>
 
         {/* Settings Button */}
-        <div className="flex justify-center mt-4">
+        <div className="flex justify-center mt-4 fixed bottom-20 right-5">
           <Link
             to="/profile/settings"
-            className="flex items-center bg-amber gap-2 bg-amber-500 text-white px-6 py-2 rounded-full hover:bg-amber-600 transition-colors"
+            className="flex items-center justify-center text-3xl bg-amber bg-amber-500 text-white  w-16 h-16  rounded-2xl hover:bg-amber-600 transition-colors"
           >
             <FaCog />
-            Settings
+            
           </Link>
         </div>
 

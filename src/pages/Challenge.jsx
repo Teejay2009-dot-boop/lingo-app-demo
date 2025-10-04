@@ -45,12 +45,12 @@ const Challenge = () => {
   ];
 
   const startChallenge = (challenge) => {
-    // Navigate to your LessonDisplay with challenge parameters
-    navigate(`/lessons/challenge/${challenge.id}`, {
+    // Navigate to ChallengeDisplay with challenge parameters
+    navigate("/challenge/display", {
       state: {
-        challengeMode: true,
         timeLimit: challenge.time,
         difficulty: challenge.difficulty,
+        challengeId: challenge.id,
       },
     });
   };
@@ -60,7 +60,7 @@ const Challenge = () => {
       <DashboardLayout>
         <div className="pt-14 lg:pt-0 p-4">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate("/lessons/section")}
             className="p-3 text-amber text-2xl rounded-lg"
           >
             <FaArrowLeft />
@@ -123,6 +123,8 @@ const Challenge = () => {
               <li>XP is calculated based on speed and accuracy</li>
               <li>Time bonus added to your final score</li>
               <li>Challenge ends automatically when timer reaches zero</li>
+              <li>Skip questions if you get stuck</li>
+              <li>Build streaks for bonus points!</li>
             </ul>
           </div>
         </div>
