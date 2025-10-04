@@ -54,7 +54,7 @@ const PracticeSection = () => {
       <DashboardLayout>
         <div className="pt-14 lg:pt-0 p-4">
           <button
-            onClick={() => navigate(-1)}
+            onClick={() => navigate(`/lessons/section`)}
             className="p-3 text-amber text-2xl rounded-lg"
           >
             <FaArrowLeft />
@@ -71,7 +71,7 @@ const PracticeSection = () => {
             <img src={chrip} style={{ width: "10rem" }} alt="Chirp mascot" />
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {practiceTypes.map((type) => (
               <div
                 key={type.id}
