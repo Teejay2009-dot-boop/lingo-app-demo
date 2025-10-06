@@ -1,15 +1,11 @@
 import { useState, useEffect, useRef } from "react";
-
 import DashboardLayout from "../components/dashboard/DashboardLayout";
-
 import Badge from "../components/dashboard/Badges";
-
 import {
   checkForNewAchievements,
   awardAchievement,
 } from "../utils/achievements";
 import AchievementEarnedModal from "../components/dashboard/BadgeEarnedModal";
-
 import NavBar from "../components/dashboard/NavBar";
 import { checkForNewBadges, awardBadge } from "../utils/badges";
 import { LevelUpModal } from "../components/LevelUpModal";
@@ -17,14 +13,9 @@ import BadgeEarnedModal from "../components/dashboard/BadgeEarnedModal";
 import { getUserRank } from "../utils/rankSystem";
 import { RankUpScreen } from "../components/RankUpScreen";
 import { addNotification } from "../firebase/utils/notifications";
-import {
-  getLevelProgress,
-  getLevel,
-  LEVELS,
-  getRankUpData,
-  // Import LEVELS for developer tools
-} from "../utils/progression";
-import { updateStreak } from "../utils/streak"; // Import updateStreak
+import { getRankUpData } from "../data/RankSystem"; // FIXED: lowercase 'r'
+import { getLevelProgress, getLevel } from "../utils/progression";
+import { updateStreak } from "../utils/streak";
 import {
   FaStar,
   FaSteam,
@@ -39,13 +30,9 @@ import {
   FaTree,
   FaHome,
 } from "react-icons/fa";
-
 import { Link } from "react-router-dom";
-
 import avatar from "../assets/girlwithbg.jpg";
-
 import { auth, db } from "../firebase/config/firebase";
-
 import {
   doc,
   onSnapshot,
@@ -54,34 +41,76 @@ import {
   query,
   collection,
   where,
-  setDoc, // Added setDoc
+  setDoc,
 } from "firebase/firestore";
 
 const Dashboard = () => {
   const [userData, setUserData] = useState(null);
-
   const [loading, setLoading] = useState(true);
-
   const [showDevTools, setShowDevTools] = useState(false);
-
   const [showLevelUpModal, setShowLevelUpModal] = useState(false);
   const [showAchievementModal, setShowAchievementModal] = useState(false);
   const [newlyEarnedAchievement, setNewlyEarnedAchievement] = useState(null);
   const [showRankUpScreen, setShowRankUpScreen] = useState(false);
   const [rankUpData, setRankUpData] = useState(null);
   const lastComputedRef = useRef(null);
-  // Add to your Dashboard states
   const [showBadgeModal, setShowBadgeModal] = useState(false);
   const [newlyEarnedBadge, setNewlyEarnedBadge] = useState(null);
-  const [currentStreak, setCurrentStreak] = useState(0); // New state for current streak
-  const [longestStreak, setLongestStreak] = useState(0); // New state for longest streak
-  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0); // New state for unread notifications
-  // Refactored level progress calculation using progression utility
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [longestStreak, setLongestStreak] = useState(0);
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+
+  // FIXED: formatXP function with proper null/undefined handling
+  const formatXP = (xp) => {
+    if (xp === undefined || xp === null) return "0";
+    const xpNumber = Number(xp);
+    if (isNaN(xpNumber)) return "0";
+    if (xpNumber >= 1000000) {
+      return (xpNumber / 1000000).toFixed(1) + "M";
+    } else if (xpNumber >= 1000) {
+      return (xpNumber / 1000).toFixed(1) + "K";
+    }
+    return xpNumber.toString();
+  };
+
+  // FIXED: Safe progress data calculation
+  const getProgressData = () => {
+    if (!userData || userData.xp === undefined || userData.xp === null) {
+      return {
+        currentLevel: 1,
+        progress: 0,
+        xpProgress: 0,
+        xpNeeded: 100,
+        totalXP: 0,
+        currentLevelXP: 0,
+        nextLevelXP: 100,
+      };
+    }
+    try {
+      return getLevelProgress(userData.xp);
+    } catch (error) {
+      console.error("Error calculating level progress:", error);
+      return {
+        currentLevel: 1,
+        progress: 0,
+        xpProgress: 0,
+        xpNeeded: 100,
+        totalXP: userData.xp || 0,
+        currentLevelXP: 0,
+        nextLevelXP: 100,
+      };
+    }
+  };
+
+  const progressData = getProgressData();
+
+  // KEEP EXISTING: Refactored level progress calculation using progression utility
   const { currentLevel, progress } = getLevelProgress(userData?.xp || 0);
-  // Get real rank using rank system
+
+  // KEEP EXISTING: Get real rank using rank system
   const realRank = userData
     ? getUserRank({
-        level: userData.level,
+        level: userData.level || 1,
         accuracy: userData.progress?.accuracy || 0,
         streak: userData.current_streak || 0,
         lessons: userData.lessons || 0,
@@ -94,8 +123,8 @@ const Dashboard = () => {
     // Prevent re-running if we already processed this data
     if (lastComputedRef.current?.xp === userData.xp) return;
 
-    const userCurrentLevel = userData.level;
-    const userCurrentXP = userData.xp;
+    const userCurrentLevel = userData.level || 1;
+    const userCurrentXP = userData.xp || 0;
 
     const updatedUserLevelInfo = getLevel(userCurrentXP);
 
@@ -148,7 +177,7 @@ const Dashboard = () => {
       rank: updatedUserLevelInfo.rank,
       xp: userCurrentXP,
     };
-  }, [userData]); // Keep the dependency, but add guards
+  }, [userData]);
 
   useEffect(() => {
     if (!userData || !auth.currentUser) return;
@@ -191,7 +220,6 @@ const Dashboard = () => {
     }
   }, [userData]);
 
-  // UNCOMMENT THIS and replace with the updated version:
   useEffect(() => {
     if (!userData || !auth.currentUser) return;
 
@@ -230,8 +258,6 @@ const Dashboard = () => {
     }
   }, [userData]);
 
-  // Add this useEffect to your Dashboard component
-  // In your Dashboard, UNCOMMENT and modify the badge useEffect:
   useEffect(() => {
     if (!userData || !auth.currentUser) return;
 
@@ -260,11 +286,9 @@ const Dashboard = () => {
 
   useEffect(() => {
     // Listen for auth state, then set up Firestore listener
-
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
       if (user) {
         const userRef = doc(db, "users", user.uid);
-
         const streakMetaRef = doc(db, `users/${user.uid}/meta`, "streak");
 
         const unsubscribeSnapshot = onSnapshot(userRef, (docSnap) => {
@@ -273,7 +297,6 @@ const Dashboard = () => {
               ...docSnap.data(),
             });
           }
-
           setLoading(false);
         });
 
@@ -281,15 +304,14 @@ const Dashboard = () => {
           if (snap.exists()) {
             const streakData = snap.data();
             setCurrentStreak(streakData.streak || 0);
-            setLongestStreak(streakData.longestStreak || 0); // Assuming longestStreak is stored here
+            setLongestStreak(streakData.longestStreak || 0);
           } else {
-            // Initialize streak if it doesn't exist
             setDoc(streakMetaRef, { streak: 0, lastActive: null });
           }
         });
 
         // Call updateStreak once per day
-        updateStreak(user.uid); // This handles the daily logic
+        updateStreak(user.uid);
 
         return () => {
           unsubscribeSnapshot();
@@ -297,7 +319,6 @@ const Dashboard = () => {
         };
       } else {
         setUserData(null);
-
         setLoading(false);
       }
     });
@@ -305,9 +326,8 @@ const Dashboard = () => {
     return () => {
       unsubscribeAuth();
     };
-  }, []); // Empty dependency array to run once on mount
+  }, []);
 
-  // New useEffect to listen for unread notifications
   useEffect(() => {
     if (!auth.currentUser) return;
 
@@ -328,7 +348,6 @@ const Dashboard = () => {
     return (
       <DashboardLayout>
         <NavBar />
-
         <div className="p-8 text-center flex items-center justify-center text-xl h-screen">
           Loading your data...
         </div>
@@ -340,7 +359,6 @@ const Dashboard = () => {
     return (
       <DashboardLayout>
         <NavBar />
-
         <div className="p-8 text-center flex items-center justify-center text-xl h-screen">
           Please log in to view your dashboard.
         </div>
@@ -349,27 +367,19 @@ const Dashboard = () => {
   }
 
   const totalLessons = userData?.totalLessons || 0;
-
   const completedLessons = userData?.completed_lessons?.length || 0;
-
   const progressPercent =
     totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
 
   // Add these test functions
-
   const simulateLevelUp = async (level) => {
     const userRef = doc(db, "users", auth.currentUser.uid);
-
-    // Determine the XP required for the target level
     const targetXP = getLevel(userData?.xp || 0).xpRequired;
 
     await updateDoc(userRef, {
       level: level,
-
       xp: targetXP,
       rank: getLevel(level).rank,
-      // current_streak: nextLevel.streak_required, // Streak requirement removed from level up
-      // title: nextLevel.title,
     });
 
     setShowLevelUpModal(true);
@@ -377,17 +387,12 @@ const Dashboard = () => {
 
   const resetTestData = async () => {
     const userRef = doc(db, "users", auth.currentUser.uid);
-
     await updateDoc(userRef, {
       level: 1,
-
       xp: 0,
-
       current_streak: 0,
-
-      title: "Beginner", // Updated title to match new rank system
+      title: "Beginner",
     });
-
     setShowLevelUpModal(false);
   };
 
@@ -398,7 +403,6 @@ const Dashboard = () => {
           <div className="flex gap-10 pt-4 items-center justify-end mr-9">
             <Link to="/notifications" className="relative">
               <FaBell className="text-3xl hover:translate-y-[-2px] transition-transform duration-500 cursor-pointer pt-1 text-amber" />
-
               {unreadNotificationCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                   {unreadNotificationCount}
@@ -408,9 +412,8 @@ const Dashboard = () => {
             <div className="text-xl flex justify-center gap-2">
               <div className="flex items-center justify-center gap-2">
                 <div>👩‍🦰</div>
-
                 <div className="text-amber pt-1 font-semibold">
-                  {userData?.username}
+                  {userData?.username || "User"}
                 </div>
               </div>
             </div>
@@ -419,7 +422,6 @@ const Dashboard = () => {
       </div>
 
       {/* Greeting Banner */}
-
       <div className="pt-28 md:pt-18 lg:10 bg-gray-50 py-0 px-4 lg:px-12 rounded-xl shadow-sm mb-10 animate-fade-in-up transition">
         <div className="md:flex items-center justify-between flex-wrap">
           <div className="flex items-center gap-6">
@@ -428,16 +430,13 @@ const Dashboard = () => {
               alt="Avatar"
               className="w-16 h-16 rounded-full border-2 border-amber"
             />
-
             <div>
               <h1 className="text-4xl font-bold text-amber pt-2">
                 Hi, {userData?.username || "Learner"}!
               </h1>
-
               <p className="text-amber py-1 text-lg">{realRank}</p>
             </div>
           </div>
-
           <Link to={"/lessons"}>
             <button className="bg-amber text-white py-3 px-8 rounded-lg shadow hover:scale-105 transition-transform my-4 lg:my-0">
               Start Lesson
@@ -447,89 +446,83 @@ const Dashboard = () => {
       </div>
 
       {/* Stats */}
-
       {userData && (
         <div className="grid md:grid-cols-3 md:grid-rows-2 gap-8 bg-gray-50 py-10 px-4 lg:px-12">
-          {/* Updated XP Card with dynamic progress */}
-
+          {/* UPDATED XP Card with new progressive system */}
           <div className="bg-white p-6 flex justify-between rounded-2xl shadow items-center">
             <FaStar className="text-7xl text-amber" />
-
             <div>
-              <h1 className="text-3xl font-bold">{userData?.xp}</h1>
-
-              <p className="text-gray-500">Current XP</p>
+              {/* CHANGED: Show formatted total XP */}
+              <h1 className="text-3xl font-bold">
+                {formatXP(progressData.totalXP)}
+              </h1>
+              <p className="text-gray-500">Total XP</p>
 
               <div className="w-40 h-2 bg-gray-200 rounded mt-2 overflow-hidden">
                 <div
-                  className="h-2 bg-amber rounded"
-                  style={{ width: `${progress}%` }}
+                  className="h-2 bg-amber rounded transition-all duration-500"
+                  style={{ width: `${progressData.progress}%` }}
                 />
               </div>
 
+              {/* CHANGED: Fixed XP calculation */}
               <p className="text-xs text-gray-400">
-                {currentLevel >= LEVELS[LEVELS.length - 1].level ? (
+                {progressData.currentLevel >= 100 ? (
                   "Max level reached!"
                 ) : (
                   <>
-                    {userData?.xp - getLevel(userData?.xp || 0).xpRequired}/
-                    {getLevel(userData?.xp || 0).xpRequired -
-                      getLevel(userData?.xp || 0).xpRequired}{" "}
-                    XP to Level {currentLevel + 1}
+                    Level {progressData.currentLevel} •{" "}
+                    {progressData.progress.toFixed(1)}%
                   </>
                 )}
+              </p>
+
+              {/* ADDED: Detailed XP info */}
+              <p className="text-xs text-gray-500 mt-1">
+                {formatXP(progressData.xpProgress)} /{" "}
+                {formatXP(progressData.xpNeeded)} XP to Level{" "}
+                {progressData.currentLevel + 1}
               </p>
             </div>
           </div>
 
           {/* Streak Card */}
-
           <div className="bg-white p-6 rounded-2xl shadow flex flex-col">
             <div className="flex items-center gap-4 mb-4">
               <div className="bg-amber-100 p-3 rounded-full">
                 <FaFire className="text-2xl text-amber" />
               </div>
-
               <div>
                 <h2 className="text-xl font-bold">Streak</h2>
-
                 <p className="text-gray-500">Daily Progress</p>
               </div>
             </div>
-
             <div className="flex items-center justify-between">
               <div className="text-center">
                 <p className="text-3xl font-bold text-amber">{currentStreak}</p>
                 <p className="text-sm">Current</p>
               </div>
-
               <div className="text-center">
                 <p className="text-3xl font-bold">{longestStreak}</p>
                 <p className="text-sm">Longest</p>
               </div>
-
               <div className="text-center">
                 <p className="text-3xl font-bold">
                   {userData?.streak_freezes || 0}
                 </p>
-
                 <p className="text-sm">Freezes</p>
               </div>
             </div>
           </div>
 
           {/* Coins & Lives */}
-
           <div className="bg-white p-6 rounded-2xl shadow flex flex-col justify-between">
             <div className="flex items-center gap-4">
               <FaWallet className="text-3xl text-yellow-500" />
-
               <p className="text-lg font-bold">Coins: {userData?.coins}</p>
             </div>
-
             <div className="flex items-center gap-4 mt-3">
               <FaHeart className="text-red-500 text-3xl" />
-
               <p className="text-lg font-bold">
                 Lives: {userData?.lives}/{userData?.max_lives}
               </p>
@@ -537,45 +530,36 @@ const Dashboard = () => {
           </div>
 
           {/* Weekly Progress */}
-
           <div className="bg-white p-6 rounded-2xl shadow">
             <h2 className="text-xl font-semibold mb-2">Weekly Progress</h2>
-
             <div className="w-full bg-gray-200 h-4 rounded-full overflow-hidden mb-2">
               <div
                 className="h-4 bg-yellow-500 transition-all duration-500"
                 style={{ width: `${progressPercent}%` }}
               />
             </div>
-
             <p className="text-sm text-gray-600">
               {completedLessons} / {totalLessons} lessons completed
             </p>
           </div>
 
           {/* Challenge Card */}
-
           <div className="bg-white rounded-2xl shadow p-6 flex flex-col items-center justify-center">
             <span className="text-4xl mb-2">⚡</span>
-
             <h1 className="text-2xl font-semibold text-center mb-4">
               Try today's Challenge
             </h1>
-
             <button className="w-full bg-amber py-2 text-white rounded-2xl shadow font-semibold hover:scale-105 transition-transform duration-200">
               Start Challenge
             </button>
           </div>
 
           {/* Explore More */}
-
           <div className="bg-amber pt-4 px-2 rounded-2xl flex flex-col justify-between text-white">
             <div>
               <h1 className="text-3xl font-semibold px-3">Explore More</h1>
-
               <p className="text-2xl font-semibold px-3">Lessons</p>
             </div>
-
             <Link to={"/lessons"}>
               <button className="bg-white text-amber mt-4 py-2 rounded-full w-full font-bold mb-5 hover:bg-gray-200">
                 Go to Lessons
@@ -586,7 +570,6 @@ const Dashboard = () => {
       )}
 
       {/* Badges */}
-
       <div className="mt-8 transition-transform duration-300 hover:scale-105 px-4 lg:px-12">
         <Badge />
       </div>
@@ -608,7 +591,6 @@ const Dashboard = () => {
           <FaTree className="text-2xl" />
           <p className="text-amber text-sm">Feed</p>
         </Link>
-
         <Link to={"/profile"} className="flex flex-col items-center pt-3">
           <FaProcedures className="text-2xl" />
           <p className="text-amber text-sm">Profile</p>
@@ -616,7 +598,6 @@ const Dashboard = () => {
       </div>
 
       {/* Developer Tools Button */}
-
       <button
         onClick={() => setShowDevTools(!showDevTools)}
         className="fixed bottom-4 right-4 bg-red-500 text-white p-3 rounded-full shadow-lg z-50"
@@ -625,38 +606,19 @@ const Dashboard = () => {
       </button>
 
       {/* Developer Tools Panel */}
-
       {showDevTools && (
         <div className="fixed bottom-20 right-4 bg-white p-4 rounded-lg shadow-xl border-2 border-red-500 z-50 max-w-xs">
           <h3 className="font-bold text-lg mb-2 text-red-600">
             Developer Tools
           </h3>
 
-          {/* <div className="mb-4">
-            <h4 className="font-semibold mb-1">Test Level Up</h4>
-
-            <div className="grid grid-cols-3 gap-2">
-              {LEVELS.map((levelInfo, index) => (
-                <button
-                  key={index + 1}
-                  onClick={() => simulateLevelUp(index + 1)}
-                  className={`py-1 px-2 rounded text-xs bg-gray-200`}
-                >
-                  Level {index + 1}
-                </button>
-              ))}
-            </div>
-          </div> */}
-
           <div className="mb-4">
             <h4 className="font-semibold mb-1">Quick Actions</h4>
-
             <div className="flex gap-2 flex-wrap">
               <button
                 onClick={() =>
                   updateDoc(doc(db, "users", auth.currentUser.uid), {
                     xp: increment(100),
-
                     coins: increment(50),
                   })
                 }
@@ -664,65 +626,7 @@ const Dashboard = () => {
               >
                 +100 XP +50 Coins
               </button>
-              // Add to your Developer Tools panel in Dashboard
-              <div className="mb-4">
-                <h4 className="font-semibold mb-1">Test Badges</h4>
-                <div className="flex gap-2 flex-wrap">
-                  <button
-                    onClick={() => {
-                      // Test First Lesson badge
-                      awardBadge(auth.currentUser.uid, "first_lesson").then(
-                        (success) => {
-                          if (success) {
-                            console.log("✅ First lesson badge awarded");
-                            // Manually trigger the modal
-                            setNewlyEarnedBadge(BADGES.first_lesson);
-                            setShowBadgeModal(true);
-                          }
-                        }
-                      );
-                    }}
-                    className="bg-green-500 text-white px-2 py-1 rounded text-xs"
-                  >
-                    First Lesson Badge
-                  </button>
 
-                  <button
-                    onClick={() => {
-                      awardBadge(auth.currentUser.uid, "streak_master_7").then(
-                        (success) => {
-                          if (success) {
-                            console.log("✅ Weekly Warrior badge awarded");
-                            setNewlyEarnedBadge(BADGES.streak_master_7);
-                            setShowBadgeModal(true);
-                          }
-                        }
-                      );
-                    }}
-                    className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
-                  >
-                    Weekly Warrior
-                  </button>
-
-                  <button
-                    onClick={() => {
-                      // Test Perfectionist badge
-                      awardBadge(auth.currentUser.uid, "perfectionist").then(
-                        (success) => {
-                          if (success) {
-                            console.log("✅ Perfectionist badge awarded");
-                            setNewlyEarnedBadge(BADGES.perfectionist);
-                            setShowBadgeModal(true);
-                          }
-                        }
-                      );
-                    }}
-                    className="bg-purple-500 text-white px-2 py-1 rounded text-xs"
-                  >
-                    Perfectionist
-                  </button>
-                </div>
-              </div>
               <button
                 onClick={() =>
                   addNotification(auth.currentUser.uid, {
@@ -759,7 +663,6 @@ const Dashboard = () => {
       )}
 
       {/* Level Up Modal */}
-
       {showLevelUpModal && (
         <LevelUpModal
           level={currentLevel}
@@ -767,7 +670,7 @@ const Dashboard = () => {
         />
       )}
 
-      {/* ✅ ADD BADGE EARNED MODAL HERE */}
+      {/* Badge Earned Modal */}
       {showBadgeModal && newlyEarnedBadge && (
         <BadgeEarnedModal
           badge={newlyEarnedBadge}
@@ -776,7 +679,7 @@ const Dashboard = () => {
         />
       )}
 
-      {/* Add with other modals in Dashboard return statement */}
+      {/* Achievement Earned Modal */}
       {showAchievementModal && newlyEarnedAchievement && (
         <AchievementEarnedModal
           achievement={newlyEarnedAchievement}
