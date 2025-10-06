@@ -11,7 +11,7 @@ export const RankUpScreen = ({ isOpen, onClose, rankData }) => {
 
   // Use the new progressive level system
   const { progress, currentLevel, xpProgress, xpNeeded, totalXP } =
-    getLevelProgress(userXp);
+    getLevelProgress(userXp || 0); // ADDED fallback for userXp
 
   // Get current rank info from the rank system
   const currentRankInfo = RANK_SYSTEM[newRank] || RANK_SYSTEM.Moonstone;
@@ -24,14 +24,17 @@ export const RankUpScreen = ({ isOpen, onClose, rankData }) => {
     lessonsCompleted: rankData.lessonsCompleted || 0,
   });
 
-  // Simple XP formatting function since formatXP is not available
+  // FIXED: formatXP function with proper null/undefined handling
   const formatXP = (xp) => {
-    if (xp >= 1000000) {
-      return (xp / 1000000).toFixed(1) + "M";
-    } else if (xp >= 1000) {
-      return (xp / 1000).toFixed(1) + "K";
+    if (xp === undefined || xp === null) return "0";
+    const xpNumber = Number(xp);
+    if (isNaN(xpNumber)) return "0";
+    if (xpNumber >= 1000000) {
+      return (xpNumber / 1000000).toFixed(1) + "M";
+    } else if (xpNumber >= 1000) {
+      return (xpNumber / 1000).toFixed(1) + "K";
     }
-    return xp.toString();
+    return xpNumber.toString();
   };
 
   return (

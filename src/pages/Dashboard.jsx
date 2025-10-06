@@ -13,7 +13,7 @@ import BadgeEarnedModal from "../components/dashboard/BadgeEarnedModal";
 import { getUserRank } from "../utils/rankSystem";
 import { RankUpScreen } from "../components/RankUpScreen";
 import { addNotification } from "../firebase/utils/notifications";
-import { getRankUpData } from "../data/RankSystem"; // FIXED: lowercase 'r'
+import { getRankUpData, getNextRankProgress } from "../data/RankSystem"; // FIXED: lowercase 'r'
 import { getLevelProgress, getLevel } from "../utils/progression";
 import { updateStreak } from "../utils/streak";
 import {
@@ -42,6 +42,7 @@ import {
   collection,
   where,
   setDoc,
+  getDoc
 } from "firebase/firestore";
 
 const Dashboard = () => {
@@ -113,10 +114,11 @@ const Dashboard = () => {
         level: userData.level || 1,
         accuracy: userData.progress?.accuracy || 0,
         streak: userData.current_streak || 0,
-        lessons: userData.lessons || 0,
+        lessonsCompleted: userData.total_lessons || userData.lessons || 0,
       })
     : "Moonstone";
 
+  // FIXED: Rank and level up detection
   useEffect(() => {
     if (!userData) return;
 
@@ -126,35 +128,50 @@ const Dashboard = () => {
     const userCurrentLevel = userData.level || 1;
     const userCurrentXP = userData.xp || 0;
 
-    const updatedUserLevelInfo = getLevel(userCurrentXP);
+    const updatedUserLevelInfo = getLevelProgress(userCurrentXP);
 
     // Check for level up
-    if (updatedUserLevelInfo.level > userCurrentLevel) {
+    if (updatedUserLevelInfo.currentLevel > userCurrentLevel) {
       setShowLevelUpModal(true);
 
       addNotification(auth.currentUser.uid, {
         type: "level-up",
-        message: `You reached Level ${updatedUserLevelInfo.level}! 🎉`,
-        level: updatedUserLevelInfo.level,
+        message: `You reached Level ${updatedUserLevelInfo.currentLevel}! 🎉`,
+        level: updatedUserLevelInfo.currentLevel,
       });
 
       // Update user document - this will trigger userData change
       updateDoc(doc(db, "users", auth.currentUser.uid), {
-        level: updatedUserLevelInfo.level,
-        rank: updatedUserLevelInfo.rank,
+        level: updatedUserLevelInfo.currentLevel,
       });
     }
 
-    // Check for rank up - only if XP changed significantly
-    const rankChange = getRankUpData(
-      lastComputedRef.current?.xp || 0,
-      userCurrentXP
-    );
+    // FIXED: Check for rank up using full user data objects
+    const currentUserData = {
+      level: userData.level || 1,
+      accuracy: userData.progress?.accuracy || 0,
+      streak: userData.current_streak || 0,
+      lessonsCompleted: userData.total_lessons || userData.lessons || 0,
+      rank: userData.rank || "Moonstone"
+    };
 
-    if (rankChange.leveledUp && rankChange.newRank !== userData.rank) {
+    const previousUserData = lastComputedRef.current?.userData || {
+      level: 1,
+      accuracy: 0,
+      streak: 0,
+      lessonsCompleted: 0,
+      rank: "Moonstone"
+    };
+
+    const rankChange = getRankUpData(previousUserData, currentUserData);
+
+    if (rankChange.rankedUp && rankChange.newRank !== userData.rank) {
       setRankUpData({
         ...rankChange,
         userXp: userCurrentXP,
+        accuracy: userData.progress?.accuracy || 0,
+        streak: userData.current_streak || 0,
+        lessonsCompleted: userData.total_lessons || userData.lessons || 0
       });
       setShowRankUpScreen(true);
 
@@ -167,15 +184,14 @@ const Dashboard = () => {
       // Update Firestore - this will trigger userData change
       updateDoc(doc(db, "users", auth.currentUser.uid), {
         rank: rankChange.newRank,
-        level: rankChange.level,
       });
     }
 
     // Update last computed snapshot to prevent re-processing
     lastComputedRef.current = {
-      level: updatedUserLevelInfo.level,
-      rank: updatedUserLevelInfo.rank,
+      level: updatedUserLevelInfo.currentLevel,
       xp: userCurrentXP,
+      userData: { ...currentUserData } // Store full user data for rank comparison
     };
   }, [userData]);
 
@@ -281,6 +297,38 @@ const Dashboard = () => {
       });
     } else {
       console.log("📭 No new badges found");
+    }
+  }, [userData]);
+
+  // Add this temporary debug useEffect to see your rank status
+  useEffect(() => {
+    if (userData) {
+      console.log("=== RANK DEBUG INFO ===");
+      console.log("User Data:", {
+        level: userData.level,
+        xp: userData.xp,
+        accuracy: userData.progress?.accuracy,
+        streak: userData.current_streak,
+        lessons: userData.lessons,
+        total_lessons: userData.total_lessons
+      });
+      
+      const currentRank = getUserRank({
+        level: userData.level || 1,
+        accuracy: userData.progress?.accuracy || 0,
+        streak: userData.current_streak || 0,
+        lessonsCompleted: userData.total_lessons || userData.lessons || 0
+      });
+      console.log("Current Rank:", currentRank);
+      
+      const nextRankProgress = getNextRankProgress({
+        level: userData.level || 1,
+        accuracy: userData.progress?.accuracy || 0,
+        streak: userData.current_streak || 0,
+        lessonsCompleted: userData.total_lessons || userData.lessons || 0
+      });
+      console.log("Next Rank Requirements:", nextRankProgress);
+      console.log("=== END DEBUG ===");
     }
   }, [userData]);
 
@@ -607,14 +655,15 @@ const Dashboard = () => {
 
       {/* Developer Tools Panel */}
       {showDevTools && (
-        <div className="fixed bottom-20 right-4 bg-white p-4 rounded-lg shadow-xl border-2 border-red-500 z-50 max-w-xs">
-          <h3 className="font-bold text-lg mb-2 text-red-600">
-            Developer Tools
+        <div className="fixed bottom-24 right-4 bg-white p-4 rounded-lg shadow-xl border-2 border-red-500 z-50 max-w-sm w-80 overflow-y-auto max-h-96">
+          <h3 className="font-bold text-lg mb-3 text-red-600">
+            Developer Tools 🛠️
           </h3>
 
+          {/* Quick Actions Section */}
           <div className="mb-4">
-            <h4 className="font-semibold mb-1">Quick Actions</h4>
-            <div className="flex gap-2 flex-wrap">
+            <h4 className="font-semibold mb-2 text-gray-700">Quick Actions</h4>
+            <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={() =>
                   updateDoc(doc(db, "users", auth.currentUser.uid), {
@@ -622,7 +671,7 @@ const Dashboard = () => {
                     coins: increment(50),
                   })
                 }
-                className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
+                className="bg-blue-500 text-white px-2 py-2 rounded text-xs hover:bg-blue-600"
               >
                 +100 XP +50 Coins
               </button>
@@ -635,29 +684,164 @@ const Dashboard = () => {
                     type: "test",
                   })
                 }
-                className="bg-purple-500 text-white px-2 py-1 rounded text-xs"
+                className="bg-purple-500 text-white px-2 py-2 rounded text-xs hover:bg-purple-600"
               >
-                Send Test Notification
+                Test Notification
               </button>
+              
               <button
                 onClick={async () => {
-                  await updateStreak(auth.currentUser.uid);
+                  const streakMetaRef = doc(db, `users/${auth.currentUser.uid}/meta`, "streak");
+                  const currentStreakSnap = await getDoc(streakMetaRef);
+                  const currentStreak = currentStreakSnap.exists() ? currentStreakSnap.data().streak || 0 : 0;
+                  
+                  await setDoc(streakMetaRef, {
+                    streak: currentStreak + 1,
+                    lastActive: new Date()
+                  }, { merge: true });
+                  
+                  await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                    current_streak: currentStreak + 1
+                  });
+                  console.log("✅ Streak increased to:", currentStreak + 1);
                 }}
-                className="bg-green-500 text-white px-2 py-1 rounded text-xs"
+                className="bg-green-500 text-white px-2 py-2 rounded text-xs hover:bg-green-600"
               >
                 +1 Streak
               </button>
+              
               <button
                 onClick={resetTestData}
-                className="bg-gray-500 text-white px-2 py-1 rounded text-xs"
+                className="bg-gray-500 text-white px-2 py-2 rounded text-xs hover:bg-gray-600"
               >
                 Reset Data
               </button>
             </div>
           </div>
 
-          <p className="text-xs text-gray-500 mt-2">
-            These controls are for testing only
+          {/* Rank Testing Section */}
+          <div className="mb-4">
+            <h4 className="font-semibold mb-2 text-gray-700">Rank Testing 🏆</h4>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={async () => {
+                  await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                    level: 11,
+                    current_streak: 5,
+                    total_lessons: 15,
+                    progress: { accuracy: 65 },
+                    xp: 1500
+                  });
+                  console.log("✅ Set Topaz requirements");
+                }}
+                className="bg-yellow-500 text-white px-2 py-2 rounded text-xs hover:bg-yellow-600"
+              >
+                Set Topaz
+              </button>
+              
+              <button
+                onClick={async () => {
+                  await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                    level: 21,
+                    current_streak: 7,
+                    total_lessons: 25,
+                    progress: { accuracy: 70 },
+                    xp: 3000
+                  });
+                  console.log("✅ Set Amethyst requirements");
+                }}
+                className="bg-purple-500 text-white px-2 py-2 rounded text-xs hover:bg-purple-600"
+              >
+                Set Amethyst
+              </button>
+              
+              <button
+                onClick={async () => {
+                  await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                    level: 31,
+                    current_streak: 10,
+                    total_lessons: 35,
+                    progress: { accuracy: 75 },
+                    xp: 5000
+                  });
+                  console.log("✅ Set Emerald requirements");
+                }}
+                className="bg-green-600 text-white px-2 py-2 rounded text-xs hover:bg-green-700"
+              >
+                Set Emerald
+              </button>
+              
+              <button
+                onClick={async () => {
+                  await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                    level: 11,
+                    current_streak: 5,
+                    total_lessons: 15,
+                    progress: { accuracy: 65 },
+                    xp: 1500,
+                    rank: "Moonstone"
+                  });
+                  console.log("🎯 Ready for Topaz rank up!");
+                }}
+                className="bg-red-500 text-white px-2 py-2 rounded text-xs hover:bg-red-600"
+              >
+                Force Rank Up
+              </button>
+              
+              <button
+                onClick={async () => {
+                  await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                    level: 1,
+                    current_streak: 0,
+                    total_lessons: 0,
+                    progress: { accuracy: 0 },
+                    xp: 0,
+                    rank: "Moonstone"
+                  });
+                  console.log("🔄 Reset to Moonstone");
+                }}
+                className="bg-gray-500 text-white px-2 py-2 rounded text-xs hover:bg-gray-600 col-span-2"
+              >
+                Reset to Moonstone
+              </button>
+            </div>
+          </div>
+
+          {/* Current Status Section */}
+          <div className="mb-4 p-3 bg-gray-50 rounded border">
+            <h4 className="font-semibold mb-2 text-gray-700">Current Status 📊</h4>
+            <button
+              onClick={() => {
+                if (userData) {
+                  const currentRank = getUserRank({
+                    level: userData.level || 1,
+                    accuracy: userData.progress?.accuracy || 0,
+                    streak: userData.current_streak || 0,
+                    lessonsCompleted: userData.total_lessons || 0
+                  });
+                  const status = `
+  Current Rank: ${currentRank.name}
+  Level: ${userData.level || 1}
+  XP: ${userData.xp || 0}
+  Streak: ${userData.current_streak || 0}
+  Lessons: ${userData.total_lessons || 0}
+  Accuracy: ${userData.progress?.accuracy || 0}%
+  Coins: ${userData.coins || 0}
+                  `;
+                  console.log("📊 Current Status:", status);
+                  alert(status);
+                } else {
+                  alert("No user data available");
+                }
+              }}
+              className="bg-blue-500 text-white px-3 py-2 rounded text-xs w-full hover:bg-blue-600"
+            >
+              Check Current Status
+            </button>
+          </div>
+
+          <p className="text-xs text-gray-500 text-center">
+            🚀 Test all rank levels instantly!
           </p>
         </div>
       )}
