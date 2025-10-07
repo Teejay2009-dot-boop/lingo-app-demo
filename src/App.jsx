@@ -18,6 +18,7 @@ import Challenge from "./pages/Challenge";
 import Settings from "./pages/Settings";
 import ChallengeDisplay from "./pages/ChallengeDisplay";
 import PracticeDisplay from "./pages/PracticeDisplay";
+import Ranking from "./pages/Ranking";
 
 function App() {
   useEffect(() => {
@@ -27,7 +28,7 @@ function App() {
     <Router>
       <Routes>
         <Route path="/" element={<Welcome />} />
-
+<Route path="/dashboard/ranking" element={<Ranking />} />
         <Route path="/challenge/display" element={<ChallengeDisplay />} />
         <Route path="/lessons/section/challenge" element={<Challenge />} />
         <Route path="/practice/display" element={<PracticeDisplay />} />

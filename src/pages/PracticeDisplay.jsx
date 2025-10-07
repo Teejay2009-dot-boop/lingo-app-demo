@@ -12,6 +12,10 @@ import {
   FaCoins,
   FaExpand,
   FaChartLine,
+  FaTrophy,
+  FaStar,
+  FaFire,
+  FaClock,
 } from "react-icons/fa";
 import { MainIdea } from "../components/LessonCards/MainIdea";
 import { FillintheGapBestOption } from "../components/LessonCards/FillintheGapBestOption";
@@ -41,6 +45,18 @@ const PracticeDisplay = () => {
   });
   const [sessionXP, setSessionXP] = useState(0);
   const [startTime, setStartTime] = useState(Date.now());
+  const [sessionDuration, setSessionDuration] = useState(0);
+  const [showScoreboard, setShowScoreboard] = useState(false);
+  const [maxStreak, setMaxStreak] = useState(0);
+
+  // Timer for session duration
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setSessionDuration(Math.floor((Date.now() - startTime) / 1000));
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [startTime]);
 
   // Get all exercises filtered by type
   const getFilteredExercises = () => {
@@ -56,7 +72,7 @@ const PracticeDisplay = () => {
       vocabulary: ["vocabulary", "match_words", "match_image_to_word"],
       listening: ["tap_what_you_hear", "type_what_you_hear"],
       role_playing: ["role_play_options", "role_play_type_yourself"],
-      speaking: ["type_what_you_hear", "role_play_type_yourself"], // Assuming these involve speaking
+      speaking: ["type_what_you_hear", "role_play_type_yourself"],
     };
 
     const allowedTypes = typeMapping[practiceType] || [practiceType];
@@ -99,10 +115,10 @@ const PracticeDisplay = () => {
   }, [practiceType]);
 
   const calculateQuestionXP = (isCorrect, timeTaken) => {
-    const base = 2; // Base XP for practice
-    const accuracy = isCorrect ? 1.0 : 0.2; // Less penalty for wrong answers in practice
+    const base = 2;
+    const accuracy = isCorrect ? 1.0 : 0.2;
     const streakBonus = 1 + Math.min(currentStreak * 0.02, 0.3);
-    const timeRatio = 15 / Math.max(1, timeTaken); // More relaxed time for practice
+    const timeRatio = 15 / Math.max(1, timeTaken);
     const speedFactor = Math.min(1.3, Math.max(0.9, timeRatio));
 
     return Math.round(base * accuracy * streakBonus * speedFactor);
@@ -117,22 +133,27 @@ const PracticeDisplay = () => {
     setTotalAnswered((prev) => prev + 1);
 
     // Update stats
-    setPracticeStats((prev) => ({
-      correct: isCorrect ? prev.correct + 1 : prev.correct,
-      incorrect: !isCorrect ? prev.incorrect + 1 : prev.incorrect,
-      accuracy:
-        prev.correct +
-        ((isCorrect ? 1 : 0) / (prev.correct + prev.incorrect + 1)) * 100,
-    }));
+    const newCorrect = isCorrect ? practiceStats.correct + 1 : practiceStats.correct;
+    const newIncorrect = !isCorrect ? practiceStats.incorrect + 1 : practiceStats.incorrect;
+    
+    setPracticeStats({
+      correct: newCorrect,
+      incorrect: newIncorrect,
+      accuracy: Math.round((newCorrect / (newCorrect + newIncorrect)) * 100),
+    });
 
     if (isCorrect) {
       setScore((prev) => prev + 1);
       setSessionXP((prev) => prev + questionXP);
     }
 
-    // Update streak locally for next question calculation
+    // Update streak and max streak
     if (isCorrect) {
-      setCurrentStreak((prev) => prev + 1);
+      const newStreak = currentStreak + 1;
+      setCurrentStreak(newStreak);
+      if (newStreak > maxStreak) {
+        setMaxStreak(newStreak);
+      }
     } else {
       setCurrentStreak(0);
     }
@@ -170,8 +191,36 @@ const PracticeDisplay = () => {
     }
   };
 
+  const endPracticeSession = () => {
+    setShowScoreboard(true);
+  };
+
   const exitPractice = () => {
     navigate("/lessons/section/practice");
+  };
+
+  const restartPractice = () => {
+    setShowScoreboard(false);
+    setScore(0);
+    setTotalAnswered(0);
+    setCurrentStreak(0);
+    setMaxStreak(0);
+    setSessionXP(0);
+    setSessionDuration(0);
+    setPracticeStats({ correct: 0, incorrect: 0, accuracy: 0 });
+    setStartTime(Date.now());
+    
+    const exercise = getRandomExercise();
+    if (exercise) {
+      setCurrentExercise(exercise);
+    }
+  };
+
+  // Format time function
+  const formatTime = (seconds) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
   const renderCard = () => {
@@ -183,7 +232,7 @@ const PracticeDisplay = () => {
           </p>
           <button
             onClick={exitPractice}
-            className="mt-4 bg-amber-500 text-white px-6 py-2 rounded-lg bg-amber hover:bg-yellow-600 transition-colors"
+            className="mt-4 bg-amber-500 text-white px-6 py-2 rounded-lg hover:bg-amber-600 transition-colors"
           >
             Return to Practice Selection
           </button>
@@ -224,11 +273,73 @@ const PracticeDisplay = () => {
     }
   };
 
-  const accuracy =
-    totalAnswered > 0
-      ? Math.round((practiceStats.correct / totalAnswered) * 100)
-      : 0;
+  const accuracy = practiceStats.accuracy;
 
+  // Scoreboard Screen
+  if (showScoreboard) {
+    return (
+      <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white p-6 flex items-center justify-center">
+        <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-md w-full text-center">
+          <div className="mb-6">
+            <FaTrophy className="text-5xl text-yellow-500 mx-auto mb-4" />
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">Practice Complete!</h1>
+            <p className="text-gray-600">{practiceName} Practice</p>
+          </div>
+
+          {/* Score Summary */}
+          <div className="grid grid-cols-2 gap-4 mb-6">
+            <div className="bg-green-50 p-4 rounded-xl">
+              <FaStar className="text-2xl text-green-500 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-green-600">{score}</div>
+              <div className="text-sm text-green-700">Correct Answers</div>
+            </div>
+            <div className="bg-blue-50 p-4 rounded-xl">
+              <FaChartLine className="text-2xl text-blue-500 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-blue-600">{accuracy}%</div>
+              <div className="text-sm text-blue-700">Accuracy</div>
+            </div>
+            <div className="bg-orange-50 p-4 rounded-xl">
+              <FaFire className="text-2xl text-orange-500 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-orange-600">{maxStreak}</div>
+              <div className="text-sm text-orange-700">Best Streak</div>
+            </div>
+            <div className="bg-purple-50 p-4 rounded-xl">
+              <FaClock className="text-2xl text-purple-500 mx-auto mb-2" />
+              <div className="text-2xl font-bold text-purple-600">{formatTime(sessionDuration)}</div>
+              <div className="text-sm text-purple-700">Time</div>
+            </div>
+          </div>
+
+          {/* XP Earned */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
+            <div className="flex items-center justify-center gap-2 mb-2">
+              <FaCoins className="text-amber-500 text-xl" />
+              <span className="text-lg font-semibold text-amber-700">XP Earned</span>
+            </div>
+            <div className="text-3xl font-bold text-amber-600">+{sessionXP}</div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="space-y-3">
+            <button
+              onClick={restartPractice}
+              className="w-full bg-amber-500 text-white py-3 rounded-xl font-bold text-lg hover:bg-amber-600 transition-colors"
+            >
+              Practice Again
+            </button>
+            <button
+              onClick={exitPractice}
+              className="w-full bg-gray-500 text-white py-3 rounded-xl font-bold text-lg hover:bg-gray-600 transition-colors"
+            >
+              Try Another Practice
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Main Practice Screen
   return (
     <div className="min-h-screen bg-gray-100 p-6 relative">
       <GoBackBtn />
@@ -284,10 +395,10 @@ const PracticeDisplay = () => {
       {/* Practice Controls */}
       <div className="flex justify-center gap-4 mt-6">
         <button
-          onClick={exitPractice}
+          onClick={endPracticeSession}
           className="bg-gray-500 text-white px-6 py-2 rounded-lg hover:bg-gray-600 transition-colors"
         >
-          Exit Practice
+          End Practice
         </button>
 
         {!showModal && (

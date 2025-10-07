@@ -5,6 +5,8 @@ import {
   checkForNewAchievements,
   awardAchievement,
 } from "../utils/achievements";
+import { Link } from "react-router-dom";
+
 import AchievementEarnedModal from "../components/dashboard/BadgeEarnedModal";
 import NavBar from "../components/dashboard/NavBar";
 import { checkForNewBadges, awardBadge } from "../utils/badges";
@@ -30,7 +32,7 @@ import {
   FaTree,
   FaHome,
 } from "react-icons/fa";
-import { Link } from "react-router-dom";
+
 import avatar from "../assets/girlwithbg.jpg";
 import { auth, db } from "../firebase/config/firebase";
 import {
@@ -42,7 +44,7 @@ import {
   collection,
   where,
   setDoc,
-  getDoc
+  getDoc,
 } from "firebase/firestore";
 
 const Dashboard = () => {
@@ -152,7 +154,7 @@ const Dashboard = () => {
       accuracy: userData.progress?.accuracy || 0,
       streak: userData.current_streak || 0,
       lessonsCompleted: userData.total_lessons || userData.lessons || 0,
-      rank: userData.rank || "Moonstone"
+      rank: userData.rank || "Moonstone",
     };
 
     const previousUserData = lastComputedRef.current?.userData || {
@@ -160,7 +162,7 @@ const Dashboard = () => {
       accuracy: 0,
       streak: 0,
       lessonsCompleted: 0,
-      rank: "Moonstone"
+      rank: "Moonstone",
     };
 
     const rankChange = getRankUpData(previousUserData, currentUserData);
@@ -171,7 +173,7 @@ const Dashboard = () => {
         userXp: userCurrentXP,
         accuracy: userData.progress?.accuracy || 0,
         streak: userData.current_streak || 0,
-        lessonsCompleted: userData.total_lessons || userData.lessons || 0
+        lessonsCompleted: userData.total_lessons || userData.lessons || 0,
       });
       setShowRankUpScreen(true);
 
@@ -191,7 +193,7 @@ const Dashboard = () => {
     lastComputedRef.current = {
       level: updatedUserLevelInfo.currentLevel,
       xp: userCurrentXP,
-      userData: { ...currentUserData } // Store full user data for rank comparison
+      userData: { ...currentUserData }, // Store full user data for rank comparison
     };
   }, [userData]);
 
@@ -310,22 +312,22 @@ const Dashboard = () => {
         accuracy: userData.progress?.accuracy,
         streak: userData.current_streak,
         lessons: userData.lessons,
-        total_lessons: userData.total_lessons
+        total_lessons: userData.total_lessons,
       });
-      
+
       const currentRank = getUserRank({
         level: userData.level || 1,
         accuracy: userData.progress?.accuracy || 0,
         streak: userData.current_streak || 0,
-        lessonsCompleted: userData.total_lessons || userData.lessons || 0
+        lessonsCompleted: userData.total_lessons || userData.lessons || 0,
       });
       console.log("Current Rank:", currentRank);
-      
+
       const nextRankProgress = getNextRankProgress({
         level: userData.level || 1,
         accuracy: userData.progress?.accuracy || 0,
         streak: userData.current_streak || 0,
-        lessonsCompleted: userData.total_lessons || userData.lessons || 0
+        lessonsCompleted: userData.total_lessons || userData.lessons || 0,
       });
       console.log("Next Rank Requirements:", nextRankProgress);
       console.log("=== END DEBUG ===");
@@ -468,7 +470,6 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
-
       {/* Greeting Banner */}
       <div className="pt-28 md:pt-18 lg:10 bg-gray-50 py-0 px-4 lg:px-12 rounded-xl shadow-sm mb-10 animate-fade-in-up transition">
         <div className="md:flex items-center justify-between flex-wrap">
@@ -482,7 +483,7 @@ const Dashboard = () => {
               <h1 className="text-4xl font-bold text-amber pt-2">
                 Hi, {userData?.username || "Learner"}!
               </h1>
-              <p className="text-amber py-1 text-lg">{realRank}</p>
+              <p className="text-amber py-1 text-lg">{userData.rank}</p>
             </div>
           </div>
           <Link to={"/lessons"}>
@@ -490,9 +491,18 @@ const Dashboard = () => {
               Start Lesson
             </button>
           </Link>
+          
         </div>
       </div>
 
+       <div>
+            <button className=" text-amber text-2xl ">
+              <Link to="/dashboard/ranking" className="p-3">
+                View Ranks
+              </Link>
+            </button>
+          </div>
+      
       {/* Stats */}
       {userData && (
         <div className="grid md:grid-cols-3 md:grid-rows-2 gap-8 bg-gray-50 py-10 px-4 lg:px-12">
@@ -502,9 +512,9 @@ const Dashboard = () => {
             <div>
               {/* CHANGED: Show formatted total XP */}
               <h1 className="text-3xl font-bold">
-                {formatXP(progressData.totalXP)}
+                {formatXP(progressData.xpProgress)}
               </h1>
-              <p className="text-gray-500">Total XP</p>
+              <p className="text-gray-500">Current XP</p>
 
               <div className="w-40 h-2 bg-gray-200 rounded mt-2 overflow-hidden">
                 <div
@@ -512,6 +522,8 @@ const Dashboard = () => {
                   style={{ width: `${progressData.progress}%` }}
                 />
               </div>
+
+             
 
               {/* CHANGED: Fixed XP calculation */}
               <p className="text-xs text-gray-400">
@@ -616,12 +628,10 @@ const Dashboard = () => {
           </div>
         </div>
       )}
-
       {/* Badges */}
       <div className="mt-8 transition-transform duration-300 hover:scale-105 px-4 lg:px-12">
         <Badge />
       </div>
-
       <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-amber justify-around bg-gray-100 lg:hidden">
         <Link to={"/lessons"} className="flex flex-col items-center pt-3">
           <FaHome className="text-2xl" />
@@ -644,7 +654,6 @@ const Dashboard = () => {
           <p className="text-amber text-sm">Profile</p>
         </Link>
       </div>
-
       {/* Developer Tools Button */}
       <button
         onClick={() => setShowDevTools(!showDevTools)}
@@ -652,7 +661,6 @@ const Dashboard = () => {
       >
         {showDevTools ? "❌" : "🧪"}
       </button>
-
       {/* Developer Tools Panel */}
       {showDevTools && (
         <div className="fixed bottom-24 right-4 bg-white p-4 rounded-lg shadow-xl border-2 border-red-500 z-50 max-w-sm w-80 overflow-y-auto max-h-96">
@@ -688,20 +696,30 @@ const Dashboard = () => {
               >
                 Test Notification
               </button>
-              
+
               <button
                 onClick={async () => {
-                  const streakMetaRef = doc(db, `users/${auth.currentUser.uid}/meta`, "streak");
+                  const streakMetaRef = doc(
+                    db,
+                    `users/${auth.currentUser.uid}/meta`,
+                    "streak"
+                  );
                   const currentStreakSnap = await getDoc(streakMetaRef);
-                  const currentStreak = currentStreakSnap.exists() ? currentStreakSnap.data().streak || 0 : 0;
-                  
-                  await setDoc(streakMetaRef, {
-                    streak: currentStreak + 1,
-                    lastActive: new Date()
-                  }, { merge: true });
-                  
+                  const currentStreak = currentStreakSnap.exists()
+                    ? currentStreakSnap.data().streak || 0
+                    : 0;
+
+                  await setDoc(
+                    streakMetaRef,
+                    {
+                      streak: currentStreak + 1,
+                      lastActive: new Date(),
+                    },
+                    { merge: true }
+                  );
+
                   await updateDoc(doc(db, "users", auth.currentUser.uid), {
-                    current_streak: currentStreak + 1
+                    current_streak: currentStreak + 1,
                   });
                   console.log("✅ Streak increased to:", currentStreak + 1);
                 }}
@@ -709,7 +727,7 @@ const Dashboard = () => {
               >
                 +1 Streak
               </button>
-              
+
               <button
                 onClick={resetTestData}
                 className="bg-gray-500 text-white px-2 py-2 rounded text-xs hover:bg-gray-600"
@@ -721,7 +739,9 @@ const Dashboard = () => {
 
           {/* Rank Testing Section */}
           <div className="mb-4">
-            <h4 className="font-semibold mb-2 text-gray-700">Rank Testing 🏆</h4>
+            <h4 className="font-semibold mb-2 text-gray-700">
+              Rank Testing 🏆
+            </h4>
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={async () => {
@@ -730,7 +750,7 @@ const Dashboard = () => {
                     current_streak: 5,
                     total_lessons: 15,
                     progress: { accuracy: 65 },
-                    xp: 1500
+                    xp: 1500,
                   });
                   console.log("✅ Set Topaz requirements");
                 }}
@@ -738,7 +758,7 @@ const Dashboard = () => {
               >
                 Set Topaz
               </button>
-              
+
               <button
                 onClick={async () => {
                   await updateDoc(doc(db, "users", auth.currentUser.uid), {
@@ -746,7 +766,7 @@ const Dashboard = () => {
                     current_streak: 7,
                     total_lessons: 25,
                     progress: { accuracy: 70 },
-                    xp: 3000
+                    xp: 3000,
                   });
                   console.log("✅ Set Amethyst requirements");
                 }}
@@ -754,7 +774,7 @@ const Dashboard = () => {
               >
                 Set Amethyst
               </button>
-              
+
               <button
                 onClick={async () => {
                   await updateDoc(doc(db, "users", auth.currentUser.uid), {
@@ -762,7 +782,7 @@ const Dashboard = () => {
                     current_streak: 10,
                     total_lessons: 35,
                     progress: { accuracy: 75 },
-                    xp: 5000
+                    xp: 5000,
                   });
                   console.log("✅ Set Emerald requirements");
                 }}
@@ -770,7 +790,7 @@ const Dashboard = () => {
               >
                 Set Emerald
               </button>
-              
+
               <button
                 onClick={async () => {
                   await updateDoc(doc(db, "users", auth.currentUser.uid), {
@@ -779,7 +799,7 @@ const Dashboard = () => {
                     total_lessons: 15,
                     progress: { accuracy: 65 },
                     xp: 1500,
-                    rank: "Moonstone"
+                    rank: "Moonstone",
                   });
                   console.log("🎯 Ready for Topaz rank up!");
                 }}
@@ -787,7 +807,7 @@ const Dashboard = () => {
               >
                 Force Rank Up
               </button>
-              
+
               <button
                 onClick={async () => {
                   await updateDoc(doc(db, "users", auth.currentUser.uid), {
@@ -796,7 +816,7 @@ const Dashboard = () => {
                     total_lessons: 0,
                     progress: { accuracy: 0 },
                     xp: 0,
-                    rank: "Moonstone"
+                    rank: "Moonstone",
                   });
                   console.log("🔄 Reset to Moonstone");
                 }}
@@ -809,7 +829,9 @@ const Dashboard = () => {
 
           {/* Current Status Section */}
           <div className="mb-4 p-3 bg-gray-50 rounded border">
-            <h4 className="font-semibold mb-2 text-gray-700">Current Status 📊</h4>
+            <h4 className="font-semibold mb-2 text-gray-700">
+              Current Status 📊
+            </h4>
             <button
               onClick={() => {
                 if (userData) {
@@ -817,7 +839,7 @@ const Dashboard = () => {
                     level: userData.level || 1,
                     accuracy: userData.progress?.accuracy || 0,
                     streak: userData.current_streak || 0,
-                    lessonsCompleted: userData.total_lessons || 0
+                    lessonsCompleted: userData.total_lessons || 0,
                   });
                   const status = `
   Current Rank: ${currentRank.name}
@@ -845,7 +867,6 @@ const Dashboard = () => {
           </p>
         </div>
       )}
-
       {/* Level Up Modal */}
       {showLevelUpModal && (
         <LevelUpModal
@@ -853,7 +874,6 @@ const Dashboard = () => {
           onClose={() => setShowLevelUpModal(false)}
         />
       )}
-
       {/* Badge Earned Modal */}
       {showBadgeModal && newlyEarnedBadge && (
         <BadgeEarnedModal
@@ -862,7 +882,6 @@ const Dashboard = () => {
           onClose={() => setShowBadgeModal(false)}
         />
       )}
-
       {/* Achievement Earned Modal */}
       {showAchievementModal && newlyEarnedAchievement && (
         <AchievementEarnedModal
@@ -871,7 +890,6 @@ const Dashboard = () => {
           onClose={() => setShowAchievementModal(false)}
         />
       )}
-
       {/* Rank Up Screen */}
       {showRankUpScreen && rankUpData && (
         <RankUpScreen

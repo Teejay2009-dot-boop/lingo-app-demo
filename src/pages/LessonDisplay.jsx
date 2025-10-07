@@ -243,6 +243,11 @@ const LessonDisplay = () => {
     const correctAnswers = Object.values(answeredMap).filter(
       (a) => a.isCorrect
     ).length;
+    const totalQuestions = exercises.length;
+    const accuracy = totalQuestions > 0
+      ? Math.round((correctAnswers / totalQuestions) * 100)
+      : 0;
+
     const perfectBonus =
       correctAnswers === exercises.length ? PERFECT_LESSON_BONUS : 0;
     const streakBonus = Math.floor(currentStreak / 7);
@@ -254,6 +259,11 @@ const LessonDisplay = () => {
     const coinsEarned = Math.floor(finalXP / 3) + (perfectBonus ? 2 : 0);
 
     console.log("💰 Calculated:", { finalXP, coinsEarned });
+    console.log("🎯 Accuracy calculated:", { 
+      correctAnswers, 
+      totalQuestions, 
+      accuracy 
+    });
 
     // ✅ SET STATES FIRST - BEFORE ANY ASYNC OPERATIONS
     console.log("🎉 SETTING COMPLETION STATES...");
@@ -269,6 +279,35 @@ const LessonDisplay = () => {
       console.log("📝 Starting Firestore updates...");
 
       const userRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userRef);
+      const userData = userSnap.exists() ? userSnap.data() : {};
+
+      // Get current accuracy stats
+      const currentProgress = userData.progress || {};
+      const currentTotalQuestions = currentProgress.total_questions || 0;
+      const currentCorrectAnswers = currentProgress.correct_answers || 0;
+
+      // Calculate new cumulative accuracy
+      const newTotalQuestions = currentTotalQuestions + totalQuestions;
+      const newCorrectAnswers = currentCorrectAnswers + correctAnswers;
+      const newAccuracy = newTotalQuestions > 0 
+        ? Math.round((newCorrectAnswers / newTotalQuestions) * 100) 
+        : 0;
+
+      console.log("📊 Updating accuracy:", {
+        old: { 
+          accuracy: currentProgress.accuracy || 0, 
+          questions: currentTotalQuestions, 
+          correct: currentCorrectAnswers 
+        },
+        new: { 
+          accuracy: newAccuracy, 
+          questions: newTotalQuestions, 
+          correct: newCorrectAnswers 
+        }
+      });
+
+      // Update user with accuracy tracking
       await updateDoc(userRef, {
         xp: increment(finalXP),
         total_xp: increment(finalXP),
@@ -277,6 +316,13 @@ const LessonDisplay = () => {
         coins: increment(coinsEarned),
         total_lessons: increment(1),
         completed_lessons: arrayUnion(lesson.lesson_id),
+        progress: {
+          ...currentProgress,
+          accuracy: newAccuracy,
+          total_questions: newTotalQuestions,
+          correct_answers: newCorrectAnswers,
+          last_updated: new Date()
+        }
       });
 
       await updateStreak(uid);
@@ -538,6 +584,21 @@ const LessonDisplay = () => {
         className="fixed bottom-4 left-4 bg-red-500 text-white p-2 rounded z-50"
       >
         Debug: Complete Lesson
+      </button>
+      {/* Accuracy debug button */}
+      <button
+        onClick={async () => {
+          const userRef = doc(db, "users", auth.currentUser.uid);
+          const userSnap = await getDoc(userRef);
+          if (userSnap.exists()) {
+            const data = userSnap.data();
+            console.log("🔍 CURRENT FIREBASE ACCURACY:", data.progress);
+            alert(`Current Accuracy: ${data.progress?.accuracy || 0}%`);
+          }
+        }}
+        className="fixed top-4 right-4 bg-blue-500 text-white p-2 rounded z-50"
+      >
+        Check Accuracy
       </button>
 
       <GoBackBtn />
