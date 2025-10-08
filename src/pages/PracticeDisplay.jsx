@@ -345,7 +345,7 @@ const PracticeDisplay = () => {
       <GoBackBtn />
 
       {/* Practice Header */}
-      <div className="flex justify-between items-center pt-10 mb-6">
+      {/* <div className="flex justify-between items-center pt-10 mb-6">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-amber-600">
             {practiceName} Practice
@@ -361,10 +361,10 @@ const PracticeDisplay = () => {
             Streak: {currentStreak} | Accuracy: {accuracy}%
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Stats Bar */}
-      <div className="bg-white rounded-lg p-4 mb-6 shadow-sm">
+      <div className="bg-white rounded-lg p-4 mb-6 mt-16 shadow-sm">
         <div className="flex justify-between items-center text-sm">
           <div className="text-center">
             <div className="font-semibold text-green-600">

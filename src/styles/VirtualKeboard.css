@@ -1,0 +1,121 @@
+.yoruba-keyboard {
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 12px;
+  padding: 16px;
+  margin: 20px 0;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.keyboard-row {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.keyboard-key {
+  min-width: 50px;
+  height: 50px;
+  border: 2px solid #dee2e6;
+  border-radius: 8px;
+  background: white;
+  font-size: 18px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #495057;
+}
+
+.keyboard-key:hover:not(:disabled) {
+  background: #e9ecef;
+  border-color: #adb5bd;
+  transform: translateY(-2px);
+}
+
+.keyboard-key:active:not(:disabled) {
+  transform: translateY(0);
+  background: #dee2e6;
+}
+
+.keyboard-key:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.special-key {
+  background: #fff3cd;
+  border-color: #ffeaa7;
+  color: #856404;
+}
+
+.special-key:hover:not(:disabled) {
+  background: #ffeaa7;
+  border-color: #fdcb6e;
+}
+
+.action-keys {
+  margin-top: 12px;
+  gap: 8px;
+}
+
+.action-key {
+  flex: 1;
+  font-size: 16px;
+  font-weight: 500;
+}
+
+.space-key {
+  flex: 3;
+  background: #d1ecf1;
+  border-color: #bee5eb;
+  color: #0c5460;
+}
+
+.backspace-key {
+  background: #f8d7da;
+  border-color: #f5c6cb;
+  color: #721c24;
+  font-size: 20px;
+}
+
+.clear-key {
+  background: #d4edda;
+  border-color: #c3e6cb;
+  color: #155724;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .keyboard-key {
+    min-width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .action-key {
+    font-size: 14px;
+  }
+
+  .yoruba-keyboard {
+    padding: 12px;
+    margin: 16px 0;
+  }
+}
+
+@media (max-width: 480px) {
+  .keyboard-key {
+    min-width: 35px;
+    height: 35px;
+    font-size: 14px;
+  }
+
+  .keyboard-row {
+    gap: 4px;
+    margin-bottom: 6px;
+  }
+}

@@ -46,6 +46,7 @@ import {
   setDoc,
   getDoc,
 } from "firebase/firestore";
+import users from "../data/user";
 
 const Dashboard = () => {
   const [userData, setUserData] = useState(null);
@@ -491,18 +492,17 @@ const Dashboard = () => {
               Start Lesson
             </button>
           </Link>
-          
         </div>
       </div>
 
-       <div>
-            <button className=" text-amber text-2xl ">
-              <Link to="/dashboard/ranking" className="p-3">
-                View Ranks
-              </Link>
-            </button>
-          </div>
-      
+      <div>
+        <button className=" text-amber text-2xl ">
+          <Link to="/dashboard/ranking" className="p-3">
+            View Ranks
+          </Link>
+        </button>
+      </div>
+
       {/* Stats */}
       {userData && (
         <div className="grid md:grid-cols-3 md:grid-rows-2 gap-8 bg-gray-50 py-10 px-4 lg:px-12">
@@ -522,8 +522,6 @@ const Dashboard = () => {
                   style={{ width: `${progressData.progress}%` }}
                 />
               </div>
-
-             
 
               {/* CHANGED: Fixed XP calculation */}
               <p className="text-xs text-gray-400">
