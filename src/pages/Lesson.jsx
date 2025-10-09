@@ -53,28 +53,34 @@ export const Lesson = () => {
   }
 
   return (
-    <div className="bg-cover bg-center lesson-container">
+    <div className="bg-cover lesson-container">
       {/* Top Navbar */}
-      <div className="text-amber fixed top-0 left-0 w-full z-50 p-2 sm:p-4 flex justify-between items-center bg-gray-900 bg-opacity-70 backdrop-blur-sm shadow-md">
-        <Link to="/dashboard">
-          <FaArrowCircleLeft className="text-xl sm:text-2xl cursor-pointer" />
-        </Link>
+      <div className="text-amber fixed top-0 w-full pt-1">
+        
 
-        <div className="flex items-center gap-2 sm:gap-4">
-          <div className="text-xs sm:text-md font-semibold flex items-center gap-2 sm:gap-3">
-            ⭐ {userData.xp} XP
-            <p className="hidden sm:flex gap-2 items-center">
-              Coins: <FaCoins /> {userData.coins}
+        <div className="">
+          <div className="text-xs sm:text-md md:text-lg font-semibold flex items-center gap-2 w-full sm:gap-3 lg:text-lg justify-between lg:justify-end">
+
+            <p className="pl-3 flex items-center ">
+              <Link to={'/lessons/shop'}>
+              ${userData.coins}
+              </Link>
+            </p>
+            <p>
+              XP:{userData.XP}
             </p>
             <p className="flex gap-2 items-center">
-              ❤ Lives: {userData.lives}/{userData.max_lives}
+              ❤ Lives: {userData.lives}
             </p>
-            {/* NEW: Streak display in navbar */}
-            <p className="flex gap-2 items-center">
-              <FaFire className="text-red-500" /> {userData.current_streak || 0}
-            </p>
+            <div>
+              {/* NEW: Streak display in navbar */}
+            
           </div>
 
+        <div className="flex gap-2 items-center"> 
+          <p className="flex gap-2 items-center">
+              <FaFire className="text-red-500" /> {userData.current_streak || 0}
+            </p>
           <button
             onClick={() => setShowDropdown(!showDropdown)}
             className="relative"
@@ -85,6 +91,8 @@ export const Lesson = () => {
               className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-amber shadow"
             />
           </button>
+        </div>
+            </div>
         </div>
       </div>
 

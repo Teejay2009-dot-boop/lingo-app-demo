@@ -94,8 +94,8 @@ const NotificationFeed = () => {
   return (
     <>
       <DashboardLayout>
-        <div className="bg-white shadow-lg rounded-xl p-6 w-full max-w-2xl mx-auto">
-          <div className="flex justify-between items-center mb-4">
+        <div className="bg-white rounded-xl pt-6 w-full max-w-xl sm:max-w-2xl md:max-w-3xl lg:max-w-5xl pl-6 pb-10 lg:pb-5">
+          <div className="flex justify-between items-center mb-4 pt-16 lg:pt-0">
             <h2 className="text-2xl font-bold text-gray-800">
               📢 Notifications
             </h2>
@@ -110,7 +110,7 @@ const NotificationFeed = () => {
           </div>
 
           {notifications.length > 0 ? (
-            <ul className="space-y-4 mb-16">
+            <ul className="space-y-5 mb-16">
               {/* Show unread notifications first */}
               {unreadNotifications.map((notif) => (
                 <li

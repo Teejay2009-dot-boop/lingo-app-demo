@@ -16,9 +16,30 @@ import {
 } from "react-icons/fa";
 import { FaShop } from "react-icons/fa6";
 import { Dropdown } from "./DropDown";
+import { useEffect } from "react";
+import { db } from "../../firebase/config/firebase";
+
+import { collection, query, where, onSnapshot } from "firebase/firestore";
 import { label } from "framer-motion/client";
 
 const DashboardSidebar = () => {
+  const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    const notificationsRef = collection(
+      db,
+      `users/${auth.currentUser.uid}/notifications`
+    );
+    const q = query(notificationsRef, where("read", "==", false));
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      setUnreadNotificationCount(snapshot.size);
+    });
+
+    return unsubscribe;
+  }, []); // or [] if you don't have userData dependency
+
   const logout = async () => {
     try {
       await signOut(auth);
@@ -49,7 +70,14 @@ const DashboardSidebar = () => {
         <h1 className="text-amber text-2xl font-bold">Lingo-Bud</h1>
         <div className="flex gap-5 justify-between">
           <div className="text-xl">
-            <FaBell className="text-3xl cursor-pointer pt-1 text-amber" />
+            <Link to="/notifications" className="relative">
+              <FaBell className="text-3xl hover:translate-y-[-2px] transition-transform duration-500 cursor-pointer pt-1 text-amber" />
+              {unreadNotificationCount > 0 && (
+                <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {unreadNotificationCount}
+                </span>
+              )}
+            </Link>
           </div>
           <div>
             <FaBars
