@@ -1,17 +1,11 @@
 import { auth, db } from "../firebase/config/firebase";
-import {
-  doc,
-  onSnapshot,
-  collection,
-  query,
-  orderBy,
-  limit,
-} from "firebase/firestore";
+import { doc, onSnapshot } from "firebase/firestore";
 import { getUserRank } from "../utils/rankSystem";
 import { useEffect, useState } from "react";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
 import profilePic from "../assets/IMG-20250724-WA0123.jpg";
 import { Link } from "react-router-dom";
+import StreakCalendar from "../components/StreakCalendar";
 import {
   FaChartBar,
   FaKeyboard,
@@ -23,13 +17,13 @@ import {
   FaStar,
   FaTrophy,
   FaMedal,
+  FaCalendarAlt, // Added missing import
 } from "react-icons/fa";
 import { getLevelProgress } from "../utils/progression";
 import BADGES from "../data/badges";
 import ACHIEVEMENTS from "../data/achievements";
-import users from "../data/user";
 
-// Badge Icon component (same as your Badges page)
+// Badge Icon component
 const BadgeIcon = ({ iconName }) => {
   switch (iconName) {
     case "school":
@@ -63,7 +57,7 @@ const BadgeIcon = ({ iconName }) => {
   }
 };
 
-// Achievement Icon component (simplified version)
+// Achievement Icon component
 const AchievementIcon = ({ iconName }) => {
   switch (iconName) {
     case "school":
@@ -89,6 +83,7 @@ export default function Profile() {
   const [recentBadges, setRecentBadges] = useState([]);
   const [recentAchievements, setRecentAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showStreakCalendar, setShowStreakCalendar] = useState(false); // Moved to main component
 
   // Format XP function
   const formatXP = (xp) => {
@@ -116,7 +111,7 @@ export default function Profile() {
 
         // Get recent badges from unlocked_badges
         if (userData.unlocked_badges) {
-          const userBadges = userData.unlocked_badges.slice(-4).reverse(); // Get last 4 earned badges
+          const userBadges = userData.unlocked_badges.slice(-4).reverse();
           const badgeDetails = userBadges
             .map((badgeId) => BADGES[badgeId])
             .filter((badge) => badge);
@@ -127,7 +122,7 @@ export default function Profile() {
         if (userData.unlocked_achievements) {
           const userAchievements = userData.unlocked_achievements
             .slice(-4)
-            .reverse(); // Get last 4 earned achievements
+            .reverse();
           const achievementDetails = userAchievements
             .map((achievementId) => ACHIEVEMENTS[achievementId])
             .filter((achievement) => achievement);
@@ -222,7 +217,7 @@ export default function Profile() {
             Hey {user?.username || "Learner"}
           </h2>
           <p className="text-amber-600 text-lg flex items-center justify-center gap-1 mt-2">
-            <span className="text-xl">🔶</span> {user.realRank}
+            <span className="text-xl">🔶</span> {realRank}
           </p>
         </div>
 
@@ -251,13 +246,17 @@ export default function Profile() {
           </div>
 
           {/* Streak Card */}
-          <div className="flex flex-col items-center justify-center p-4 rounded-xl shadow-md bg-white border border-yellow-200 w-32 h-32">
+          <div
+            onClick={() => setShowStreakCalendar(true)}
+            className="flex flex-col items-center justify-center p-4 rounded-xl shadow-md bg-white border border-yellow-200 w-32 h-32 cursor-pointer hover:bg-gray-50 transition-colors"
+          >
             <FaFire className="text-red-500 text-2xl mb-2" />
             <p className="text-amber-500 font-bold text-lg mb-1">Streak</p>
-            <p className="text-gray-800 text-3xl font-bold">
-              {currentStreak} day{currentStreak !== 1 ? "s" : ""}
+            <p className="text-gray-800 text-3xl font-bold">{currentStreak}</p>
+            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+              <FaCalendarAlt className="text-xs" />
+              View calendar
             </p>
-            <p className="text-xs text-gray-500 mt-1">Keep going! 🔥</p>
           </div>
 
           {/* XP Card */}
@@ -410,6 +409,12 @@ export default function Profile() {
             </div>
           </div>
         </div>
+
+        {/* Streak Calendar Modal */}
+        <StreakCalendar
+          isOpen={showStreakCalendar}
+          onClose={() => setShowStreakCalendar(false)}
+        />
 
         {/* Bottom Navigation */}
         <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-amber justify-around bg-gray-100 lg:hidden">

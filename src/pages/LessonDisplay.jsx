@@ -13,6 +13,7 @@ import {
   FaCoins,
   FaHeart,
   FaExpand,
+  FaFire,
 } from "react-icons/fa";
 import { MainIdea } from "../components/LessonCards/MainIdea";
 import { FillintheGapBestOption } from "../components/LessonCards/FillintheGapBestOption";
@@ -41,15 +42,16 @@ const LessonDisplay = () => {
   const [currentModule, setCurrentModule] = useState(null);
   const [lesson, setLesson] = useState(null);
   const [exercises, setExercises] = useState([]);
-  const [baseXp, setBaseXp] = useState(10);
 
-  const [currentIndex, setCurrentIndex] = useState(0);
+  // NEW: Lesson XP starts at 20 and decreases with wrong answers
+  const [currentLessonXP, setCurrentLessonXP] = useState(20);
   const [lives, setLives] = useState(5);
-  const [xp, setXp] = useState(0);
+  const [userXP, setUserXP] = useState(0);
   const [coins, setCoins] = useState(0);
   const [showModal, setShowModal] = useState(false);
   const [lastAnswerCorrect, setLastAnswerCorrect] = useState(null);
   const [answeredMap, setAnsweredMap] = useState({});
+  const [currentIndex, setCurrentIndex] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [user, setUser] = useState(null);
 
@@ -63,22 +65,10 @@ const LessonDisplay = () => {
       })
     : "Moonstone";
   const [startTime, setStartTime] = useState(null);
-  const [earnedXPPerQuestion, setEarnedXPPerQuestion] = useState([]);
   const [lessonCompleted, setLessonCompleted] = useState(false);
-  const [xpBreakdown, setXpBreakdown] = useState({
-    base: 0,
-    accuracy: 0,
-    streak: 0,
-    speed: 0,
-    total: 0,
-  });
   const [showCompletionSummary, setShowCompletionSummary] = useState(false);
   const [finalLessonXp, setFinalLessonXp] = useState(0);
   const [finalLessonCoins, setFinalLessonCoins] = useState(0);
-
-  const MAX_XP_PER_LESSON = 30;
-  const IDEAL_TIME_PER_QUESTION = 10;
-  const PERFECT_LESSON_BONUS = 5;
 
   const currentExercise = exercises[currentIndex];
   const progressPercent =
@@ -104,9 +94,10 @@ const LessonDisplay = () => {
     const unsubUser = onSnapshot(userRef, (snap) => {
       if (snap.exists()) {
         setLives(snap.data().lives ?? 5);
-        setXp(snap.data().xp ?? 0);
+        setUserXP(snap.data().xp ?? 0);
         setCoins(snap.data().coins ?? 0);
         setCurrentStreak(snap.data().current_streak ?? 0);
+        setUser(snap.data());
       }
     });
 
@@ -169,12 +160,12 @@ const LessonDisplay = () => {
         if (fetchedLesson) {
           setLesson(fetchedLesson);
           setExercises(fetchedLesson.exercises);
-          setBaseXp(fetchedLesson.base_xp || 10);
           setCurrentIndex(0);
           setAnsweredMap({});
-          setEarnedXPPerQuestion([]);
           setLessonCompleted(false);
           setShowCompletionSummary(false);
+          // Reset lesson XP to 20 when starting new lesson
+          setCurrentLessonXP(20);
         } else {
           console.error("Lesson not found:", lessonId);
           if (lessonId !== undefined) {
@@ -185,33 +176,15 @@ const LessonDisplay = () => {
     }
   }, [moduleId, currentLessonIndex, navigate]);
 
-  const calculateQuestionXP = (isCorrect, timeTaken) => {
-    const base = Math.min(baseXp, 2);
-    const accuracy = isCorrect ? 1.0 : 0.5;
-    const streakBonus = 1 + Math.min(currentStreak * 0.02, 0.5);
-    const timeRatio = IDEAL_TIME_PER_QUESTION / Math.max(1, timeTaken);
-    const speedFactor = Math.min(1.2, Math.max(0.8, timeRatio));
-
-    const breakdown = {
-      base: base,
-      accuracy: Math.round(base * accuracy),
-      streak: Math.round(base * (streakBonus - 1)),
-      speed: Math.round(base * (speedFactor - 1)),
-      total: Math.round(base * accuracy * streakBonus * speedFactor),
-    };
-
-    setXpBreakdown(breakdown);
-    return breakdown.total;
-  };
-
   const handleAnswer = async (isCorrect) => {
     if (answeredMap[currentIndex]) return;
 
-    const timeTaken = (Date.now() - startTime) / 1000;
-    const questionXP = calculateQuestionXP(isCorrect, timeTaken);
+    // Update lesson XP for wrong answers
+    if (!isCorrect) {
+      setCurrentLessonXP((prev) => Math.max(0, prev - 2));
+    }
 
     setAnsweredMap((prev) => ({ ...prev, [currentIndex]: { isCorrect } }));
-    setEarnedXPPerQuestion((prev) => [...prev, questionXP]);
     setShowModal(true);
     setLastAnswerCorrect(isCorrect);
 
@@ -219,10 +192,6 @@ const LessonDisplay = () => {
       const userRef = doc(db, "users", auth.currentUser.uid);
       try {
         await updateDoc(userRef, {
-          xp: increment(questionXP),
-          total_xp: increment(questionXP),
-          weeklyXP: increment(questionXP),
-          monthlyXP: increment(questionXP),
           ...(!isCorrect && { lives: increment(-1) }),
         });
       } catch (error) {
@@ -244,40 +213,72 @@ const LessonDisplay = () => {
       (a) => a.isCorrect
     ).length;
     const totalQuestions = exercises.length;
-    const accuracy = totalQuestions > 0
-      ? Math.round((correctAnswers / totalQuestions) * 100)
-      : 0;
+    const wrongAnswers = totalQuestions - correctAnswers;
+    const accuracy =
+      totalQuestions > 0
+        ? Math.round((correctAnswers / totalQuestions) * 100)
+        : 0;
 
-    const perfectBonus =
-      correctAnswers === exercises.length ? PERFECT_LESSON_BONUS : 0;
-    const streakBonus = Math.floor(currentStreak / 7);
-    const totalRawXP = earnedXPPerQuestion.reduce((sum, xp) => sum + xp, 0);
-    const finalXP = Math.min(
-      totalRawXP + perfectBonus + streakBonus,
-      MAX_XP_PER_LESSON
-    );
-    const coinsEarned = Math.floor(finalXP / 3) + (perfectBonus ? 2 : 0);
+    // Calculate base XP (20 minus 2 for each wrong answer)
+    let baseXP = 20 - wrongAnswers * 2;
+    baseXP = Math.max(0, baseXP); // Ensure XP doesn't go below 0
 
-    console.log("💰 Calculated:", { finalXP, coinsEarned });
-    console.log("🎯 Accuracy calculated:", { 
-      correctAnswers, 
-      totalQuestions, 
-      accuracy 
+    // Calculate streak bonus for XP
+    let streakBonusXP = 0;
+    if (currentStreak >= 7) {
+      streakBonusXP = 7;
+    } else if (currentStreak >= 3) {
+      streakBonusXP = 5;
+    } else if (currentStreak >= 1) {
+      streakBonusXP = 2;
+    }
+
+    // Calculate final XP (can exceed 20)
+    const finalXP = baseXP + streakBonusXP;
+
+    // NEW: Calculate coins according to the formula
+    const baseCoin = 10;
+    const accuracyBonusCoin = Math.floor(accuracy / 10);
+    let coinReward = baseCoin + accuracyBonusCoin;
+
+    // Calculate streak bonus for coins (same as XP streak bonus)
+    let streakBonusCoin = 0;
+    if (currentStreak >= 7) {
+      streakBonusCoin = 7;
+    } else if (currentStreak >= 3) {
+      streakBonusCoin = 5;
+    } else if (currentStreak >= 1) {
+      streakBonusCoin = 2;
+    }
+
+    // Total coin reward
+    const totalCoinReward = coinReward + streakBonusCoin;
+
+    console.log("💰 XP Calculation:", {
+      baseXP,
+      wrongAnswers,
+      streakBonusXP,
+      finalXP,
     });
 
-    // ✅ SET STATES FIRST - BEFORE ANY ASYNC OPERATIONS
-    console.log("🎉 SETTING COMPLETION STATES...");
+    console.log("💰 COINS Calculation:", {
+      baseCoin,
+      accuracyBonusCoin,
+      coinReward,
+      streakBonusCoin,
+      totalCoinReward,
+      accuracy,
+    });
+
+    // ✅ SET STATES FIRST
     setLessonCompleted(true);
     setFinalLessonXp(finalXP);
-    setFinalLessonCoins(coinsEarned);
+    setFinalLessonCoins(totalCoinReward);
     setShowCompletionSummary(true);
-    console.log("✅ STATES SHOULD BE SET NOW!");
 
-    // Then do Firestore updates (they can happen in background)
+    // Then do Firestore updates
     const uid = auth.currentUser.uid;
     try {
-      console.log("📝 Starting Firestore updates...");
-
       const userRef = doc(db, "users", uid);
       const userSnap = await getDoc(userRef);
       const userData = userSnap.exists() ? userSnap.data() : {};
@@ -290,30 +291,18 @@ const LessonDisplay = () => {
       // Calculate new cumulative accuracy
       const newTotalQuestions = currentTotalQuestions + totalQuestions;
       const newCorrectAnswers = currentCorrectAnswers + correctAnswers;
-      const newAccuracy = newTotalQuestions > 0 
-        ? Math.round((newCorrectAnswers / newTotalQuestions) * 100) 
-        : 0;
+      const newAccuracy =
+        newTotalQuestions > 0
+          ? Math.round((newCorrectAnswers / newTotalQuestions) * 100)
+          : 0;
 
-      console.log("📊 Updating accuracy:", {
-        old: { 
-          accuracy: currentProgress.accuracy || 0, 
-          questions: currentTotalQuestions, 
-          correct: currentCorrectAnswers 
-        },
-        new: { 
-          accuracy: newAccuracy, 
-          questions: newTotalQuestions, 
-          correct: newCorrectAnswers 
-        }
-      });
-
-      // Update user with accuracy tracking
+      // Update user with new XP and coins system
       await updateDoc(userRef, {
         xp: increment(finalXP),
         total_xp: increment(finalXP),
         weeklyXP: increment(finalXP),
         monthlyXP: increment(finalXP),
-        coins: increment(coinsEarned),
+        coins: increment(totalCoinReward),
         total_lessons: increment(1),
         completed_lessons: arrayUnion(lesson.lesson_id),
         progress: {
@@ -321,8 +310,8 @@ const LessonDisplay = () => {
           accuracy: newAccuracy,
           total_questions: newTotalQuestions,
           correct_answers: newCorrectAnswers,
-          last_updated: new Date()
-        }
+          last_updated: new Date(),
+        },
       });
 
       await updateStreak(uid);
@@ -431,6 +420,7 @@ const LessonDisplay = () => {
     console.log("Answered questions:", Object.keys(answeredMap).length);
     console.log("Lesson completed:", lessonCompleted);
     console.log("Show completion summary:", showCompletionSummary);
+    console.log("Current Lesson XP:", currentLessonXP);
     console.log("====================");
   }, [
     currentIndex,
@@ -438,6 +428,7 @@ const LessonDisplay = () => {
     lessonCompleted,
     showCompletionSummary,
     exercises.length,
+    currentLessonXP,
   ]);
 
   const renderCard = () => {
@@ -604,7 +595,12 @@ const LessonDisplay = () => {
       <GoBackBtn />
       <div className="flex justify-between items-center pt-10 mb-4">
         <p className="font-semibold">❤ Lives: {lives}</p>
-        <p className="font-semibold">XP: {xp}</p>
+        <div className="flex items-center gap-4">
+          <p className="font-semibold flex items-center gap-1">
+            <FaFire className="text-red-500" /> {currentStreak}
+          </p>
+          <p className="font-semibold">XP: {currentLessonXP}</p>
+        </div>
       </div>
       <div className="w-full bg-gray-300 h-2 rounded mb-4">
         <div
@@ -632,6 +628,9 @@ const LessonDisplay = () => {
             >
               {lastAnswerCorrect ? "✔ Correct!" : "❌ Incorrect!"}
             </h2>
+            {!lastAnswerCorrect && (
+              <p className="text-lg mb-2 text-red-600">-2 XP</p>
+            )}
             <button
               onClick={handleNext}
               className={`px-8 py-3 mt-4 rounded-full text-white font-bold text-lg shadow-lg transition duration-300 transform hover:scale-105 ${

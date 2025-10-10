@@ -5,78 +5,65 @@ import {
   orderBy,
   limit,
   onSnapshot,
-  where, // Added where for rank filtering
-  doc, // Added doc for direct document reference
+  where,
+  doc,
 } from "firebase/firestore";
 import { db, auth } from "../../firebase/config/firebase";
 import { FaTrophy, FaCrown, FaMedal, FaUserAlt, FaFire } from "react-icons/fa";
 import { Link } from "react-router-dom";
 import DashboardLayout from "../dashboard/DashboardLayout";
 import { getUserRank } from "../../utils/rankSystem";
-import { BeatLoader } from "react-spinners";
-import { FaChartBar, FaKeyboard, FaTree, FaHome, FaProcedures } from "react-icons/fa";
+import {
+  FaChartBar,
+  FaKeyboard,
+  FaTree,
+  FaHome,
+  FaProcedures,
+} from "react-icons/fa";
 
 const Leaderboard = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [leaderboardMode, setLeaderboardMode] = useState("general"); // "general" or "rank"
+  const [leaderboardMode, setLeaderboardMode] = useState("general");
   const [currentUserPosition, setCurrentUserPosition] = useState(null);
-  const [currentUserData, setCurrentUserData] = useState(null); // To store current user's data
+  const [currentUserData, setCurrentUserData] = useState(null);
 
   // Fetch current user's data
   useEffect(() => {
     if (!auth.currentUser) {
-      console.log("Leaderboard: No auth.currentUser, returning.");
-      setCurrentUserData(null); // Explicitly set to null if no user
+      setCurrentUserData(null);
       return;
     }
 
-    console.log(
-      "Leaderboard: Fetching currentUserData for UID:",
-      auth.currentUser.uid
-    );
-    const userDocRef = doc(db, "users", auth.currentUser.uid); // Direct reference to user document
-
+    const userDocRef = doc(db, "users", auth.currentUser.uid);
     const unsubscribe = onSnapshot(
       userDocRef,
       (docSnap) => {
         if (docSnap.exists()) {
-          const data = docSnap.data();
-          console.log("Leaderboard: currentUserData fetched:", data);
-          setCurrentUserData(data);
+          setCurrentUserData(docSnap.data());
         } else {
-          console.log("Leaderboard: currentUserData does not exist.");
-          setCurrentUserData(null); // User data not found
+          setCurrentUserData(null);
         }
       },
       (error) => {
-        console.error("Leaderboard: Error fetching currentUserData:", error);
+        console.error("Error fetching currentUserData:", error);
         setCurrentUserData(null);
       }
     );
     return unsubscribe;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [auth.currentUser?.uid]); // Depend on auth.currentUser.uid
+  }, [auth.currentUser?.uid]);
 
   useEffect(() => {
     let unsubscribe;
     const fetchLeaderboard = async () => {
       try {
         setLoading(true);
-        console.log(
-          "Leaderboard: Fetching leaderboard for mode:",
-          leaderboardMode
-        );
         let q;
 
         if (leaderboardMode === "general") {
-          q = query(collection(db, "users"), orderBy("xp", "desc"), limit(50)); // Order by xp
-          console.log("Leaderboard: General query constructed.");
+          q = query(collection(db, "users"), orderBy("xp", "desc"), limit(50));
         } else if (leaderboardMode === "rank") {
           if (!currentUserData?.rank) {
-            console.log(
-              "Leaderboard: Rank mode selected but currentUserData.rank is missing."
-            );
             setUsers([]);
             setCurrentUserPosition(null);
             setLoading(false);
@@ -87,10 +74,6 @@ const Leaderboard = () => {
             where("rank", "==", currentUserData.rank),
             orderBy("xp", "desc"),
             limit(50)
-          ); // Filter by current user's rank
-          console.log(
-            "Leaderboard: Rank query constructed for rank:",
-            currentUserData.rank
           );
         }
 
@@ -108,38 +91,29 @@ const Leaderboard = () => {
               }),
             }));
 
-            console.log("Leaderboard: Fetched users data:", usersData);
             setUsers(usersData);
 
-            // Find current user's position
             if (auth.currentUser) {
               const position = usersData.findIndex(
                 (user) => user.id === auth.currentUser.uid
               );
-              console.log("Leaderboard: Current user position:", position + 1);
               setCurrentUserPosition(position >= 0 ? position + 1 : null);
             }
-            setLoading(false); // Set loading to false here, inside onSnapshot
+            setLoading(false);
           },
           (error) => {
-            console.error(
-              "Leaderboard: Error in onSnapshot for leaderboard:",
-              error
-            );
+            console.error("Error in onSnapshot:", error);
             setLoading(false);
           }
         );
       } catch (error) {
-        console.error("Leaderboard: Error fetching leaderboard:", error);
+        console.error("Error fetching leaderboard:", error);
         setLoading(false);
       }
     };
 
     if (leaderboardMode === "rank" && !currentUserData) {
-      console.log(
-        "Leaderboard: Waiting for currentUserData before fetching rank leaderboard."
-      );
-      setLoading(true); // Keep loading true while waiting for currentUserData
+      setLoading(true);
       return;
     }
 
@@ -148,44 +122,48 @@ const Leaderboard = () => {
     return () => {
       if (unsubscribe) unsubscribe();
     };
-  }, [leaderboardMode, currentUserData]); // Depend on leaderboardMode and currentUserData
+  }, [leaderboardMode, currentUserData]);
+
+  // Format XP to whole numbers
+  const formatXP = (xp) => {
+    return Math.round(xp || 0);
+  };
 
   if (loading) {
-    console.log("Leaderboard: Component is in loading state.");
     return (
       <DashboardLayout>
-        <div className="text-center py-8">Loading leaderboard...</div>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-lg text-gray-600">Loading leaderboard...</div>
+        </div>
       </DashboardLayout>
     );
   }
 
-  console.log(
-    "Leaderboard: Rendering component with users:",
-    users,
-    "and currentUserData:",
-    currentUserData
-  );
   return (
     <DashboardLayout>
-      <div className="max-w-4xl mx-auto bg-gray-50 p-4 md:px-8 pt-24 md:pt-8 pb-8">
-        <h1 className="text-3xl font-bold text-center mb-6">Leaderboard</h1>
+      <div className="w-full px-2 sm:px-4 pt-20 md:pt-8 pb-20 max-w-4xl mx-auto">
+        <h1 className="text-2xl sm:text-3xl font-bold text-center mb-6 text-gray-800">
+          Leaderboard
+        </h1>
 
         {/* Leaderboard mode selector */}
-        <div className="flex justify-center gap-4 mb-8">
+        <div className="flex justify-center gap-2 sm:gap-4 mb-6">
           <button
             onClick={() => setLeaderboardMode("general")}
-            className={`px-4 py-2 rounded-full text-sm sm:text-base ${
+            className={`px-4 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-colors text-sm sm:text-base ${
               leaderboardMode === "general"
                 ? "bg-amber text-white"
-                : "bg-gray-200"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
             General
           </button>
           <button
             onClick={() => setLeaderboardMode("rank")}
-            className={`px-4 py-2 rounded-full text-sm sm:text-base ${
-              leaderboardMode === "rank" ? "bg-amber text-white" : "bg-gray-200"
+            className={`px-4 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-colors text-sm sm:text-base ${
+              leaderboardMode === "rank"
+                ? "bg-amber text-white"
+                : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
             My Rank
@@ -193,23 +171,26 @@ const Leaderboard = () => {
         </div>
 
         {/* Leaderboard table */}
-        <div className="bg-white rounded-xl shadow-md overflow-hidden mb-8">
+        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
           {users.length === 0 ? (
-            <div className="text-center p-8">
+            <div className="text-center p-8 sm:p-12 text-gray-500 text-sm sm:text-base">
               {leaderboardMode === "rank" && !currentUserData?.rank
                 ? "Log in to see your rank leaderboard."
                 : "No users found for this leaderboard."}
             </div>
           ) : (
-            <ul className="divide-y divide-gray-200">
+            <ul className="divide-y divide-gray-100">
               {users.map((user, index) => (
                 <li
                   key={user.id}
-                  className={`relative flex items-center py-4 px-3 sm:px-6 transition-colors
-    ${user.id === auth.currentUser?.uid ? "bg-amber-50" : "hover:bg-gray-50"}`}
+                  className={`relative flex items-center py-4 px-3 sm:py-6 sm:px-6 transition-colors ${
+                    user.id === auth.currentUser?.uid
+                      ? "bg-amber-50 border-l-4 border-amber-500"
+                      : "hover:bg-gray-50"
+                  }`}
                 >
                   {/* Rank Badge */}
-                  <div className="flex-shrink-0 mr-2 sm:mr-4 w-6 text-center">
+                  <div className="flex-shrink-0 mr-3 sm:mr-4 w-6 sm:w-8 text-center">
                     {index === 0 ? (
                       <FaCrown className="text-yellow-500 text-xl sm:text-2xl" />
                     ) : index === 1 ? (
@@ -224,8 +205,8 @@ const Leaderboard = () => {
                   </div>
 
                   {/* Avatar */}
-                  <div className="relative flex-shrink-0 mx-2 sm:mx-4">
-                    <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-2 border-white shadow-md">
+                  <div className="flex-shrink-0 mr-3 sm:mr-4">
+                    <div className="w-8 h-8 sm:w-12 sm:h-12 rounded-full bg-gray-200 flex items-center justify-center overflow-hidden border-2 border-white">
                       {user.avatar ? (
                         <img
                           src={user.avatar}
@@ -233,37 +214,43 @@ const Leaderboard = () => {
                           className="w-full h-full object-cover"
                         />
                       ) : (
-                        <FaUserAlt className="text-gray-500 text-base sm:text-xl" />
+                        <FaUserAlt className="text-gray-500 text-sm sm:text-xl" />
                       )}
                     </div>
                   </div>
 
                   {/* User Info */}
-                  <div className="flex-grow ml-2 sm:ml-4 flex justify-between items-center flex-wrap">
-                    <div>
-                      <h3 className="font-semibold text-gray-800 text-base sm:text-lg">
+                  <div className="flex-grow min-w-0 flex justify-between items-center">
+                    <div className="min-w-0 flex-1 mr-2">
+                      <h3 className="font-semibold text-gray-800 text-sm sm:text-lg truncate">
                         {user.username || "Anonymous"}
                         {user.id === auth.currentUser?.uid && (
-                          <span className="ml-2 text-amber-500 text-xs sm:text-sm">
+                          <span className="ml-1 sm:ml-2 text-amber-500 text-xs sm:text-sm">
                             (You)
                           </span>
                         )}
                       </h3>
-                      <p className="text-xs sm:text-sm text-gray-500">
-                        {user.rank || "Beginner"} (Lvl {user.level || 1})
+                      <p className="text-xs sm:text-sm text-gray-500 truncate">
+                        {user.rank || "Beginner"} • Lvl {user.level || 1}
                       </p>
                     </div>
 
-                    {/* XP and Level */}
-                    <div className="text-right min-w-[70px] sm:min-w-[100px] mt-2 sm:mt-0">
-                      <p className="font-bold text-gray-800 text-base sm:text-lg">
-                        {user.xp || 0} XP
+                    {/* XP and Streak */}
+                    <div className="text-right flex-shrink-0">
+                      <p className="font-bold text-gray-800 text-sm sm:text-lg">
+                        {formatXP(user.xp)} XP
                       </p>
-                      <div className="flex items-center justify-end">
-                        {(user.current_streak || 0) > 3 && (
-                          <FaFire className="text-amber-500 text-xs sm:text-sm" />
-                        )}
-                      </div>
+                      {(user.current_streak || 0) > 3 && (
+                        <div className="flex items-center justify-end text-amber-500 text-xs sm:text-sm">
+                          <FaFire className="mr-1" />
+                          <span className="hidden sm:inline">
+                            {user.current_streak} day
+                          </span>
+                          <span className="sm:hidden">
+                            {user.current_streak}d
+                          </span>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </li>
@@ -272,50 +259,28 @@ const Leaderboard = () => {
           )}
         </div>
 
-        <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-amber justify-around bg-gray-100 lg:hidden">
-                <Link to={"/lessons"} className="flex flex-col items-center pt-3">
-                  <FaHome className="text-2xl" />
-                  <p className="text-amber text-sm">Home</p>
-                </Link>
-                <Link to={"/leaderboard"} className="flex flex-col items-center pt-3">
-                  <FaChartBar className="text-2xl" />
-                  <p className="text-amber text-sm">Ranking</p>
-                </Link>
-                <Link to={"/dashboard"} className="flex flex-col items-center pt-3">
-                  <FaKeyboard className="text-2xl " />
-                   <p className="text-amber text-sm">Dashboard</p>
-                </Link>
-                <Link to={"/notifications"} className="flex flex-col items-center pt-3">
-                  <FaTree className="text-2xl" />
-                  <p className="text-amber text-sm">Feed</p>
-                </Link>
-        
-                <Link to={"/profile"} className="flex flex-col items-center pt-3">
-                  <FaProcedures className="text-2xl" />
-                  <p className="text-amber text-sm">Profile</p>
-                </Link>
-              </div>
-
         {/* Current user's position */}
         {auth.currentUser && currentUserData && (
-          <div className="bg-amber-50 p-4 rounded-xl border border-amber-200 text-sm sm:text-base">
-            <h2 className="text-xl font-semibold mb-2">Your Position</h2>
+          <div className="bg-amber-50 p-4 sm:p-6 rounded-xl border border-amber-200">
+            <h2 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-gray-800">
+              Your Position
+            </h2>
             {currentUserPosition !== null ? (
-              <div className="flex items-center justify-between flex-wrap">
-                <p className="text-gray-700 mb-2 sm:mb-0">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <p className="text-gray-700 text-sm sm:text-base">
                   {leaderboardMode === "general"
-                    ? `You are #${currentUserPosition} globally.`
-                    : `You are #${currentUserPosition} in ${currentUserData.rank} Rank.`}
+                    ? `You are #${currentUserPosition} globally`
+                    : `You are #${currentUserPosition} in ${currentUserData.rank} Rank`}
                 </p>
                 {(currentUserData?.current_streak || 0) > 3 && (
-                  <div className="flex items-center text-amber-600">
-                    <FaFire className="mr-1" />
+                  <div className="flex items-center text-amber-600 text-sm sm:text-base">
+                    <FaFire className="mr-1 sm:mr-2" />
                     <span>{currentUserData.current_streak}-day streak</span>
                   </div>
                 )}
               </div>
             ) : (
-              <p className="text-gray-700">
+              <p className="text-gray-700 text-sm sm:text-base">
                 {leaderboardMode === "rank"
                   ? `You are not yet ranked in ${currentUserData.rank} Rank. Complete lessons to earn XP!`
                   : `You are not on the leaderboard yet. Complete lessons to earn XP!`}
@@ -323,6 +288,33 @@ const Leaderboard = () => {
             )}
           </div>
         )}
+
+        {/* Mobile Navigation */}
+        <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-amber justify-around bg-gray-100 lg:hidden">
+          <Link to={"/lessons"} className="flex flex-col items-center pt-3">
+            <FaHome className="text-xl" />
+            <p className="text-amber text-xs">Home</p>
+          </Link>
+          <Link to={"/leaderboard"} className="flex flex-col items-center pt-3">
+            <FaChartBar className="text-xl" />
+            <p className="text-amber text-xs">Ranking</p>
+          </Link>
+          <Link to={"/dashboard"} className="flex flex-col items-center pt-3">
+            <FaKeyboard className="text-xl" />
+            <p className="text-amber text-xs">Dashboard</p>
+          </Link>
+          <Link
+            to={"/notifications"}
+            className="flex flex-col items-center pt-3"
+          >
+            <FaTree className="text-xl" />
+            <p className="text-amber text-xs">Feed</p>
+          </Link>
+          <Link to={"/profile"} className="flex flex-col items-center pt-3">
+            <FaProcedures className="text-xl" />
+            <p className="text-amber text-xs">Profile</p>
+          </Link>
+        </div>
       </div>
     </DashboardLayout>
   );

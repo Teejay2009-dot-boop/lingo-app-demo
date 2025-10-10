@@ -60,7 +60,7 @@ const Dashboard = () => {
   const lastComputedRef = useRef(null);
   const [showBadgeModal, setShowBadgeModal] = useState(false);
   const [newlyEarnedBadge, setNewlyEarnedBadge] = useState(null);
-  const [currentStreak, setCurrentStreak] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(1);
   const [longestStreak, setLongestStreak] = useState(0);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
 
