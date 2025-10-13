@@ -2,9 +2,7 @@ import { db } from "../firebase/config/firebase";
 import {
   doc,
   getDoc,
-  setDoc,
   updateDoc,
-  serverTimestamp,
 } from "firebase/firestore";
 
 export const updateStreak = async (uid) => {
@@ -13,61 +11,78 @@ export const updateStreak = async (uid) => {
     return;
   }
 
-  const streakRef = doc(db, `users/${uid}/meta`, "streak");
-  const streakSnap = await getDoc(streakRef);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-
-  let currentStreak = 0;
-  let lastActiveDate = null;
-
-  if (streakSnap.exists()) {
-    const data = streakSnap.data();
-    currentStreak = data.streak || 0;
-    lastActiveDate = data.lastActive ? data.lastActive.toDate() : null; // Convert Firestore Timestamp to Date
-    if (lastActiveDate) lastActiveDate.setHours(0, 0, 0, 0);
+  const userRef = doc(db, "users", uid);
+  const userSnap = await getDoc(userRef);
+  
+  if (!userSnap.exists()) {
+    console.error("User document not found");
+    return;
   }
+
+  const userData = userSnap.data();
+  
+  // Use client-side date only (no server timestamp for comparison)
+  const today = new Date();
+  today.setHours(0, 0, 0, 0); // Reset to start of day
+  
+  let currentStreak = userData.current_streak || 0;
+  let longestStreak = userData.longest_streak || 0;
+  let lastActiveDate = userData.last_login ? userData.last_login.toDate() : null;
+
+  console.log("🔍 STREAK DEBUG:");
+  console.log("Today:", today.toDateString());
+  console.log("Last Active:", lastActiveDate ? lastActiveDate.toDateString() : "Never");
+  console.log("Current Streak:", currentStreak);
 
   let newStreak = currentStreak;
 
   if (!lastActiveDate) {
-    // First activity or no previous streak data
+    // First time login
     newStreak = 1;
+    console.log("🎯 First login - streak set to 1");
   } else {
-    const diffTime = Math.abs(today.getTime() - lastActiveDate.getTime());
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    // Reset last active to start of that day for comparison
+    const lastActiveDay = new Date(lastActiveDate);
+    lastActiveDay.setHours(0, 0, 0, 0);
+    
+    // Calculate difference in days
+    const diffTime = today.getTime() - lastActiveDay.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    console.log("📅 Day Difference:", diffDays);
 
     if (diffDays === 1) {
-      // Active yesterday, increment streak
+      // Consecutive day - increment streak
       newStreak += 1;
+      console.log("✅ Consecutive day - streak:", newStreak);
     } else if (diffDays === 0) {
-      // Active today, keep streak unchanged (already updated today)
-      // No action needed for newStreak, it retains currentStreak
-    } else {
-      // More than 1 day gap, reset streak
+      // Same day - no change
+      console.log("🔄 Same day - streak unchanged:", newStreak);
+    } else if (diffDays > 1) {
+      // Broken streak - reset to 1
+      newStreak = 1;
+      console.log("🔄 Streak broken - reset to 1");
+    } else if (diffDays < 0) {
+      // Future date detected - reset streak (safety measure)
+      console.log("⚠️ Future date detected - resetting streak");
       newStreak = 1;
     }
   }
 
-  // Update Firestore only if streak or lastActive needs updating
-  if (
-    newStreak !== currentStreak ||
-    !lastActiveDate ||
-    today.getTime() !== lastActiveDate.getTime()
-  ) {
-    await setDoc(
-      streakRef,
-      {
-        streak: newStreak,
-        lastActive: serverTimestamp(),
-      },
-      { merge: true }
-    );
-    console.log(`Streak updated to: ${newStreak}`);
+  // Update longest streak if current is higher
+  if (newStreak > longestStreak) {
+    longestStreak = newStreak;
+    console.log("🏆 New longest streak:", longestStreak);
   }
+
+  // Always update last_login to current client time
+  await updateDoc(userRef, {
+    current_streak: newStreak,
+    longest_streak: longestStreak,
+    last_login: new Date(), // Use client date instead of serverTimestamp
+  });
+  
+  console.log(`💾 Saved: streak=${newStreak}, longest=${longestStreak}`);
 
   return newStreak;
 };
-
-
-

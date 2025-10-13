@@ -89,7 +89,7 @@ const StreakCalendar = ({ isOpen, onClose }) => {
                 <FaFire className="text-red-500" />
                 <span className="text-lg font-bold text-gray-800">{currentStreak}</span>
               </div>
-              <p className="text-sm text-gray-600">Current Streak</p>
+              <p className="text-sm text-gray-900">Current Streak</p>
             </div>
             <div className="text-center">
               <div className="flex items-center justify-center gap-2 mb-2">

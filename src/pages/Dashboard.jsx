@@ -15,7 +15,7 @@ import BadgeEarnedModal from "../components/dashboard/BadgeEarnedModal";
 import { getUserRank } from "../utils/rankSystem";
 import { RankUpScreen } from "../components/RankUpScreen";
 import { addNotification } from "../firebase/utils/notifications";
-import { getRankUpData, getNextRankProgress } from "../data/RankSystem"; // FIXED: lowercase 'r'
+import { getRankUpData, getNextRankProgress } from "../data/RankSystem";
 import { getLevelProgress, getLevel } from "../utils/progression";
 import { updateStreak } from "../utils/streak";
 import {
@@ -48,6 +48,69 @@ import {
 } from "firebase/firestore";
 import users from "../data/user";
 
+// Lives regeneration utility functions
+const checkLivesRegeneration = async (uid) => {
+  if (!uid) return;
+
+  const userRef = doc(db, "users", uid);
+  const userSnap = await getDoc(userRef);
+  
+  if (!userSnap.exists()) return;
+
+  const userData = userSnap.data();
+  const currentLives = userData.lives || 0;
+  const maxLives = userData.max_lives || 5;
+  const lastLifeUpdate = userData.last_life_update ? userData.last_life_update.toDate() : null;
+  const now = new Date();
+
+  // If lives are already full, no need to regenerate
+  if (currentLives >= maxLives) {
+    await updateDoc(userRef, {
+      last_life_update: new Date()
+    });
+    return currentLives;
+  }
+
+  let newLives = currentLives;
+  let timePassed = 0;
+
+  if (lastLifeUpdate) {
+    // Calculate hours passed since last update
+    timePassed = (now - lastLifeUpdate) / (1000 * 60 * 60); // Convert to hours
+    console.log(`⏰ ${timePassed.toFixed(2)} hours passed since last life update`);
+  }
+
+  // If 24 hours passed, refill 1 life
+  if (timePassed >= 24) {
+    newLives = Math.min(maxLives, currentLives + 1);
+    console.log(`❤️ Life regenerated: ${currentLives} → ${newLives}`);
+    
+    await updateDoc(userRef, {
+      lives: newLives,
+      last_life_update: new Date()
+    });
+  }
+
+  return newLives;
+};
+
+const getTimeUntilNextLife = (lastLifeUpdate) => {
+  if (!lastLifeUpdate) return "24:00:00";
+  
+  const now = new Date();
+  const lastUpdate = lastLifeUpdate.toDate();
+  const timePassed = (now - lastUpdate) / (1000 * 60 * 60); // hours
+  const timeRemaining = 24 - timePassed;
+  
+  if (timeRemaining <= 0) return "00:00:00";
+  
+  const hours = Math.floor(timeRemaining);
+  const minutes = Math.floor((timeRemaining - hours) * 60);
+  const seconds = Math.floor(((timeRemaining - hours) * 60 - minutes) * 60);
+  
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+};
+
 const Dashboard = () => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -63,6 +126,7 @@ const Dashboard = () => {
   const [currentStreak, setCurrentStreak] = useState(1);
   const [longestStreak, setLongestStreak] = useState(0);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
+  const [timeUntilNextLife, setTimeUntilNextLife] = useState("24:00:00");
 
   // FIXED: formatXP function with proper null/undefined handling
   const formatXP = (xp) => {
@@ -197,6 +261,28 @@ const Dashboard = () => {
       userData: { ...currentUserData }, // Store full user data for rank comparison
     };
   }, [userData]);
+
+  // Lives regeneration effect
+  useEffect(() => {
+    if (auth.currentUser && userData) {
+      checkLivesRegeneration(auth.currentUser.uid);
+    }
+  }, [userData]);
+
+  // Lives countdown timer effect
+  useEffect(() => {
+    if (!userData?.last_life_update || (userData?.lives || 0) >= (userData?.max_lives || 5)) {
+      setTimeUntilNextLife("24:00:00");
+      return;
+    }
+
+    const timer = setInterval(() => {
+      const time = getTimeUntilNextLife(userData.last_life_update);
+      setTimeUntilNextLife(time);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [userData?.last_life_update, userData?.lives, userData?.max_lives]);
 
   useEffect(() => {
     if (!userData || !auth.currentUser) return;
@@ -340,25 +426,16 @@ const Dashboard = () => {
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
       if (user) {
         const userRef = doc(db, "users", user.uid);
-        const streakMetaRef = doc(db, `users/${user.uid}/meta`, "streak");
 
         const unsubscribeSnapshot = onSnapshot(userRef, (docSnap) => {
           if (docSnap.exists()) {
-            setUserData({
-              ...docSnap.data(),
-            });
+            const data = docSnap.data();
+            setUserData(data);
+            // Use the main streak value from user document
+            setCurrentStreak(data.current_streak || 0);
+            setLongestStreak(data.longest_streak || 0);
           }
           setLoading(false);
-        });
-
-        const unsubscribeStreak = onSnapshot(streakMetaRef, (snap) => {
-          if (snap.exists()) {
-            const streakData = snap.data();
-            setCurrentStreak(streakData.streak || 0);
-            setLongestStreak(streakData.longestStreak || 0);
-          } else {
-            setDoc(streakMetaRef, { streak: 0, lastActive: null });
-          }
         });
 
         // Call updateStreak once per day
@@ -366,7 +443,6 @@ const Dashboard = () => {
 
         return () => {
           unsubscribeSnapshot();
-          unsubscribeStreak();
         };
       } else {
         setUserData(null);
@@ -417,6 +493,9 @@ const Dashboard = () => {
     );
   }
 
+  console.log("🔄 Current streak value:", currentStreak);
+  console.log("📊 Component: Dashboard");
+
   const totalLessons = userData?.totalLessons || 0;
   const completedLessons = userData?.completed_lessons?.length || 0;
   const progressPercent =
@@ -447,6 +526,17 @@ const Dashboard = () => {
     setShowLevelUpModal(false);
   };
 
+  // Initialize lives system for existing users
+  const initializeLivesSystem = async () => {
+    const userRef = doc(db, "users", auth.currentUser.uid);
+    await updateDoc(userRef, {
+      lives: 5,
+      max_lives: 5,
+      last_life_update: new Date()
+    });
+    console.log("✅ Lives system initialized");
+  };
+
   return (
     <DashboardLayout>
       <div className="hidden lg:block bg-gray-50">
@@ -471,6 +561,7 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+
       {/* Greeting Banner */}
       <div className="pt-28 md:pt-18 lg:10 bg-gray-50 py-0 px-4 lg:px-12 rounded-xl shadow-sm mb-10 animate-fade-in-up transition">
         <div className="md:flex items-center justify-between flex-wrap">
@@ -573,7 +664,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Coins & Lives */}
+          {/* Coins & Lives - UPDATED WITH REGENERATION */}
           <div className="bg-white p-6 rounded-2xl shadow flex flex-col justify-between">
             <div className="flex items-center gap-4">
               <FaWallet className="text-3xl text-yellow-500" />
@@ -581,9 +672,19 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center gap-4 mt-3">
               <FaHeart className="text-red-500 text-3xl" />
-              <p className="text-lg font-bold">
-                Lives: {userData?.lives}/{userData?.max_lives}
-              </p>
+              <div>
+                <p className="text-lg font-bold">
+                  Lives: {userData?.lives || 0}/{userData?.max_lives || 5}
+                </p>
+                {(userData?.lives || 0) < (userData?.max_lives || 5) && (
+                  <p className="text-xs text-gray-500">
+                    Next life in: {timeUntilNextLife}
+                  </p>
+                )}
+                {(userData?.lives || 0) >= (userData?.max_lives || 5) && (
+                  <p className="text-xs text-green-500">Full lives! 🎉</p>
+                )}
+              </div>
             </div>
           </div>
 
@@ -697,26 +798,10 @@ const Dashboard = () => {
 
               <button
                 onClick={async () => {
-                  const streakMetaRef = doc(
-                    db,
-                    `users/${auth.currentUser.uid}/meta`,
-                    "streak"
-                  );
-                  const currentStreakSnap = await getDoc(streakMetaRef);
-                  const currentStreak = currentStreakSnap.exists()
-                    ? currentStreakSnap.data().streak || 0
-                    : 0;
+                  const userRef = doc(db, "users", auth.currentUser.uid);
+                  const currentStreak = userData?.current_streak || 0;
 
-                  await setDoc(
-                    streakMetaRef,
-                    {
-                      streak: currentStreak + 1,
-                      lastActive: new Date(),
-                    },
-                    { merge: true }
-                  );
-
-                  await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                  await updateDoc(userRef, {
                     current_streak: currentStreak + 1,
                   });
                   console.log("✅ Streak increased to:", currentStreak + 1);
@@ -724,6 +809,13 @@ const Dashboard = () => {
                 className="bg-green-500 text-white px-2 py-2 rounded text-xs hover:bg-green-600"
               >
                 +1 Streak
+              </button>
+
+              <button
+                onClick={initializeLivesSystem}
+                className="bg-pink-500 text-white px-2 py-2 rounded text-xs hover:bg-pink-600"
+              >
+                Init Lives System
               </button>
 
               <button
@@ -847,6 +939,7 @@ const Dashboard = () => {
   Lessons: ${userData.total_lessons || 0}
   Accuracy: ${userData.progress?.accuracy || 0}%
   Coins: ${userData.coins || 0}
+  Lives: ${userData.lives || 0}/${userData.max_lives || 5}
                   `;
                   console.log("📊 Current Status:", status);
                   alert(status);

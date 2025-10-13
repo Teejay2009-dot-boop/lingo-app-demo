@@ -83,7 +83,7 @@ export default function Profile() {
   const [recentBadges, setRecentBadges] = useState([]);
   const [recentAchievements, setRecentAchievements] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [showStreakCalendar, setShowStreakCalendar] = useState(false); // Moved to main component
+  const [showStreakCalendar, setShowStreakCalendar] = useState(false);
 
   // Format XP function
   const formatXP = (xp) => {
@@ -103,7 +103,7 @@ export default function Profile() {
 
     const uid = auth.currentUser.uid;
 
-    // Listen to user data
+    // Listen to user data - ONLY ONE SOURCE NOW
     const userUnsubscribe = onSnapshot(doc(db, "users", uid), (doc) => {
       if (doc.exists()) {
         const userData = doc.data();
@@ -132,20 +132,11 @@ export default function Profile() {
       setLoading(false);
     });
 
-    // Listen to streak data
-    const streakMetaRef = doc(db, `users/${uid}/meta`, "streak");
-    const streakUnsubscribe = onSnapshot(streakMetaRef, (snap) => {
-      if (snap.exists()) {
-        setUser((prevUser) => ({
-          ...prevUser,
-          streakData: snap.data(),
-        }));
-      }
-    });
+    // REMOVED: The meta streak listener entirely
 
     return () => {
       userUnsubscribe();
-      streakUnsubscribe();
+      // No streak unsubscribe needed anymore
     };
   }, []);
 
@@ -168,8 +159,9 @@ export default function Profile() {
         totalXP: 0,
       };
 
-  // Get current streak (prioritize current_streak from user doc)
-  const currentStreak = user?.current_streak || user?.streakData?.streak || 0;
+  // Get current streak - ONLY from user document now
+  const currentStreak = user?.current_streak || 0;
+  const longestStreak = user?.longest_streak || 0;
 
   // Get total counts
   const totalBadges = user?.unlocked_badges?.length || 0;
@@ -255,7 +247,7 @@ export default function Profile() {
             <p className="text-gray-800 text-3xl font-bold">{currentStreak}</p>
             <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
               <FaCalendarAlt className="text-xs" />
-              View calendar
+              Longest: {longestStreak}
             </p>
           </div>
 

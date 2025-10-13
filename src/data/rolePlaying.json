@@ -1,0 +1,117 @@
+{
+  "category_name": "Shopping & Markets",
+  "category_icon": "cart",
+  "category_description": "Practice shopping conversations in local markets and stores",
+  "difficulty_levels": ["Beginner", "Intermediate", "Advanced"],
+  "total_scenarios": 4,
+  "premium_scenarios": 2,
+  "estimated_total_time": "15-20 minutes",
+  "last_updated": "2024-01-15",
+  "version": "1.0",
+  "scenarios": [
+    {
+      "id": "market_onions",
+      "title": "Buying Vegetables",
+      "description": "Practice buying onions and other vegetables at the local market",
+      "difficulty": "Beginner",
+      "estimated_time": "2-3 minutes",
+      "premium": false,
+      "tags": ["vegetables", "market", "basic"],
+      "learning_objectives": [
+        "Learn vegetable names",
+        "Practice basic shopping phrases",
+        "Understand local market culture"
+      ],
+      "conversation_flow": [
+        {
+          "character_dialogue": "Welcome to my market! What would you like to buy today?",
+          "character_name": "Market Seller",
+          "user_options": [
+            {
+              "text": "I want to buy onions, please",
+              "is_correct": true,
+              "response": "",
+              "next_step": 1,
+              "cultural_note": "Polite way to request items"
+            },
+            {
+              "text": "Do you have beans?",
+              "is_correct": false,
+              "response": "Sorry, I only sell vegetables here. What vegetables would you like?",
+              "next_step": 0,
+              "cultural_note": "Asking for unavailable items"
+            },
+            {
+              "text": "Give me onions",
+              "is_correct": false,
+              "response": "Please be more polite. What would you like to buy?",
+              "next_step": 0,
+              "cultural_note": "Too direct, considered rude"
+            }
+          ]
+        },
+        {
+          "character_dialogue": "Good choice! We have fresh onions. How many kilograms do you want?",
+          "character_name": "Market Seller",
+          "user_options": [
+            {
+              "text": "Two kilograms, please",
+              "is_correct": true,
+              "response": "",
+              "next_step": 2,
+              "cultural_note": "Specific quantity is appreciated"
+            },
+            {
+              "text": "A little",
+              "is_correct": false,
+              "response": "Please be specific. How many kilograms do you want?",
+              "next_step": 1,
+              "cultural_note": "Vague quantities are not helpful"
+            },
+            {
+              "text": "Just one",
+              "is_correct": true,
+              "response": "",
+              "next_step": 2,
+              "cultural_note": "Acceptable but could be more specific"
+            }
+          ]
+        },
+        {
+          "character_dialogue": "That will be 500 Naira. Would you like anything else?",
+          "character_name": "Market Seller",
+          "user_options": [
+            {
+              "text": "No, that's all. Thank you!",
+              "is_correct": true,
+              "response": "",
+              "next_step": 3,
+              "cultural_note": "Polite way to end transaction"
+            },
+            {
+              "text": "Yes, give me tomatoes too",
+              "is_correct": true,
+              "response": "Great! Let me add that to your order.",
+              "next_step": 4,
+              "cultural_note": "Adding more items to purchase"
+            },
+            {
+              "text": "That's too expensive",
+              "is_correct": false,
+              "response": "This is our standard price. Would you like to proceed?",
+              "next_step": 2,
+              "cultural_note": "Haggling requires different approach"
+            }
+          ]
+        },
+        {
+          "character_dialogue": "Perfect! Your total is 500 Naira. Thank you for shopping with us!",
+          "character_name": "Market Seller",
+          "user_options": [],
+          "is_final": true,
+          "completion_message": "Great job! You successfully completed the market shopping scenario."
+        }
+      ]
+    }
+  ]
+}
