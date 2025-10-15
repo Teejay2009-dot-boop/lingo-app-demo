@@ -1,9 +1,25 @@
 import React, { useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router-dom";
-import { FaHeart, FaArrowLeft, FaShoppingCart, FaUser } from "react-icons/fa";
-import { auth, db } from "../firebase/config/firebase";
-import { doc, onSnapshot } from "firebase/firestore";
+import {
+  FaArrowLeft,
+  FaShoppingCart,
+  FaUser,
+  FaCoins,
+  FaFire,
+  FaExpand,
+} from "react-icons/fa";
 import roleplayData from "../data/rolePlaying.json";
+import { auth, db } from "../firebase/config/firebase";
+import { updateStreak } from "../utils/streak";
+import {
+  doc,
+  updateDoc,
+  increment,
+  getDoc,
+  arrayUnion,
+} from "firebase/firestore";
+// ADDED: Import the XP boost completion component
+import LessonCompletionWithBoost from "../components/LessonCompletionWithBoost";
 
 const RoleplayExercise = () => {
   const { scenarioId } = useParams();
@@ -11,28 +27,20 @@ const RoleplayExercise = () => {
 
   const [currentScenario, setCurrentScenario] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
-  const [userLives, setUserLives] = useState(0);
-  const [userData, setUserData] = useState(null);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [feedbackMessage, setFeedbackMessage] = useState("");
-  const [isCulturalNote, setIsCulturalNote] = useState(false);
   const [conversationHistory, setConversationHistory] = useState([]);
+  const [showCompletion, setShowCompletion] = useState(false);
 
-  // Get real user data from Firebase
-  useEffect(() => {
-    if (!auth.currentUser) return;
+  // XP and coins state
+  const [currentLessonXP, setCurrentLessonXP] = useState(20);
+  const [user, setUser] = useState(null);
+  const [currentStreak, setCurrentStreak] = useState(0);
+  const [wrongAnswersCount, setWrongAnswersCount] = useState(0);
+  const [finalLessonXp, setFinalLessonXp] = useState(0);
+  const [finalLessonCoins, setFinalLessonCoins] = useState(0);
 
-    const userRef = doc(db, "users", auth.currentUser.uid);
-    const unsubscribe = onSnapshot(userRef, (docSnap) => {
-      if (docSnap.exists()) {
-        const data = docSnap.data();
-        setUserData(data);
-        setUserLives(data.lives || 0);
-      }
-    });
-
-    return () => unsubscribe();
-  }, []);
+  // ADDED: XP Boost completion state
+  const [showXpBoostCompletion, setShowXpBoostCompletion] = useState(false);
+  const [boostMultiplier, setBoostMultiplier] = useState(1);
 
   useEffect(() => {
     // Find the scenario by ID
@@ -52,10 +60,157 @@ const RoleplayExercise = () => {
         ]);
       }
     }
+
+    // Fetch user data
+    if (auth.currentUser) {
+      const uid = auth.currentUser.uid;
+      const userRef = doc(db, "users", uid);
+      getDoc(userRef).then((snap) => {
+        if (snap.exists()) {
+          const userData = snap.data();
+          setUser(userData);
+          setCurrentStreak(userData.current_streak || 0);
+
+          // Check for active XP boost
+          const hasXpBoost =
+            userData?.active_xp_boost &&
+            new Date(userData.active_xp_boost.expires_at.toDate()) > new Date();
+          if (hasXpBoost) {
+            setBoostMultiplier(userData.active_xp_boost.multiplier);
+          }
+        }
+      });
+    }
   }, [scenarioId]);
 
+  // UPDATED: Complete lesson function with XP boost support
+  const completeLesson = async () => {
+    if (!auth.currentUser || !currentScenario) return;
+
+    // Calculate base XP (20 minus 2 for each wrong answer)
+    let baseXP = 20 - wrongAnswersCount * 2;
+    baseXP = Math.max(0, baseXP);
+
+    // Calculate streak bonus for XP
+    let streakBonusXP = 0;
+    if (currentStreak >= 7) {
+      streakBonusXP = 7;
+    } else if (currentStreak >= 3) {
+      streakBonusXP = 5;
+    } else if (currentStreak >= 1) {
+      streakBonusXP = 2;
+    }
+
+    // Calculate final XP (can exceed 20)
+    const finalXP = baseXP + streakBonusXP;
+
+    // Check for active XP boost
+    const hasXpBoost =
+      user?.active_xp_boost &&
+      new Date(user.active_xp_boost.expires_at.toDate()) > new Date();
+    const currentBoostMultiplier = hasXpBoost
+      ? user.active_xp_boost.multiplier
+      : 1;
+    const bonusXP = hasXpBoost
+      ? Math.floor(finalXP * (currentBoostMultiplier - 1))
+      : 0;
+    const totalXPWithBoost = finalXP + bonusXP;
+
+    // Calculate coins according to the formula
+    const totalQuestions = currentScenario.conversation_flow.filter(
+      (step) => step.user_options && step.user_options.length > 0
+    ).length;
+    const correctAnswers = totalQuestions - wrongAnswersCount;
+    const accuracy =
+      totalQuestions > 0
+        ? Math.round((correctAnswers / totalQuestions) * 100)
+        : 0;
+
+    const baseCoin = 10;
+    const accuracyBonusCoin = Math.floor(accuracy / 10);
+    let coinReward = baseCoin + accuracyBonusCoin;
+
+    // Calculate streak bonus for coins (same as XP streak bonus)
+    let streakBonusCoin = 0;
+    if (currentStreak >= 7) {
+      streakBonusCoin = 7;
+    } else if (currentStreak >= 3) {
+      streakBonusCoin = 5;
+    } else if (currentStreak >= 1) {
+      streakBonusCoin = 2;
+    }
+
+    // Total coin reward
+    const totalCoinReward = coinReward + streakBonusCoin;
+
+    // Set final values
+    setFinalLessonXp(hasXpBoost ? totalXPWithBoost : finalXP);
+    setFinalLessonCoins(totalCoinReward);
+
+    // Show appropriate completion screen
+    if (hasXpBoost) {
+      setShowXpBoostCompletion(true);
+    } else {
+      setShowCompletion(true);
+    }
+
+    // Update Firestore
+    const uid = auth.currentUser.uid;
+    try {
+      const userRef = doc(db, "users", uid);
+      const userSnap = await getDoc(userRef);
+      const userData = userSnap.exists() ? userSnap.data() : {};
+
+      // Get current accuracy stats
+      const currentProgress = userData.progress || {};
+      const currentTotalQuestions = currentProgress.total_questions || 0;
+      const currentCorrectAnswers = currentProgress.correct_answers || 0;
+
+      // Calculate new cumulative accuracy
+      const newTotalQuestions = currentTotalQuestions + totalQuestions;
+      const newCorrectAnswers = currentCorrectAnswers + correctAnswers;
+      const newAccuracy =
+        newTotalQuestions > 0
+          ? Math.round((newCorrectAnswers / newTotalQuestions) * 100)
+          : 0;
+
+      // Update user with new XP and coins system
+      await updateDoc(userRef, {
+        xp: increment(hasXpBoost ? totalXPWithBoost : finalXP),
+        total_xp: increment(hasXpBoost ? totalXPWithBoost : finalXP),
+        weeklyXP: increment(hasXpBoost ? totalXPWithBoost : finalXP),
+        monthlyXP: increment(hasXpBoost ? totalXPWithBoost : finalXP),
+        coins: increment(totalCoinReward),
+        total_lessons: increment(1),
+        completed_lessons: arrayUnion(`roleplay-${currentScenario.id}`),
+        progress: {
+          ...currentProgress,
+          accuracy: newAccuracy,
+          total_questions: newTotalQuestions,
+          correct_answers: newCorrectAnswers,
+          last_updated: new Date(),
+        },
+      });
+
+      await updateStreak(uid);
+
+      console.log("✅ Roleplay completed with:", {
+        baseXP,
+        wrongAnswersCount,
+        streakBonusXP,
+        finalXP,
+        hasXpBoost,
+        currentBoostMultiplier,
+        totalXPWithBoost,
+        totalCoinReward,
+      });
+    } catch (error) {
+      console.error("❌ Firestore error:", error);
+    }
+  };
+
   const handleOptionSelect = (option) => {
-    if (!currentScenario || userLives <= 0) return;
+    if (!currentScenario) return;
 
     const currentStepData = currentScenario.conversation_flow[currentStep];
 
@@ -71,9 +226,9 @@ const RoleplayExercise = () => {
     ]);
 
     if (option.is_correct) {
-      // Correct answer - move to next step
+      // Correct answer
       if (option.response) {
-        // Show character response first
+        // Show character response
         setConversationHistory((prev) => [
           ...prev,
           {
@@ -91,7 +246,7 @@ const RoleplayExercise = () => {
             currentScenario.conversation_flow[option.next_step];
           setCurrentStep(option.next_step);
 
-          // Add next character dialogue to history
+          // Add next character dialogue to history if not final step
           if (nextStepData.character_dialogue && !nextStepData.is_final) {
             setConversationHistory((prev) => [
               ...prev,
@@ -103,18 +258,18 @@ const RoleplayExercise = () => {
               },
             ]);
           }
-        }
-      }, 1500);
-    } else {
-      // Wrong answer - lose a life and show feedback
-      setUserLives((prev) => Math.max(0, prev - 1));
-      setFeedbackMessage(
-        option.response || "That was not quite right. Try again!"
-      );
-      setIsCulturalNote(false);
-      setShowFeedback(true);
 
-      // Add character's corrective response to history
+          // Check if this is the final step
+          if (nextStepData.is_final) {
+            completeLesson();
+          }
+        }
+      }, 1000);
+    } else {
+      // Wrong answer - show corrective response and update XP
+      setWrongAnswersCount((prev) => prev + 1);
+      setCurrentLessonXP((prev) => Math.max(0, prev - 2));
+
       if (option.response) {
         setConversationHistory((prev) => [
           ...prev,
@@ -127,24 +282,54 @@ const RoleplayExercise = () => {
         ]);
       }
     }
-
-    // Show cultural note if available (only for correct answers with cultural notes)
-    if (option.is_correct && option.cultural_note) {
-      setFeedbackMessage(option.cultural_note);
-      setIsCulturalNote(true);
-      setShowFeedback(true);
-    }
   };
 
-  const handleContinue = () => {
-    setShowFeedback(false);
-    // If no lives left, end the game
-    if (userLives <= 0) {
-      navigate("/challenges");
+  const handleRestart = () => {
+    setCurrentStep(0);
+    setShowCompletion(false);
+    setShowXpBoostCompletion(false);
+    setWrongAnswersCount(0);
+    setCurrentLessonXP(20);
+    setFinalLessonXp(0);
+    setFinalLessonCoins(0);
+    if (currentScenario && currentScenario.conversation_flow.length > 0) {
+      const firstStep = currentScenario.conversation_flow[0];
+      setConversationHistory([
+        {
+          speaker: firstStep.character_name,
+          text: firstStep.character_dialogue,
+          isUser: false,
+          timestamp: new Date(),
+        },
+      ]);
     }
   };
 
   const currentStepData = currentScenario?.conversation_flow[currentStep];
+
+  // ADDED: XP Boost Completion Screen
+  if (showXpBoostCompletion) {
+    // Calculate base XP for display (without boost)
+    const baseXP = Math.max(0, 20 - wrongAnswersCount * 2);
+    const streakBonusXP =
+      currentStreak >= 7
+        ? 7
+        : currentStreak >= 3
+        ? 5
+        : currentStreak >= 1
+        ? 2
+        : 0;
+    const finalBaseXP = baseXP + streakBonusXP;
+
+    return (
+      <LessonCompletionWithBoost
+        basicXP={finalBaseXP}
+        boostMultiplier={boostMultiplier}
+        onContinue={() => navigate("/lessons")}
+        lessonTitle="Roleplay Complete! 🎭"
+      />
+    );
+  }
 
   if (!currentScenario) {
     return (
@@ -165,36 +350,49 @@ const RoleplayExercise = () => {
           <div className="flex justify-between items-center h-16">
             {/* Go Back Button */}
             <button
-              onClick={() => navigate("/challenges")}
+              onClick={() => navigate("/lessons/section")}
               className="flex items-center text-yellow-600 hover:text-yellow-700 font-semibold"
             >
               <FaArrowLeft className="mr-2" />
               Back to Challenges
             </button>
 
-            {/* Lives Display */}
-            <div className="flex items-center space-x-2">
-              <FaHeart
-                className={`text-xl ${
-                  userLives > 0 ? "text-red-500" : "text-gray-400"
-                }`}
-              />
-              <span
-                className={`font-semibold ${
-                  userLives > 0 ? "text-gray-700" : "text-gray-400"
-                }`}
-              >
-                {userLives} {userLives === 1 ? "Life" : "Lives"}
-              </span>
+            {/* Scenario Info and XP Display */}
+            <div className="flex items-center space-x-6">
+              <div className="flex items-center space-x-2">
+                <FaShoppingCart className="text-blue-500" />
+                <span className="font-semibold text-gray-700">
+                  {currentScenario.title}
+                </span>
+              </div>
+
+              {/* XP and Streak Display */}
+              <div className="flex items-center space-x-4 text-sm">
+                <div className="flex items-center space-x-1">
+                  <FaExpand className="text-green-500" />
+                  <span className="font-semibold">{currentLessonXP} XP</span>
+                </div>
+                <div className="flex items-center space-x-1">
+                  <FaFire className="text-red-500" />
+                  <span className="font-semibold">{currentStreak}</span>
+                </div>
+                {boostMultiplier > 1 && (
+                  <div className="flex items-center space-x-1 bg-yellow-100 px-2 py-1 rounded-full">
+                    <span className="text-yellow-700 font-bold text-xs">
+                      {boostMultiplier}x XP Boost
+                    </span>
+                  </div>
+                )}
+              </div>
             </div>
 
-            {/* Scenario Info */}
-            <div className="flex items-center space-x-4">
-              <FaShoppingCart className="text-blue-500" />
-              <span className="font-semibold text-gray-700">
-                {currentScenario.title}
-              </span>
-            </div>
+            {/* Restart Button */}
+            <button
+              onClick={handleRestart}
+              className="text-gray-600 hover:text-gray-800 font-medium"
+            >
+              Restart
+            </button>
           </div>
         </div>
       </nav>
@@ -216,9 +414,9 @@ const RoleplayExercise = () => {
           </div>
         </div>
 
-        {/* Main Content Area - Flex container for conversation and options */}
+        {/* Main Content Area */}
         <div className="flex-1 flex flex-col min-h-0">
-          {/* Conversation Area - Scrollable */}
+          {/* Conversation Area */}
           <div className="bg-white rounded-lg shadow-sm p-6 mb-4 flex-1 overflow-y-auto">
             <div className="space-y-4">
               {conversationHistory.map((message, index) => (
@@ -255,100 +453,115 @@ const RoleplayExercise = () => {
             </div>
           </div>
 
-          {/* Options Area - Fixed at bottom */}
+          {/* Options Area */}
           <div className="bg-white rounded-lg shadow-sm p-6 flex-shrink-0">
-            {userLives <= 0 ? (
-              <div className="text-center py-4">
-                <p className="text-red-600 font-semibold">
-                  You're out of lives! Come back later.
-                </p>
-                <button
-                  onClick={() => navigate("/challenges")}
-                  className="mt-2 bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200"
-                >
-                  Back to Challenges
-                </button>
-              </div>
+            {showCompletion ? (
+              <ScenarioCompletion
+                completionMessage={currentStepData?.completion_message}
+                onRestart={handleRestart}
+                onReturn={() => navigate("/lessons/section")}
+                finalLessonXp={finalLessonXp}
+                finalLessonCoins={finalLessonCoins}
+                wrongAnswersCount={wrongAnswersCount}
+                totalQuestions={
+                  currentScenario.conversation_flow.filter(
+                    (step) => step.user_options && step.user_options.length > 0
+                  ).length
+                }
+              />
             ) : currentStepData && currentStepData.user_options.length > 0 ? (
-              <div className="space-y-3">
-                <h3 className="font-semibold text-gray-700 mb-3">
-                  Your Response:
-                </h3>
-                {currentStepData.user_options.map((option, index) => (
-                  <button
-                    key={index}
-                    onClick={() => handleOptionSelect(option)}
-                    className="w-full text-left bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg p-4 transition-colors duration-200 hover:border-yellow-300"
-                    disabled={userLives <= 0}
-                  >
-                    <span className="text-yellow-600 font-medium">
-                      {option.text}
-                    </span>
-                  </button>
-                ))}
-              </div>
-            ) : currentStepData?.is_final ? (
-              <div className="text-center py-4">
-                <div className="bg-green-100 border border-green-200 rounded-lg p-6">
-                  <h3 className="text-xl font-semibold text-green-800 mb-2">
-                    Scenario Complete! 🎉
-                  </h3>
-                  <p className="text-green-700 mb-4">
-                    {currentStepData.completion_message}
-                  </p>
-                  <button
-                    onClick={() => navigate("/challenges")}
-                    className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200"
-                  >
-                    Back to Challenges
-                  </button>
-                </div>
-              </div>
+              <ResponseOptions
+                options={currentStepData.user_options}
+                onOptionSelect={handleOptionSelect}
+              />
             ) : null}
           </div>
         </div>
+      </div>
+    </div>
+  );
+};
 
-        {/* Feedback Modal */}
-        {showFeedback && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full">
-              <h3
-                className={`text-lg font-semibold mb-3 ${
-                  isCulturalNote ? "text-blue-600" : "text-red-600"
-                }`}
-              >
-                {isCulturalNote ? "💡 Cultural Note" : "❌ Incorrect"}
-              </h3>
-              <p className="text-gray-700 mb-4">{feedbackMessage}</p>
-              <button
-                onClick={handleContinue}
-                className="w-full bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-4 rounded transition-colors duration-200"
-              >
-                {userLives > 0 ? "Continue" : "Return to Challenges"}
-              </button>
-            </div>
-          </div>
-        )}
+// Component for response options
+const ResponseOptions = ({ options, onOptionSelect }) => (
+  <div className="space-y-3">
+    <h3 className="font-semibold text-gray-700 mb-3">Your Response:</h3>
+    {options.map((option, index) => (
+      <button
+        key={index}
+        onClick={() => onOptionSelect(option)}
+        className="w-full text-left bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg p-4 transition-colors duration-200 hover:border-yellow-300"
+      >
+        <span className="text-yellow-600 font-medium">{option.text}</span>
+      </button>
+    ))}
+  </div>
+);
 
-        {/* Game Over Modal */}
-        {userLives <= 0 && !currentStepData?.is_final && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-full text-center">
-              <h3 className="text-2xl font-bold text-red-600 mb-3">
-                Game Over! 💀
-              </h3>
-              <p className="text-gray-700 mb-4">
-                You've run out of lives. Better luck next time!
-              </p>
-              <button
-                onClick={() => navigate("/lessons/section")}
-                className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200"
-              >
-                Back to Challenges
-              </button>
+// Component for scenario completion
+const ScenarioCompletion = ({
+  completionMessage,
+  onRestart,
+  onReturn,
+  finalLessonXp,
+  finalLessonCoins,
+  wrongAnswersCount,
+  totalQuestions,
+}) => {
+  const correctAnswers = totalQuestions - wrongAnswersCount;
+  const accuracy =
+    totalQuestions > 0
+      ? Math.round((correctAnswers / totalQuestions) * 100)
+      : 0;
+
+  return (
+    <div className="text-center py-4">
+      <div className="bg-green-100 border border-green-200 rounded-lg p-6">
+        <h3 className="text-xl font-semibold text-green-800 mb-2">
+          Scenario Complete! 🎉
+        </h3>
+        <p className="text-green-700 mb-4">{completionMessage}</p>
+
+        {/* XP and Coins Summary */}
+        <div className="flex justify-center gap-6 mb-6">
+          <div className="px-4 rounded-xl border border-green-300 flex flex-col justify-center items-center">
+            <div className="text-xl text-green-600">
+              <FaExpand />
             </div>
+            <p className="text-2xl font-bold text-black py-2">
+              +{finalLessonXp} XP
+            </p>
+            <p className="text-green-600 text-sm">gained</p>
           </div>
-        )}
+          <div className="px-4 rounded-xl border border-green-300 flex flex-col justify-center items-center">
+            <div className="text-xl text-yellow-600">
+              <FaCoins />
+            </div>
+            <p className="text-2xl font-bold text-black py-2">
+              +{finalLessonCoins}
+            </p>
+            <p className="text-green-600 text-sm">coins</p>
+          </div>
+        </div>
+
+        <div className="text-sm text-green-700 mb-4">
+          Accuracy: {correctAnswers}/{totalQuestions} ({accuracy}%)
+        </div>
+
+        <div className="flex gap-4 justify-center">
+          <button
+            onClick={onRestart}
+            className="bg-gray-500 hover:bg-gray-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200"
+          >
+            Practice Again
+          </button>
+          <button
+            onClick={onReturn}
+            className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200"
+          >
+            Back to Challenges
+          </button>
+        </div>
       </div>
     </div>
   );

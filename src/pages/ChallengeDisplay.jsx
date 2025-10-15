@@ -23,7 +23,9 @@ import MatchWords from "../components/LessonCards/MatchWords";
 import TypeWhatYouHear from "../components/LessonCards/TypeWhatYouHear";
 import RolePlayOptions from "../components/LessonCards/RolePlayOptions";
 import { auth, db } from "../firebase/config/firebase";
-import { doc, updateDoc, increment, onSnapshot } from "firebase/firestore";
+import { doc, updateDoc, increment, onSnapshot, getDoc, arrayUnion } from "firebase/firestore";
+// ADDED: Import XP boost completion component
+import LessonCompletionWithBoost from "../components/LessonCompletionWithBoost";
 
 const ChallengeDisplay = () => {
   const navigate = useNavigate();
@@ -45,6 +47,9 @@ const ChallengeDisplay = () => {
   const [finalCoins, setFinalCoins] = useState(0);
   const [answeredMap, setAnsweredMap] = useState({});
   const [currentStreak, setCurrentStreak] = useState(0);
+  const [user, setUser] = useState(null);
+  // ADDED: XP Boost completion state
+  const [showXpBoostCompletion, setShowXpBoostCompletion] = useState(false);
 
   const getRandomLesson = () => {
     const allLessons = Object.values(getAllLessons);
@@ -93,6 +98,8 @@ const ChallengeDisplay = () => {
       const unsubUser = onSnapshot(userRef, (snap) => {
         if (snap.exists()) {
           setCurrentStreak(snap.data().current_streak ?? 0);
+          setLives(snap.data().lives ?? 5);
+          setUser(snap.data());
         }
       });
       return () => unsubUser();
@@ -149,6 +156,7 @@ const ChallengeDisplay = () => {
     }
   };
 
+  // UPDATED: completeChallenge function with same XP/coins calculation as lessons
   const completeChallenge = async (success) => {
     setChallengeCompleted(true);
 
@@ -156,36 +164,128 @@ const ChallengeDisplay = () => {
       (a) => a.isCorrect
     ).length;
     const totalQuestions = exercises.length;
+    const wrongAnswers = totalQuestions - correctAnswers;
     const accuracy =
-      totalQuestions > 0 ? (correctAnswers / totalQuestions) * 100 : 0;
+      totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
 
-    let calculatedXP = 0;
-    let calculatedCoins = 0;
+    // SAME CALCULATION AS LESSONS:
+    // Calculate base XP (20 minus 2 for each wrong answer)
+    let baseXP = 20 - wrongAnswers * 2;
+    baseXP = Math.max(0, baseXP); // Ensure XP doesn't go below 0
 
-    if (success) {
-      // Fixed tiers based on accuracy
-      if (accuracy === 100) {
-        calculatedXP = 20; // Perfect score
-      } else if (accuracy >= 80) {
-        calculatedXP = 16; // Great score
-      } else if (accuracy >= 60) {
-        calculatedXP = 12; // Good score
-      } else {
-        calculatedXP = 8; // Passing score
-      }
-
-      calculatedCoins = Math.floor(calculatedXP / 2) + 2;
-    } else {
-      // Failure: scaled rewards
-      calculatedXP = Math.floor(accuracy / 10); // 10% = 1 XP, 50% = 5 XP, etc.
-      calculatedCoins = Math.floor(calculatedXP / 3);
+    // Calculate streak bonus for XP
+    let streakBonusXP = 0;
+    if (currentStreak >= 7) {
+      streakBonusXP = 7;
+    } else if (currentStreak >= 3) {
+      streakBonusXP = 5;
+    } else if (currentStreak >= 1) {
+      streakBonusXP = 2;
     }
 
-    setFinalXP(calculatedXP);
-    setFinalCoins(calculatedCoins);
-    setShowCompletionSummary(true);
+    // Calculate final XP (can exceed 20)
+    const finalXP = baseXP + streakBonusXP;
 
-    // ... rest of firebase code
+    // NEW: Check for active XP boost
+    const hasXpBoost = user?.active_xp_boost && 
+                      new Date(user.active_xp_boost.expires_at.toDate()) > new Date();
+    const boostMultiplier = hasXpBoost ? user.active_xp_boost.multiplier : 1;
+    const bonusXP = hasXpBoost ? Math.floor(finalXP * (boostMultiplier - 1)) : 0;
+    const totalXPWithBoost = finalXP + bonusXP;
+
+    // SAME COINS CALCULATION AS LESSONS:
+    const baseCoin = 10;
+    const accuracyBonusCoin = Math.floor(accuracy / 10);
+    let coinReward = baseCoin + accuracyBonusCoin;
+
+    // Calculate streak bonus for coins (same as XP streak bonus)
+    let streakBonusCoin = 0;
+    if (currentStreak >= 7) {
+      streakBonusCoin = 7;
+    } else if (currentStreak >= 3) {
+      streakBonusCoin = 5;
+    } else if (currentStreak >= 1) {
+      streakBonusCoin = 2;
+    }
+
+    // Total coin reward
+    const totalCoinReward = coinReward + streakBonusCoin;
+
+    console.log("💰 CHALLENGE XP Calculation:", {
+      baseXP,
+      wrongAnswers,
+      streakBonusXP,
+      finalXP,
+      hasXpBoost,
+      boostMultiplier,
+      bonusXP,
+      totalXPWithBoost
+    });
+
+    console.log("💰 CHALLENGE COINS Calculation:", {
+      baseCoin,
+      accuracyBonusCoin,
+      coinReward,
+      streakBonusCoin,
+      totalCoinReward,
+      accuracy,
+    });
+
+    setFinalXP(hasXpBoost ? totalXPWithBoost : finalXP);
+    setFinalCoins(totalCoinReward);
+    
+    // Show appropriate completion screen
+    if (hasXpBoost) {
+      setShowXpBoostCompletion(true);
+    } else {
+      setShowCompletionSummary(true);
+    }
+
+    // Update Firestore with rewards
+    if (auth.currentUser) {
+      const uid = auth.currentUser.uid;
+      const userRef = doc(db, "users", uid);
+      
+      try {
+        const userSnap = await getDoc(userRef);
+        const userData = userSnap.exists() ? userSnap.data() : {};
+
+        // Get current accuracy stats
+        const currentProgress = userData.progress || {};
+        const currentTotalQuestions = currentProgress.total_questions || 0;
+        const currentCorrectAnswers = currentProgress.correct_answers || 0;
+
+        // Calculate new cumulative accuracy
+        const newTotalQuestions = currentTotalQuestions + totalQuestions;
+        const newCorrectAnswers = currentCorrectAnswers + correctAnswers;
+        const newAccuracy =
+          newTotalQuestions > 0
+            ? Math.round((newCorrectAnswers / newTotalQuestions) * 100)
+            : 0;
+
+        // Update user with rewards
+        await updateDoc(userRef, {
+          xp: increment(hasXpBoost ? totalXPWithBoost : finalXP),
+          total_xp: increment(hasXpBoost ? totalXPWithBoost : finalXP),
+          weeklyXP: increment(hasXpBoost ? totalXPWithBoost : finalXP),
+          monthlyXP: increment(hasXpBoost ? totalXPWithBoost : finalXP),
+          coins: increment(totalCoinReward),
+          total_lessons: increment(1),
+          completed_challenges: arrayUnion(`challenge_${Date.now()}`),
+          progress: {
+            ...currentProgress,
+            accuracy: newAccuracy,
+            total_questions: newTotalQuestions,
+            correct_answers: newCorrectAnswers,
+            last_updated: new Date(),
+          },
+        });
+
+        console.log("✅ Challenge rewards updated in Firestore");
+      } catch (error) {
+        console.error("❌ Firestore update error:", error);
+      }
+    }
   };
 
   const formatTime = (seconds) => {
@@ -240,7 +340,7 @@ const ChallengeDisplay = () => {
   };
 
   // Game Over Screen (No Lives)
-  if (lives <= 0 && !showCompletionSummary) {
+  if (lives <= 0 && !showCompletionSummary && !showXpBoostCompletion) {
     return (
       <div className="p-6 h-screen flex flex-col items-center justify-center text-center">
         <img src={mascot} style={{ width: "10rem" }} alt="" />
@@ -262,7 +362,34 @@ const ChallengeDisplay = () => {
     );
   }
 
-  // Challenge Completion Summary
+  // XP Boost Completion Screen
+  if (showXpBoostCompletion && challengeCompleted) {
+    console.log("🎉 Rendering XP boost completion for challenge...");
+    const correctAnswers = Object.values(answeredMap).filter(
+      (a) => a.isCorrect
+    ).length;
+    const totalQuestions = exercises.length;
+
+    // Calculate base values for display (same as lesson calculation)
+    const wrongAnswers = totalQuestions - correctAnswers;
+    let baseXP = 20 - wrongAnswers * 2;
+    baseXP = Math.max(0, baseXP);
+    const streakBonusXP = currentStreak >= 7 ? 7 : currentStreak >= 3 ? 5 : currentStreak >= 1 ? 2 : 0;
+    const finalBaseXP = baseXP + streakBonusXP;
+    const boostMultiplier = user?.active_xp_boost?.multiplier || 1;
+    const bonusXP = Math.floor(finalBaseXP * (boostMultiplier - 1));
+
+    return (
+      <LessonCompletionWithBoost
+        basicXP={finalBaseXP}
+        boostMultiplier={boostMultiplier}
+        onContinue={() => navigate("/lessons/section/challenge")}
+        lessonTitle="Challenge Complete! 🏆"
+      />
+    );
+  }
+
+  // Normal Challenge Completion Summary
   if (showCompletionSummary && challengeCompleted) {
     const correctAnswers = Object.values(answeredMap).filter(
       (a) => a.isCorrect
@@ -330,11 +457,31 @@ const ChallengeDisplay = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 relative">
+      {/* Test button for XP boost */}
+      <button
+        onClick={() => {
+          console.log("🧪 FORCING XP boost completion screen");
+          setShowXpBoostCompletion(true);
+          setChallengeCompleted(true);
+          setFinalXP(25);
+          setFinalCoins(10);
+        }}
+        className="fixed bottom-4 right-4 bg-green-500 text-white p-2 rounded z-50"
+      >
+        Test XP Boost
+      </button>
+
       <GoBackBtn />
 
       {/* Header with Lives, XP, and Timer */}
       <div className="flex justify-between items-center pt-10 mb-4">
-        <p className="font-semibold">❤ Lives: {lives}</p>
+        <div className="flex items-center gap-4">
+          <p className="font-semibold">❤ Lives: {lives}</p>
+          <p className="font-semibold flex items-center gap-1">
+            <FaFire className="text-red-500" /> {currentStreak}
+          </p>
+          <p className="font-semibold">XP: {currentXP}</p>
+        </div>
 
         <div className="text-center">
           <div

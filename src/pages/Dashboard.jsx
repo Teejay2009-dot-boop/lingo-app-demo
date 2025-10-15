@@ -31,6 +31,7 @@ import {
   FaKeyboard,
   FaTree,
   FaHome,
+  FaClock,
 } from "react-icons/fa";
 
 import avatar from "../assets/girlwithbg.jpg";
@@ -48,67 +49,115 @@ import {
 } from "firebase/firestore";
 import users from "../data/user";
 
-// Lives regeneration utility functions
+// FIXED: Lives regeneration utility functions - ONLY 1 LIFE PER HOUR
 const checkLivesRegeneration = async (uid) => {
   if (!uid) return;
 
   const userRef = doc(db, "users", uid);
   const userSnap = await getDoc(userRef);
-  
+
   if (!userSnap.exists()) return;
 
   const userData = userSnap.data();
   const currentLives = userData.lives || 0;
   const maxLives = userData.max_lives || 5;
-  const lastLifeUpdate = userData.last_life_update ? userData.last_life_update.toDate() : null;
+  const lastLifeUpdate = userData.last_life_update
+    ? userData.last_life_update.toDate()
+    : null;
   const now = new Date();
 
   // If lives are already full, no need to regenerate
   if (currentLives >= maxLives) {
+    return currentLives;
+  }
+
+  // If no lastLifeUpdate (first time), set it to now but DON'T add lives
+  if (!lastLifeUpdate) {
     await updateDoc(userRef, {
-      last_life_update: new Date()
+      last_life_update: new Date(),
     });
     return currentLives;
   }
 
   let newLives = currentLives;
-  let timePassed = 0;
+  const timePassed = (now - lastLifeUpdate) / (1000 * 60 * 60); // Convert to hours
 
-  if (lastLifeUpdate) {
-    // Calculate hours passed since last update
-    timePassed = (now - lastLifeUpdate) / (1000 * 60 * 60); // Convert to hours
-    console.log(`⏰ ${timePassed.toFixed(2)} hours passed since last life update`);
-  }
+  console.log(`⏰ ${timePassed.toFixed(2)} hours passed since last life update`);
 
-  // If 24 hours passed, refill 1 life
-  if (timePassed >= 24) {
-    newLives = Math.min(maxLives, currentLives + 1);
-    console.log(`❤️ Life regenerated: ${currentLives} → ${newLives}`);
+  // FIXED: Only add 1 life if exactly 1+ hours passed
+  if (timePassed >= 1 && currentLives < maxLives) {
+    newLives = currentLives + 1;
+    console.log(`❤️ 1 life regenerated: ${currentLives} → ${newLives}`);
     
     await updateDoc(userRef, {
       lives: newLives,
-      last_life_update: new Date()
+      last_life_update: new Date() // Reset timer
+    });
+
+    // Send notification for life regeneration
+    addNotification(uid, {
+      type: "life-regenerated",
+      title: "Life Regenerated! ❤️",
+      message: "You gained 1 life back!",
+      timestamp: new Date(),
     });
   }
 
   return newLives;
 };
 
-const getTimeUntilNextLife = (lastLifeUpdate) => {
-  if (!lastLifeUpdate) return "24:00:00";
+// FIXED: Get time until next life (1 hour countdown)
+const getTimeUntilNextLife = (lastLifeUpdate, currentLives, maxLives = 5) => {
+  // If lives are full, show completed
+  if (currentLives >= maxLives) {
+    return "Full";
+  }
+
+  if (!lastLifeUpdate) return "01:00:00";
   
   const now = new Date();
   const lastUpdate = lastLifeUpdate.toDate();
-  const timePassed = (now - lastUpdate) / (1000 * 60 * 60); // hours
-  const timeRemaining = 24 - timePassed;
+  const timePassed = (now - lastUpdate) / 1000; // seconds
+  const timeRemaining = 3600 - timePassed; // 1 hour in seconds
   
-  if (timeRemaining <= 0) return "00:00:00";
+  if (timeRemaining <= 0) {
+    return "Ready!";
+  }
   
-  const hours = Math.floor(timeRemaining);
-  const minutes = Math.floor((timeRemaining - hours) * 60);
-  const seconds = Math.floor(((timeRemaining - hours) * 60 - minutes) * 60);
+  const hours = Math.floor(timeRemaining / 3600);
+  const minutes = Math.floor((timeRemaining % 3600) / 60);
+  const seconds = Math.floor(timeRemaining % 60);
   
-  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+  return `${hours.toString().padStart(2, "0")}:${minutes
+    .toString()
+    .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+};
+
+// FIXED: Function to consume a life and start countdown
+export const consumeLife = async (uid) => {
+  if (!uid) return false;
+
+  const userRef = doc(db, "users", uid);
+  const userSnap = await getDoc(userRef);
+
+  if (!userSnap.exists()) return false;
+
+  const userData = userSnap.data();
+  const currentLives = userData.lives || 0;
+
+  if (currentLives <= 0) {
+    console.log("❌ No lives available to consume");
+    return false;
+  }
+
+  // Decrease life and set regeneration timer
+  await updateDoc(userRef, {
+    lives: increment(-1),
+    last_life_update: new Date(), // Reset timer when life is consumed
+  });
+
+  console.log(`❤️ Life consumed: ${currentLives} → ${currentLives - 1}`);
+  return true;
 };
 
 const Dashboard = () => {
@@ -126,7 +175,7 @@ const Dashboard = () => {
   const [currentStreak, setCurrentStreak] = useState(1);
   const [longestStreak, setLongestStreak] = useState(0);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
-  const [timeUntilNextLife, setTimeUntilNextLife] = useState("24:00:00");
+  const [timeUntilNextLife, setTimeUntilNextLife] = useState("01:00:00");
 
   // FIXED: formatXP function with proper null/undefined handling
   const formatXP = (xp) => {
@@ -262,22 +311,33 @@ const Dashboard = () => {
     };
   }, [userData]);
 
-  // Lives regeneration effect
+  // FIXED: Lives regeneration effect - check every minute
   useEffect(() => {
-    if (auth.currentUser && userData) {
-      checkLivesRegeneration(auth.currentUser.uid);
-    }
+    if (!auth.currentUser || !userData) return;
+
+    const checkLives = async () => {
+      await checkLivesRegeneration(auth.currentUser.uid);
+    };
+
+    // Check immediately
+    checkLives();
+
+    // Set up interval to check every minute
+    const interval = setInterval(checkLives, 60000); // 1 minute
+
+    return () => clearInterval(interval);
   }, [userData]);
 
-  // Lives countdown timer effect
+  // FIXED: Lives countdown timer effect - update every second
   useEffect(() => {
-    if (!userData?.last_life_update || (userData?.lives || 0) >= (userData?.max_lives || 5)) {
-      setTimeUntilNextLife("24:00:00");
-      return;
-    }
+    if (!userData) return;
 
     const timer = setInterval(() => {
-      const time = getTimeUntilNextLife(userData.last_life_update);
+      const time = getTimeUntilNextLife(
+        userData.last_life_update,
+        userData.lives || 0,
+        userData.max_lives || 5
+      );
       setTimeUntilNextLife(time);
     }, 1000);
 
@@ -526,15 +586,25 @@ const Dashboard = () => {
     setShowLevelUpModal(false);
   };
 
-  // Initialize lives system for existing users
+  // FIXED: Initialize lives system for existing users (1 hour regeneration)
   const initializeLivesSystem = async () => {
     const userRef = doc(db, "users", auth.currentUser.uid);
     await updateDoc(userRef, {
       lives: 5,
       max_lives: 5,
-      last_life_update: new Date()
+      last_life_update: new Date(),
     });
-    console.log("✅ Lives system initialized");
+    console.log("✅ Lives system initialized (1-hour regeneration)");
+  };
+
+  // FIXED: Test function to consume a life
+  const testConsumeLife = async () => {
+    const success = await consumeLife(auth.currentUser.uid);
+    if (success) {
+      console.log("✅ Test: Life consumed successfully");
+    } else {
+      console.log("❌ Test: No lives available to consume");
+    }
   };
 
   return (
@@ -664,7 +734,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Coins & Lives - UPDATED WITH REGENERATION */}
+          {/* FIXED: Coins & Lives - CORRECT 1-HOUR REGENERATION SYSTEM */}
           <div className="bg-white p-6 rounded-2xl shadow flex flex-col justify-between">
             <div className="flex items-center gap-4">
               <FaWallet className="text-3xl text-yellow-500" />
@@ -676,16 +746,25 @@ const Dashboard = () => {
                 <p className="text-lg font-bold">
                   Lives: {userData?.lives || 0}/{userData?.max_lives || 5}
                 </p>
+                {/* FIXED: Show countdown timer when lives are not full */}
                 {(userData?.lives || 0) < (userData?.max_lives || 5) && (
-                  <p className="text-xs text-gray-500">
-                    Next life in: {timeUntilNextLife}
-                  </p>
+                  <div className="flex items-center gap-1">
+                    <FaClock className="text-xs text-gray-500" />
+                    <p className="text-xs text-gray-500">
+                      Next life: {timeUntilNextLife}
+                    </p>
+                  </div>
                 )}
+                {/* FIXED: Show full status */}
                 {(userData?.lives || 0) >= (userData?.max_lives || 5) && (
                   <p className="text-xs text-green-500">Full lives! 🎉</p>
                 )}
               </div>
             </div>
+            {/* FIXED: Regeneration info */}
+            <p className="text-xs text-gray-400 mt-2">
+              ⏰ 1 life per hour • Countdown starts when life is lost
+            </p>
           </div>
 
           {/* Weekly Progress */}
@@ -811,6 +890,14 @@ const Dashboard = () => {
                 +1 Streak
               </button>
 
+              {/* FIXED: Test life consumption */}
+              <button
+                onClick={testConsumeLife}
+                className="bg-red-500 text-white px-2 py-2 rounded text-xs hover:bg-red-600"
+              >
+                -1 Life
+              </button>
+
               <button
                 onClick={initializeLivesSystem}
                 className="bg-pink-500 text-white px-2 py-2 rounded text-xs hover:bg-pink-600"
@@ -823,6 +910,66 @@ const Dashboard = () => {
                 className="bg-gray-500 text-white px-2 py-2 rounded text-xs hover:bg-gray-600"
               >
                 Reset Data
+              </button>
+            </div>
+          </div>
+
+          {/* FIXED: Lives System Testing Section */}
+          <div className="mb-4">
+            <h4 className="font-semibold mb-2 text-gray-700">
+              Lives System Testing ❤️
+            </h4>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                onClick={async () => {
+                  await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                    lives: 3,
+                    last_life_update: new Date(),
+                  });
+                  console.log("✅ Lives set to 3, countdown started");
+                }}
+                className="bg-orange-500 text-white px-2 py-2 rounded text-xs hover:bg-orange-600"
+              >
+                Set 3 Lives
+              </button>
+
+              <button
+                onClick={async () => {
+                  await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                    lives: 5,
+                  });
+                  console.log("✅ Lives set to full");
+                }}
+                className="bg-green-500 text-white px-2 py-2 rounded text-xs hover:bg-green-600"
+              >
+                Set Full Lives
+              </button>
+
+              <button
+                onClick={async () => {
+                  // Simulate time passing by setting last update to 1 hour ago
+                  const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+                  await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                    last_life_update: oneHourAgo,
+                    lives: 3, // Set to non-full to trigger regeneration
+                  });
+                  console.log("✅ Set timer to 1 hour ago - should regenerate 1 life");
+                }}
+                className="bg-blue-500 text-white px-2 py-2 rounded text-xs hover:bg-blue-600"
+              >
+                Simulate 1h Passed
+              </button>
+
+              <button
+                onClick={async () => {
+                  await updateDoc(doc(db, "users", auth.currentUser.uid), {
+                    last_life_update: new Date(),
+                  });
+                  console.log("✅ Timer reset to now");
+                }}
+                className="bg-purple-500 text-white px-2 py-2 rounded text-xs hover:bg-purple-600"
+              >
+                Reset Timer
               </button>
             </div>
           </div>
@@ -940,6 +1087,12 @@ const Dashboard = () => {
   Accuracy: ${userData.progress?.accuracy || 0}%
   Coins: ${userData.coins || 0}
   Lives: ${userData.lives || 0}/${userData.max_lives || 5}
+  Next Life: ${timeUntilNextLife}
+  Last Update: ${
+    userData.last_life_update
+      ? userData.last_life_update.toDate().toLocaleTimeString()
+      : "Never"
+  }
                   `;
                   console.log("📊 Current Status:", status);
                   alert(status);

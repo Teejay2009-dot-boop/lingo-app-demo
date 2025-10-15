@@ -33,6 +33,7 @@ import {
   setDoc,
   arrayUnion,
 } from "firebase/firestore";
+import LessonCompletionWithBoost from "../components/LessonCompletionWithBoost";
 
 const LessonDisplay = () => {
   const { moduleId, lessonIndex: lessonIndexParam } = useParams();
@@ -54,6 +55,9 @@ const LessonDisplay = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [user, setUser] = useState(null);
+
+  // ADDED: XP Boost completion state
+  const [showXpBoostCompletion, setShowXpBoostCompletion] = useState(false);
 
   // Get real rank using rank system
   const realRank = user
@@ -164,6 +168,7 @@ const LessonDisplay = () => {
           setAnsweredMap({});
           setLessonCompleted(false);
           setShowCompletionSummary(false);
+          setShowXpBoostCompletion(false);
           // Reset lesson XP to 20 when starting new lesson
           setCurrentLessonXP(20);
         } else {
@@ -200,6 +205,7 @@ const LessonDisplay = () => {
     }, 0);
   };
 
+  // UPDATED: completeLesson function with XP boost support
   const completeLesson = async () => {
     if (!auth.currentUser || lessonCompleted || !lesson || !currentModule) {
       console.log("❌ CANNOT COMPLETE - Missing requirements");
@@ -236,7 +242,14 @@ const LessonDisplay = () => {
     // Calculate final XP (can exceed 20)
     const finalXP = baseXP + streakBonusXP;
 
-    // NEW: Calculate coins according to the formula
+    // NEW: Check for active XP boost
+    const hasXpBoost = user?.active_xp_boost && 
+                      new Date(user.active_xp_boost.expires_at.toDate()) > new Date();
+    const boostMultiplier = hasXpBoost ? user.active_xp_boost.multiplier : 1;
+    const bonusXP = hasXpBoost ? Math.floor(finalXP * (boostMultiplier - 1)) : 0;
+    const totalXPWithBoost = finalXP + bonusXP;
+
+    // Calculate coins according to the formula
     const baseCoin = 10;
     const accuracyBonusCoin = Math.floor(accuracy / 10);
     let coinReward = baseCoin + accuracyBonusCoin;
@@ -259,6 +272,10 @@ const LessonDisplay = () => {
       wrongAnswers,
       streakBonusXP,
       finalXP,
+      hasXpBoost,
+      boostMultiplier,
+      bonusXP,
+      totalXPWithBoost
     });
 
     console.log("💰 COINS Calculation:", {
@@ -270,11 +287,19 @@ const LessonDisplay = () => {
       accuracy,
     });
 
-    // ✅ SET STATES FIRST
+    // ✅ SET STATES FIRST - FIXED: Set both completion states explicitly
     setLessonCompleted(true);
-    setFinalLessonXp(finalXP);
+    setFinalLessonXp(hasXpBoost ? totalXPWithBoost : finalXP);
     setFinalLessonCoins(totalCoinReward);
-    setShowCompletionSummary(true);
+    
+    // Show appropriate completion screen - FIXED: Set both states explicitly
+    if (hasXpBoost) {
+      setShowXpBoostCompletion(true);
+      setShowCompletionSummary(false);
+    } else {
+      setShowCompletionSummary(true);
+      setShowXpBoostCompletion(false);
+    }
 
     // Then do Firestore updates
     const uid = auth.currentUser.uid;
@@ -298,10 +323,10 @@ const LessonDisplay = () => {
 
       // Update user with new XP and coins system
       await updateDoc(userRef, {
-        xp: increment(finalXP),
-        total_xp: increment(finalXP),
-        weeklyXP: increment(finalXP),
-        monthlyXP: increment(finalXP),
+        xp: increment(hasXpBoost ? totalXPWithBoost : finalXP),
+        total_xp: increment(hasXpBoost ? totalXPWithBoost : finalXP),
+        weeklyXP: increment(hasXpBoost ? totalXPWithBoost : finalXP),
+        monthlyXP: increment(hasXpBoost ? totalXPWithBoost : finalXP),
         coins: increment(totalCoinReward),
         total_lessons: increment(1),
         completed_lessons: arrayUnion(lesson.lesson_id),
@@ -378,14 +403,17 @@ const LessonDisplay = () => {
       "📊 STATE UPDATE - lessonCompleted:",
       lessonCompleted,
       "showCompletionSummary:",
-      showCompletionSummary
+      showCompletionSummary,
+      "showXpBoostCompletion:",
+      showXpBoostCompletion
     );
-  }, [lessonCompleted, showCompletionSummary]);
+  }, [lessonCompleted, showCompletionSummary, showXpBoostCompletion]);
 
   // Debug useEffect - add this to track state changes
   useEffect(() => {
     console.log("🔍 LESSON DEBUG:", {
       showCompletionSummary,
+      showXpBoostCompletion,
       lessonCompleted,
       currentIndex,
       exercisesLength: exercises.length,
@@ -396,6 +424,7 @@ const LessonDisplay = () => {
     });
   }, [
     showCompletionSummary,
+    showXpBoostCompletion,
     lessonCompleted,
     currentIndex,
     exercises.length,
@@ -407,10 +436,12 @@ const LessonDisplay = () => {
     if (lessonCompleted) {
       console.log(
         "🎉 LESSON COMPLETED - Show completion should be:",
-        showCompletionSummary
+        showCompletionSummary,
+        "XP Boost completion:",
+        showXpBoostCompletion
       );
     }
-  }, [lessonCompleted, showCompletionSummary]);
+  }, [lessonCompleted, showCompletionSummary, showXpBoostCompletion]);
 
   // Debug useEffect
   useEffect(() => {
@@ -420,6 +451,7 @@ const LessonDisplay = () => {
     console.log("Answered questions:", Object.keys(answeredMap).length);
     console.log("Lesson completed:", lessonCompleted);
     console.log("Show completion summary:", showCompletionSummary);
+    console.log("Show XP boost completion:", showXpBoostCompletion);
     console.log("Current Lesson XP:", currentLessonXP);
     console.log("====================");
   }, [
@@ -427,6 +459,7 @@ const LessonDisplay = () => {
     answeredMap,
     lessonCompleted,
     showCompletionSummary,
+    showXpBoostCompletion,
     exercises.length,
     currentLessonXP,
   ]);
@@ -489,9 +522,33 @@ const LessonDisplay = () => {
     );
   }
 
-  // Normal Lesson Completion Summary
-  if (showCompletionSummary && lessonCompleted) {
-    console.log("🎉 Rendering completion summary...");
+  // XP Boost Completion Screen - FIXED: Remove lessonCompleted check
+  if (showXpBoostCompletion) {
+    console.log("🎉 Rendering XP boost completion...");
+    const correctAnswers = Object.values(answeredMap).filter(
+      (a) => a.isCorrect
+    ).length;
+    const totalQuestions = exercises.length;
+
+    // Calculate base values for display
+    const baseXP = 20 - (totalQuestions - correctAnswers) * 2;
+    const streakBonusXP = currentStreak >= 7 ? 7 : currentStreak >= 3 ? 5 : currentStreak >= 1 ? 2 : 0;
+    const finalBaseXP = Math.max(0, baseXP) + streakBonusXP;
+    const boostMultiplier = user?.active_xp_boost?.multiplier || 1;
+
+    return (
+      <LessonCompletionWithBoost
+        basicXP={finalBaseXP}
+        boostMultiplier={boostMultiplier}
+        onContinue={() => navigate("/lessons")}
+        lessonTitle="Lesson Complete! 🎉"
+      />
+    );
+  }
+
+  // Normal Lesson Completion Summary - FIXED: Remove lessonCompleted check
+  if (showCompletionSummary) {
+    console.log("🎉 Rendering normal completion summary...");
     const correctAnswers = Object.values(answeredMap).filter(
       (a) => a.isCorrect
     ).length;
@@ -553,20 +610,20 @@ const LessonDisplay = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 relative">
-      {/* Test button - ALWAYS show this for now */}
+      {/* REMOVED DEBUG BUTTONS */}
+      {/*
       <button
         onClick={() => {
-          console.log("🧪 FORCING completion screen");
-          setShowCompletionSummary(true);
+          console.log("🧪 FORCING XP boost completion screen");
+          setShowXpBoostCompletion(true);
           setLessonCompleted(true);
           setFinalLessonXp(25);
           setFinalLessonCoins(10);
         }}
         className="fixed bottom-4 right-4 bg-green-500 text-white p-2 rounded z-50"
       >
-        Test Completion
+        Test XP Boost
       </button>
-      {/* Debug button */}
       <button
         onClick={() => {
           console.log("🔧 Manual completion trigger");
@@ -576,7 +633,6 @@ const LessonDisplay = () => {
       >
         Debug: Complete Lesson
       </button>
-      {/* Accuracy debug button */}
       <button
         onClick={async () => {
           const userRef = doc(db, "users", auth.currentUser.uid);
@@ -584,13 +640,15 @@ const LessonDisplay = () => {
           if (userSnap.exists()) {
             const data = userSnap.data();
             console.log("🔍 CURRENT FIREBASE ACCURACY:", data.progress);
-            alert(`Current Accuracy: ${data.progress?.accuracy || 0}%`);
+            console.log("🔍 CURRENT XP BOOST:", data.active_xp_boost);
+            alert(`Current Accuracy: ${data.progress?.accuracy || 0}%\nXP Boost: ${data.active_xp_boost ? 'Active' : 'None'}`);
           }
         }}
         className="fixed top-4 right-4 bg-blue-500 text-white p-2 rounded z-50"
       >
-        Check Accuracy
+        Check Boost
       </button>
+      */}
 
       <GoBackBtn />
       <div className="flex justify-between items-center pt-10 mb-4">

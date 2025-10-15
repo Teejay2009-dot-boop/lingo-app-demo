@@ -217,7 +217,7 @@ export default function Profile() {
         <div className="flex justify-center mt-4 fixed bottom-20 right-5 z-10">
           <Link
             to="/profile/settings"
-            className="flex items-center justify-center text-3xl bg-amber-500 text-white w-16 h-16 rounded-2xl hover:bg-amber-600 transition-colors shadow-lg"
+            className="flex items-center justify-center text-3xl bg-amber text-white w-16 h-16 rounded-2xl hover:bg-amber-600 transition-colors shadow-lg"
           >
             <FaCog />
           </Link>

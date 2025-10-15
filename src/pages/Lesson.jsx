@@ -99,9 +99,9 @@ export const Lesson = () => {
   return (
     <div className="bg-cover lesson-container">
       {/* Top Navbar */}
-      <div className="text-amber fixed top-0 w-full pt-1">
+      <div className="text-amber fixed top-0 w-full pt-3 px-1">
         <div className="">
-          <div className="text-xs sm:text-md md:text-lg font-semibold flex items-center gap-2 w-full sm:gap-3 lg:text-lg justify-between lg:justify-end">
+          <div className="text-lg sm:text-md md:text-lg font-semibold flex items-center gap-2 w-full sm:gap-3 lg:text-lg justify-between lg:justify-end">
             <p className="pl-3 flex items-center">
               <Link to={'/lessons/shop'}>
                 ${userData.coins || 0}
@@ -116,7 +116,7 @@ export const Lesson = () => {
               <p className="flex gap-2 items-center">
                 <FaFire className="text-red-500" /> {userData.current_streak || 0}
               </p>
-              <button
+              {/* <button
                 onClick={() => setShowDropdown(!showDropdown)}
                 className="relative"
               >
@@ -125,7 +125,7 @@ export const Lesson = () => {
                   alt="avatar"
                   className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-amber shadow"
                 />
-              </button>
+              </button> */}
             </div>
           </div>
         </div>
