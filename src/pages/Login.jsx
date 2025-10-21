@@ -11,8 +11,8 @@ import { doc, setDoc, updateDoc, getDoc, increment } from "firebase/firestore";
 import { auth, db } from "../firebase/config/firebase";
 import { useNavigate } from "react-router-dom";
 import { NavBar } from "../components/Welcome/NavBar";
-import { defaultUser } from "../data/defaultUser"; // Import the new defaults
-import { updateStreak } from "../utils/streak"; // Import updateStreak
+import { defaultUser } from "../data/defaultUser";
+import { updateStreak } from "../utils/streak";
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -23,22 +23,39 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
 
-  // Initialize Google provider
   const googleProvider = new GoogleAuthProvider();
   googleProvider.setCustomParameters({
-    prompt: "select_account", // Forces account selection
+    prompt: "select_account",
   });
 
+  // FIXED: Better auth state handling
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged((user) => {
-      if (user) navigate("/lessons");
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        console.log("User authenticated, checking if new user...");
+
+        // Check if user data exists in Firestore
+        try {
+          const userRef = doc(db, "users", user.uid);
+          const userSnap = await getDoc(userRef);
+
+          if (userSnap.exists()) {
+            console.log("User data exists, navigating to lessons");
+            navigate("/lessons");
+          } else {
+            console.log(
+              "User authenticated but no Firestore data, staying on login"
+            );
+            // Don't navigate - let the user complete signup
+          }
+        } catch (error) {
+          console.error("Error checking user data:", error);
+        }
+      }
     });
     return unsubscribe;
   }, [navigate]);
 
-  // Removed old updateStreakOnLogin, now using utility function
-
-  // Initialize new user with level progression data
   const initializeNewUser = async (user, additionalData = {}) => {
     const userRef = doc(db, "users", user.uid);
     await setDoc(userRef, {
@@ -46,9 +63,9 @@ const Login = () => {
       ...additionalData,
       email: user.email,
       username: additionalData.username || user.displayName || "New User",
-      // Removed last_active_date and streak defaults as updateStreak handles initialization
       avatar: user.photoURL || defaultUser.avatar,
     });
+    console.log("New user initialized in Firestore");
   };
 
   const handleGoogleAuth = async () => {
@@ -56,20 +73,26 @@ const Login = () => {
     setError("");
     try {
       const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
 
-      // Check if user is new (first time sign-in)
       const isNewUser =
         result.user.metadata.creationTime ===
         result.user.metadata.lastSignInTime;
 
+      console.log("Is new user?", isNewUser);
+
       if (isNewUser) {
-        await initializeNewUser(result.user, {
-          displayName: result.user.displayName || name,
+        await initializeNewUser(user, {
+          displayName: user.displayName || name,
         });
+        console.log("New Google user initialized");
       }
 
-      // Always update streak on login for existing or new users
-      await updateStreak(result.user.uid);
+      await updateStreak(user.uid);
+
+      // FIXED: Explicit navigation after successful auth
+      console.log("Google auth successful, navigating to lessons");
+      navigate("/lessons");
     } catch (error) {
       console.error("Google auth error:", error);
       setError(getFriendlyAuthError(error));
@@ -86,6 +109,16 @@ const Login = () => {
         return "Account already exists with different method";
       case "auth/cancelled-popup-request":
         return "Sign in was cancelled";
+      case "auth/email-already-in-use":
+        return "This email is already registered";
+      case "auth/invalid-email":
+        return "Invalid email address";
+      case "auth/weak-password":
+        return "Password should be at least 6 characters";
+      case "auth/user-not-found":
+        return "No account found with this email";
+      case "auth/wrong-password":
+        return "Incorrect password";
       default:
         return error.message.replace("Firebase: ", "");
     }
@@ -98,9 +131,13 @@ const Login = () => {
 
     try {
       if (isLogin) {
+        // Login flow
         await signInWithEmailAndPassword(auth, email, password);
-        await updateStreak(auth.currentUser.uid); // Use new updateStreak utility
+        await updateStreak(auth.currentUser.uid);
+        console.log("Email login successful, navigating to lessons");
+        navigate("/lessons");
       } else {
+        // Signup flow
         const userCredential = await createUserWithEmailAndPassword(
           auth,
           email,
@@ -114,15 +151,51 @@ const Login = () => {
         await sendEmailVerification(userCredential.user);
         await updateProfile(userCredential.user, { displayName: name });
 
-        alert("Account created! Please verify your email.");
-        await updateStreak(userCredential.user.uid); // Initialize streak for new user
+        await updateStreak(userCredential.user.uid);
+
+        console.log("Signup successful, navigating to lessons");
+        navigate("/lessons");
       }
     } catch (err) {
+      console.error("Auth error:", err);
       setError(getFriendlyAuthError(err));
     } finally {
       setLoading(false);
     }
   };
+
+  // Add debug info
+  useEffect(() => {
+    console.log("Login component mounted");
+    console.log("Current path:", window.location.pathname);
+  }, []);
+
+  // In Login.js - temporary debug
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(async (user) => {
+      if (user) {
+        console.log("User authenticated, checking if new user...");
+
+        // Add a small delay to see if it helps
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+
+        try {
+          const userRef = doc(db, "users", user.uid);
+          const userSnap = await getDoc(userRef);
+
+          if (userSnap.exists()) {
+            console.log("User data exists, navigating to lessons");
+            setTimeout(() => {
+              navigate("/lessons");
+            }, 500);
+          }
+        } catch (error) {
+          console.error("Error checking user data:", error);
+        }
+      }
+    });
+    return unsubscribe;
+  }, [navigate]);
 
   return (
     <>
@@ -158,6 +231,11 @@ const Login = () => {
                 {error}
               </div>
             )}
+
+            {/* Debug info - remove in production */}
+            <div className="text-center text-sm text-gray-500 mb-2">
+              Current: {window.location.pathname}
+            </div>
 
             <div className="relative h-[400px] overflow-hidden">
               {/* Login Form */}
@@ -223,7 +301,7 @@ const Login = () => {
                   isLogin ? "translate-x-full" : "translate-x-0"
                 }`}
               >
-                <form onSubmit={handleAuth} className="flex flex-col gap-">
+                <form onSubmit={handleAuth} className="flex flex-col gap-4">
                   <h2 className="text-2xl font-bold text-center mb-4">
                     Get Started
                   </h2>

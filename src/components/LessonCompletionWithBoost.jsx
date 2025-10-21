@@ -1,5 +1,6 @@
 import React from 'react';
 import { motion } from 'framer-motion';
+import xpBoost from '../assets/xpboost-removebg-preview.png';
 import { FaBolt, FaStar, FaCheck } from 'react-icons/fa';
 
 const LessonCompletionWithBoost = ({ 
@@ -11,12 +12,6 @@ const LessonCompletionWithBoost = ({
   const hasBoost = boostMultiplier > 1;
   const bonusXP = hasBoost ? Math.floor(basicXP * (boostMultiplier - 1)) : 0;
   const totalXP = basicXP + bonusXP;
-
-  const getBoostText = () => {
-    if (boostMultiplier === 1.5) return "50% Boost";
-    if (boostMultiplier === 1.75) return "75% Boost";
-    return "XP Boost";
-  };
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
@@ -35,24 +30,29 @@ const LessonCompletionWithBoost = ({
         >
           <div className="flex justify-center mb-4">
             <div className="relative">
-              <motion.div
-                animate={{ 
-                  scale: [1, 1.2, 1],
-                  rotate: [0, 5, -5, 0]
-                }}
-                transition={{ duration: 0.5, delay: 0.5 }}
-                className="text-6xl text-yellow-500 mb-2"
-              >
-                <FaBolt />
-              </motion.div>
-              {hasBoost && (
+              {hasBoost ? (
                 <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ delay: 0.7 }}
-                  className="absolute -top-2 -right-2 bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full"
+                  animate={{ 
+                    scale: [1, 1.1, 1],
+                  }}
+                  transition={{ duration: 0.5, delay: 0.5 }}
                 >
-                  {getBoostText()}
+                  <img 
+                    src={xpBoost} 
+                    alt="XP Boost" 
+                    className="w-24 h-24 object-contain mx-auto"
+                  />
+                </motion.div>
+              ) : (
+                <motion.div
+                  animate={{ 
+                    scale: [1, 1.2, 1],
+                    rotate: [0, 5, -5, 0]
+                  }}
+                  transition={{ duration: 0.5, delay: 0.5 }}
+                  className="text-6xl text-yellow-500 mb-2"
+                >
+                  <FaBolt />
                 </motion.div>
               )}
             </div>
@@ -144,7 +144,7 @@ const LessonCompletionWithBoost = ({
           </motion.div>
         </motion.div>
 
-        {/* Continue Button */}
+        {/* Close Button */}
         <motion.button
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -154,7 +154,7 @@ const LessonCompletionWithBoost = ({
         >
           <div className="flex items-center justify-center gap-2">
             <FaCheck />
-            Continue Learning
+            Close
           </div>
         </motion.button>
       </motion.div>

@@ -4,9 +4,10 @@ import {
   query,
   orderBy,
   limit,
-  onSnapshot,
+  getDocs,
   where,
   doc,
+  getDoc,
 } from "firebase/firestore";
 import { db, auth } from "../../firebase/config/firebase";
 import { FaTrophy, FaCrown, FaMedal, FaUserAlt, FaFire } from "react-icons/fa";
@@ -28,63 +29,56 @@ const Leaderboard = () => {
   const [currentUserPosition, setCurrentUserPosition] = useState(null);
   const [currentUserData, setCurrentUserData] = useState(null);
   
-  // Add refs to track mounted state and prevent infinite loops
   const mountedRef = useRef(true);
-  const currentUserDataRef = useRef(null);
 
-  // Fetch current user's data - FIXED: Only run once
+  // Fetch current user's data - ONE TIME FETCH
   useEffect(() => {
-    if (!auth.currentUser) {
-      setCurrentUserData(null);
-      currentUserDataRef.current = null;
-      return;
-    }
+    const fetchCurrentUserData = async () => {
+      if (!auth.currentUser || !mountedRef.current) {
+        setCurrentUserData(null);
+        return;
+      }
 
-    const userDocRef = doc(db, "users", auth.currentUser.uid);
-    const unsubscribe = onSnapshot(
-      userDocRef,
-      (docSnap) => {
+      try {
+        const userDocRef = doc(db, "users", auth.currentUser.uid);
+        const docSnap = await getDoc(userDocRef);
+        
         if (!mountedRef.current) return;
         
         if (docSnap.exists()) {
           const data = docSnap.data();
           setCurrentUserData(data);
-          currentUserDataRef.current = data;
         } else {
           setCurrentUserData(null);
-          currentUserDataRef.current = null;
         }
-      },
-      (error) => {
-        console.error("Error fetching currentUserData:", error);
+      } catch (error) {
         if (mountedRef.current) {
           setCurrentUserData(null);
-          currentUserDataRef.current = null;
         }
       }
-    );
-    
-    return () => {
-      unsubscribe();
     };
-  }, []); // Empty dependency array - only run once
 
-  // Fetch leaderboard data - FIXED: Optimized with proper dependencies
+    fetchCurrentUserData();
+
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
+
+  // Fetch leaderboard data - ONE TIME FETCH when mode changes
   useEffect(() => {
     if (!mountedRef.current) return;
 
-    let unsubscribe;
-    setLoading(true);
-
     const fetchLeaderboard = async () => {
+      setLoading(true);
+      
       try {
         let q;
 
         if (leaderboardMode === "general") {
           q = query(collection(db, "users"), orderBy("xp", "desc"), limit(50));
         } else if (leaderboardMode === "rank") {
-          // Use the ref instead of state to avoid dependency loop
-          const userRank = currentUserDataRef.current?.rank;
+          const userRank = currentUserData?.rank;
           if (!userRank) {
             setUsers([]);
             setCurrentUserPosition(null);
@@ -99,68 +93,43 @@ const Leaderboard = () => {
           );
         }
 
-        unsubscribe = onSnapshot(
-          q,
-          (querySnapshot) => {
-            if (!mountedRef.current) return;
+        const querySnapshot = await getDocs(q);
+        
+        if (!mountedRef.current) return;
 
-            const usersData = querySnapshot.docs.map((doc) => ({
-              id: doc.id,
-              ...doc.data(),
-              rank: getUserRank({
-                level: doc.data().level || 1,
-                accuracy: doc.data().progress?.accuracy || 0,
-                streak: doc.data().current_streak || 0,
-                lessons: doc.data().lessons || 0,
-              }),
-            }));
+        const usersData = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+          rank: getUserRank({
+            level: doc.data().level || 1,
+            accuracy: doc.data().progress?.accuracy || 0,
+            streak: doc.data().current_streak || 0,
+            lessons: doc.data().lessons || 0,
+          }),
+        }));
 
-            setUsers(usersData);
+        setUsers(usersData);
 
-            if (auth.currentUser) {
-              const position = usersData.findIndex(
-                (user) => user.id === auth.currentUser.uid
-              );
-              setCurrentUserPosition(position >= 0 ? position + 1 : null);
-            }
-            setLoading(false);
-          },
-          (error) => {
-            console.error("Error in onSnapshot:", error);
-            if (mountedRef.current) {
-              setLoading(false);
-            }
-          }
-        );
+        if (auth.currentUser) {
+          const position = usersData.findIndex(
+            (user) => user.id === auth.currentUser.uid
+          );
+          setCurrentUserPosition(position >= 0 ? position + 1 : null);
+        }
       } catch (error) {
-        console.error("Error fetching leaderboard:", error);
+        if (mountedRef.current) {
+          setUsers([]);
+          setCurrentUserPosition(null);
+        }
+      } finally {
         if (mountedRef.current) {
           setLoading(false);
         }
       }
     };
 
-    // Only fetch if we have the necessary data for rank mode
-    if (leaderboardMode === "rank" && !currentUserDataRef.current) {
-      setLoading(false);
-      return;
-    }
-
     fetchLeaderboard();
-
-    return () => {
-      if (unsubscribe) {
-        unsubscribe();
-      }
-    };
-  }, [leaderboardMode]); // Only depend on leaderboardMode
-
-  // Cleanup on unmount
-  useEffect(() => {
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
+  }, [leaderboardMode, currentUserData]);
 
   // Format XP to whole numbers
   const formatXP = (xp) => {

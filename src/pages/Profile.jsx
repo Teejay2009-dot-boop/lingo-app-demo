@@ -232,9 +232,7 @@ export default function Profile() {
             <p className="text-gray-800 text-3xl font-bold">
               {progressData.currentLevel}
             </p>
-            <p className="text-xs text-gray-500 mt-1">
-              {progressData.progress.toFixed(0)}% to next
-            </p>
+            
           </div>
 
           {/* Streak Card */}
@@ -245,10 +243,7 @@ export default function Profile() {
             <FaFire className="text-red-500 text-2xl mb-2" />
             <p className="text-amber-500 font-bold text-lg mb-1">Streak</p>
             <p className="text-gray-800 text-3xl font-bold">{currentStreak}</p>
-            <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
-              <FaCalendarAlt className="text-xs" />
-              Longest: {longestStreak}
-            </p>
+            
           </div>
 
           {/* XP Card */}
@@ -258,9 +253,7 @@ export default function Profile() {
             <p className="text-gray-800 text-2xl font-bold">
               {formatXP(user?.xp || 0)}
             </p>
-            <p className="text-xs text-gray-500 mt-1">
-              {user?.total_lessons || 0} lessons
-            </p>
+            
           </div>
         </div>
 

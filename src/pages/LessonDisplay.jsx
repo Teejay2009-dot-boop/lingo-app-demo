@@ -243,10 +243,13 @@ const LessonDisplay = () => {
     const finalXP = baseXP + streakBonusXP;
 
     // NEW: Check for active XP boost
-    const hasXpBoost = user?.active_xp_boost && 
-                      new Date(user.active_xp_boost.expires_at.toDate()) > new Date();
+    const hasXpBoost =
+      user?.active_xp_boost &&
+      new Date(user.active_xp_boost.expires_at.toDate()) > new Date();
     const boostMultiplier = hasXpBoost ? user.active_xp_boost.multiplier : 1;
-    const bonusXP = hasXpBoost ? Math.floor(finalXP * (boostMultiplier - 1)) : 0;
+    const bonusXP = hasXpBoost
+      ? Math.floor(finalXP * (boostMultiplier - 1))
+      : 0;
     const totalXPWithBoost = finalXP + bonusXP;
 
     // Calculate coins according to the formula
@@ -275,7 +278,7 @@ const LessonDisplay = () => {
       hasXpBoost,
       boostMultiplier,
       bonusXP,
-      totalXPWithBoost
+      totalXPWithBoost,
     });
 
     console.log("💰 COINS Calculation:", {
@@ -291,7 +294,7 @@ const LessonDisplay = () => {
     setLessonCompleted(true);
     setFinalLessonXp(hasXpBoost ? totalXPWithBoost : finalXP);
     setFinalLessonCoins(totalCoinReward);
-    
+
     // Show appropriate completion screen - FIXED: Set both states explicitly
     if (hasXpBoost) {
       setShowXpBoostCompletion(true);
@@ -532,7 +535,14 @@ const LessonDisplay = () => {
 
     // Calculate base values for display
     const baseXP = 20 - (totalQuestions - correctAnswers) * 2;
-    const streakBonusXP = currentStreak >= 7 ? 7 : currentStreak >= 3 ? 5 : currentStreak >= 1 ? 2 : 0;
+    const streakBonusXP =
+      currentStreak >= 7
+        ? 7
+        : currentStreak >= 3
+        ? 5
+        : currentStreak >= 1
+        ? 2
+        : 0;
     const finalBaseXP = Math.max(0, baseXP) + streakBonusXP;
     const boostMultiplier = user?.active_xp_boost?.multiplier || 1;
 
