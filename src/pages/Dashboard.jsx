@@ -17,15 +17,12 @@ import { RankUpScreen } from "../components/RankUpScreen";
 import { addNotification } from "../firebase/utils/notifications";
 import { getRankUpData, getNextRankProgress } from "../data/RankSystem";
 import { getLevelProgress, getLevel } from "../utils/progression";
-import { updateStreak } from "../utils/streak";
 import {
   FaStar,
-  FaSteam,
   FaHeart,
   FaWallet,
   FaBell,
   FaFire,
-  FaCoins,
   FaChartBar,
   FaProcedures,
   FaKeyboard,
@@ -44,10 +41,8 @@ import {
   query,
   collection,
   where,
-  setDoc,
   getDoc,
 } from "firebase/firestore";
-import users from "../data/user";
 
 // FIXED: Lives regeneration utility functions - ONLY 1 LIFE PER HOUR
 const checkLivesRegeneration = async (uid) => {
@@ -82,16 +77,13 @@ const checkLivesRegeneration = async (uid) => {
   let newLives = currentLives;
   const timePassed = (now - lastLifeUpdate) / (1000 * 60 * 60); // Convert to hours
 
-  console.log(`⏰ ${timePassed.toFixed(2)} hours passed since last life update`);
-
   // FIXED: Only add 1 life if exactly 1+ hours passed
   if (timePassed >= 1 && currentLives < maxLives) {
     newLives = currentLives + 1;
-    console.log(`❤️ 1 life regenerated: ${currentLives} → ${newLives}`);
-    
+
     await updateDoc(userRef, {
       lives: newLives,
-      last_life_update: new Date() // Reset timer
+      last_life_update: new Date(), // Reset timer
     });
 
     // Send notification for life regeneration
@@ -114,20 +106,20 @@ const getTimeUntilNextLife = (lastLifeUpdate, currentLives, maxLives = 5) => {
   }
 
   if (!lastLifeUpdate) return "01:00:00";
-  
+
   const now = new Date();
   const lastUpdate = lastLifeUpdate.toDate();
   const timePassed = (now - lastUpdate) / 1000; // seconds
   const timeRemaining = 3600 - timePassed; // 1 hour in seconds
-  
+
   if (timeRemaining <= 0) {
     return "Ready!";
   }
-  
+
   const hours = Math.floor(timeRemaining / 3600);
   const minutes = Math.floor((timeRemaining % 3600) / 60);
   const seconds = Math.floor(timeRemaining % 60);
-  
+
   return `${hours.toString().padStart(2, "0")}:${minutes
     .toString()
     .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
@@ -146,7 +138,6 @@ export const consumeLife = async (uid) => {
   const currentLives = userData.lives || 0;
 
   if (currentLives <= 0) {
-    console.log("❌ No lives available to consume");
     return false;
   }
 
@@ -156,7 +147,6 @@ export const consumeLife = async (uid) => {
     last_life_update: new Date(), // Reset timer when life is consumed
   });
 
-  console.log(`❤️ Life consumed: ${currentLives} → ${currentLives - 1}`);
   return true;
 };
 
@@ -172,8 +162,6 @@ const Dashboard = () => {
   const lastComputedRef = useRef(null);
   const [showBadgeModal, setShowBadgeModal] = useState(false);
   const [newlyEarnedBadge, setNewlyEarnedBadge] = useState(null);
-  const [currentStreak, setCurrentStreak] = useState(1);
-  const [longestStreak, setLongestStreak] = useState(0);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [timeUntilNextLife, setTimeUntilNextLife] = useState("01:00:00");
 
@@ -206,7 +194,6 @@ const Dashboard = () => {
     try {
       return getLevelProgress(userData.xp);
     } catch (error) {
-      console.error("Error calculating level progress:", error);
       return {
         currentLevel: 1,
         progress: 0,
@@ -221,29 +208,66 @@ const Dashboard = () => {
 
   const progressData = getProgressData();
 
-  // KEEP EXISTING: Refactored level progress calculation using progression utility
-  const { currentLevel, progress } = getLevelProgress(userData?.xp || 0);
+  // FIXED: Combined achievement and badge checking to reduce state updates
+  const checkAchievementsAndBadges = useRef(async (userData, uid) => {
+    if (!userData || !uid) return;
 
-  // KEEP EXISTING: Get real rank using rank system
-  const realRank = userData
-    ? getUserRank({
-        level: userData.level || 1,
-        accuracy: userData.progress?.accuracy || 0,
-        streak: userData.current_streak || 0,
-        lessonsCompleted: userData.total_lessons || userData.lessons || 0,
-      })
-    : "Moonstone";
+    // Check achievements
+    const newAchievements = checkForNewAchievements(userData);
+    if (newAchievements.length > 0) {
+      // Award each new achievement and show modal for the first one
+      for (const [index, achievement] of newAchievements.entries()) {
+        const success = await awardAchievement(uid, achievement.id);
+        if (success) {
+          if (index === 0) {
+            setNewlyEarnedAchievement(achievement);
+            setShowAchievementModal(true);
+          }
 
-  // FIXED: Rank and level up detection
+          addNotification(uid, {
+            type: "achievement",
+            title: "Achievement Unlocked! 💎",
+            message: `You earned "${achievement.name}"!`,
+            achievementId: achievement.id,
+            timestamp: new Date(),
+          });
+        }
+      }
+    }
+
+    // Check badges
+    const newBadges = checkForNewBadges(userData);
+    if (newBadges.length > 0) {
+      // Award each new badge and show modal for the first one
+      for (const [index, badge] of newBadges.entries()) {
+        const success = await awardBadge(uid, badge.id);
+        if (success) {
+          if (index === 0) {
+            setNewlyEarnedBadge(badge);
+            setShowBadgeModal(true);
+          }
+
+          addNotification(uid, {
+            type: "badge",
+            title: "Badge Earned! 🏆",
+            message: `You unlocked the "${badge.name}" badge!`,
+            badgeId: badge.id,
+            timestamp: new Date(),
+          });
+        }
+      }
+    }
+  });
+
+  // FIXED: Combined level, rank, and achievement detection
   useEffect(() => {
-    if (!userData) return;
+    if (!userData || !auth.currentUser) return;
 
     // Prevent re-running if we already processed this data
     if (lastComputedRef.current?.xp === userData.xp) return;
 
     const userCurrentLevel = userData.level || 1;
     const userCurrentXP = userData.xp || 0;
-
     const updatedUserLevelInfo = getLevelProgress(userCurrentXP);
 
     // Check for level up
@@ -256,13 +280,13 @@ const Dashboard = () => {
         level: updatedUserLevelInfo.currentLevel,
       });
 
-      // Update user document - this will trigger userData change
+      // Update user document
       updateDoc(doc(db, "users", auth.currentUser.uid), {
         level: updatedUserLevelInfo.currentLevel,
       });
     }
 
-    // FIXED: Check for rank up using full user data objects
+    // Check for rank up
     const currentUserData = {
       level: userData.level || 1,
       accuracy: userData.progress?.accuracy || 0,
@@ -297,213 +321,92 @@ const Dashboard = () => {
         rank: rankChange.newRank,
       });
 
-      // Update Firestore - this will trigger userData change
       updateDoc(doc(db, "users", auth.currentUser.uid), {
         rank: rankChange.newRank,
       });
     }
 
-    // Update last computed snapshot to prevent re-processing
+    // Check achievements and badges
+    checkAchievementsAndBadges.current(userData, auth.currentUser.uid);
+
+    // Update last computed snapshot
     lastComputedRef.current = {
       level: updatedUserLevelInfo.currentLevel,
       xp: userCurrentXP,
-      userData: { ...currentUserData }, // Store full user data for rank comparison
+      userData: { ...currentUserData },
     };
   }, [userData]);
 
-  // FIXED: Lives regeneration effect - check every minute
+  // FIXED: Lives regeneration effect - check every 5 minutes instead of 1
   useEffect(() => {
     if (!auth.currentUser || !userData) return;
 
+    let mounted = true;
+
     const checkLives = async () => {
+      if (!mounted) return;
       await checkLivesRegeneration(auth.currentUser.uid);
     };
 
     // Check immediately
     checkLives();
 
-    // Set up interval to check every minute
-    const interval = setInterval(checkLives, 60000); // 1 minute
+    // Set up interval to check every 5 minutes (reduced frequency)
+    const interval = setInterval(checkLives, 300000);
 
-    return () => clearInterval(interval);
+    return () => {
+      mounted = false;
+      clearInterval(interval);
+    };
   }, [userData]);
 
-  // FIXED: Lives countdown timer effect - update every second
+  // FIXED: Lives countdown timer effect - update every 5 seconds instead of 1
   useEffect(() => {
     if (!userData) return;
 
-    const timer = setInterval(() => {
+    let mounted = true;
+
+    const updateTimer = () => {
+      if (!mounted) return;
       const time = getTimeUntilNextLife(
         userData.last_life_update,
         userData.lives || 0,
         userData.max_lives || 5
       );
       setTimeUntilNextLife(time);
-    }, 1000);
+    };
 
-    return () => clearInterval(timer);
+    const timer = setInterval(updateTimer, 5000); // Reduced from 1000ms to 5000ms
+
+    // Initial update
+    updateTimer();
+
+    return () => {
+      mounted = false;
+      clearInterval(timer);
+    };
   }, [userData?.last_life_update, userData?.lives, userData?.max_lives]);
 
+  // FIXED: Single Firestore listener with cleanup
   useEffect(() => {
-    if (!userData || !auth.currentUser) return;
+    let unsubscribeSnapshot = null;
+    let mounted = true;
 
-    console.log("🔍 Checking for new achievements...");
-
-    const newAchievements = checkForNewAchievements(userData);
-
-    if (newAchievements.length > 0) {
-      console.log(
-        "🏆 Found new achievements:",
-        newAchievements.map((a) => a.name)
-      );
-
-      // Award each new achievement and show modal for the first one
-      newAchievements.forEach(async (achievement, index) => {
-        const success = await awardAchievement(
-          auth.currentUser.uid,
-          achievement.id
-        );
-        if (success) {
-          console.log(`🎉 Awarded achievement: ${achievement.name}`);
-
-          // Show modal for the first achievement
-          if (index === 0) {
-            setNewlyEarnedAchievement(achievement);
-            setShowAchievementModal(true);
-          }
-
-          // Send notification
-          addNotification(auth.currentUser.uid, {
-            type: "achievement",
-            title: "Achievement Unlocked! 💎",
-            message: `You earned "${achievement.name}"!`,
-            achievementId: achievement.id,
-            timestamp: new Date(),
-          });
-        }
-      });
-    }
-  }, [userData]);
-
-  useEffect(() => {
-    if (!userData || !auth.currentUser) return;
-
-    console.log("🔄 Checking for new badges...");
-
-    const newBadges = checkForNewBadges(userData);
-
-    if (newBadges.length > 0) {
-      console.log(
-        "🏆 Found new badges:",
-        newBadges.map((b) => b.name)
-      );
-
-      // Award each new badge and show modal for the first one
-      newBadges.forEach(async (badge, index) => {
-        const success = await awardBadge(auth.currentUser.uid, badge.id);
-        if (success) {
-          console.log(`🎉 Awarded badge: ${badge.name}`);
-
-          // Show modal for the first badge
-          if (index === 0) {
-            setNewlyEarnedBadge(badge);
-            setShowBadgeModal(true);
-          }
-
-          // Send regular notification
-          addNotification(auth.currentUser.uid, {
-            type: "badge",
-            title: "Badge Earned! 🏆",
-            message: `You unlocked the "${badge.name}" badge!`,
-            badgeId: badge.id,
-            timestamp: new Date(),
-          });
-        }
-      });
-    }
-  }, [userData]);
-
-  useEffect(() => {
-    if (!userData || !auth.currentUser) return;
-
-    console.log("🔄 Checking for badges...");
-
-    // Check for new badges
-    const newBadges = checkForNewBadges(userData);
-
-    if (newBadges.length > 0) {
-      console.log(
-        "🏆 Found new badges:",
-        newBadges.map((b) => b.name)
-      );
-
-      // Award each new badge
-      newBadges.forEach(async (badge) => {
-        const success = await awardBadge(auth.currentUser.uid, badge.id);
-        if (success) {
-          console.log(`🎉 Awarded badge: ${badge.name}`);
-        }
-      });
-    } else {
-      console.log("📭 No new badges found");
-    }
-  }, [userData]);
-
-  // Add this temporary debug useEffect to see your rank status
-  useEffect(() => {
-    if (userData) {
-      console.log("=== RANK DEBUG INFO ===");
-      console.log("User Data:", {
-        level: userData.level,
-        xp: userData.xp,
-        accuracy: userData.progress?.accuracy,
-        streak: userData.current_streak,
-        lessons: userData.lessons,
-        total_lessons: userData.total_lessons,
-      });
-
-      const currentRank = getUserRank({
-        level: userData.level || 1,
-        accuracy: userData.progress?.accuracy || 0,
-        streak: userData.current_streak || 0,
-        lessonsCompleted: userData.total_lessons || userData.lessons || 0,
-      });
-      console.log("Current Rank:", currentRank);
-
-      const nextRankProgress = getNextRankProgress({
-        level: userData.level || 1,
-        accuracy: userData.progress?.accuracy || 0,
-        streak: userData.current_streak || 0,
-        lessonsCompleted: userData.total_lessons || userData.lessons || 0,
-      });
-      console.log("Next Rank Requirements:", nextRankProgress);
-      console.log("=== END DEBUG ===");
-    }
-  }, [userData]);
-
-  useEffect(() => {
-    // Listen for auth state, then set up Firestore listener
     const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+      if (!mounted) return;
+
       if (user) {
         const userRef = doc(db, "users", user.uid);
 
-        const unsubscribeSnapshot = onSnapshot(userRef, (docSnap) => {
+        unsubscribeSnapshot = onSnapshot(userRef, (docSnap) => {
+          if (!mounted) return;
+
           if (docSnap.exists()) {
             const data = docSnap.data();
             setUserData(data);
-            // Use the main streak value from user document
-            setCurrentStreak(data.current_streak || 0);
-            setLongestStreak(data.longest_streak || 0);
           }
           setLoading(false);
         });
-
-        // Call updateStreak once per day
-        updateStreak(user.uid);
-
-        return () => {
-          unsubscribeSnapshot();
-        };
       } else {
         setUserData(null);
         setLoading(false);
@@ -511,13 +414,19 @@ const Dashboard = () => {
     });
 
     return () => {
+      mounted = false;
       unsubscribeAuth();
+      if (unsubscribeSnapshot) {
+        unsubscribeSnapshot();
+      }
     };
   }, []);
 
+  // FIXED: Optimized notifications listener
   useEffect(() => {
     if (!auth.currentUser) return;
 
+    let mounted = true;
     const notificationsRef = collection(
       db,
       `users/${auth.currentUser.uid}/notifications`
@@ -525,11 +434,29 @@ const Dashboard = () => {
     const q = query(notificationsRef, where("read", "==", false));
 
     const unsubscribe = onSnapshot(q, (snapshot) => {
+      if (!mounted) return;
       setUnreadNotificationCount(snapshot.size);
     });
 
-    return unsubscribe;
-  }, [userData]);
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
+  }, []);
+
+  // FIXED: Test functions
+  const testConsumeLife = async () => {
+    const success = await consumeLife(auth.currentUser.uid);
+  };
+
+  const initializeLivesSystem = async () => {
+    const userRef = doc(db, "users", auth.currentUser.uid);
+    await updateDoc(userRef, {
+      lives: 5,
+      max_lives: 5,
+      last_life_update: new Date(),
+    });
+  };
 
   if (loading) {
     return (
@@ -553,59 +480,10 @@ const Dashboard = () => {
     );
   }
 
-  console.log("🔄 Current streak value:", currentStreak);
-  console.log("📊 Component: Dashboard");
-
   const totalLessons = userData?.totalLessons || 0;
   const completedLessons = userData?.completed_lessons?.length || 0;
   const progressPercent =
     totalLessons > 0 ? (completedLessons / totalLessons) * 100 : 0;
-
-  // Add these test functions
-  const simulateLevelUp = async (level) => {
-    const userRef = doc(db, "users", auth.currentUser.uid);
-    const targetXP = getLevel(userData?.xp || 0).xpRequired;
-
-    await updateDoc(userRef, {
-      level: level,
-      xp: targetXP,
-      rank: getLevel(level).rank,
-    });
-
-    setShowLevelUpModal(true);
-  };
-
-  const resetTestData = async () => {
-    const userRef = doc(db, "users", auth.currentUser.uid);
-    await updateDoc(userRef, {
-      level: 1,
-      xp: 0,
-      current_streak: 0,
-      title: "Beginner",
-    });
-    setShowLevelUpModal(false);
-  };
-
-  // FIXED: Initialize lives system for existing users (1 hour regeneration)
-  const initializeLivesSystem = async () => {
-    const userRef = doc(db, "users", auth.currentUser.uid);
-    await updateDoc(userRef, {
-      lives: 5,
-      max_lives: 5,
-      last_life_update: new Date(),
-    });
-    console.log("✅ Lives system initialized (1-hour regeneration)");
-  };
-
-  // FIXED: Test function to consume a life
-  const testConsumeLife = async () => {
-    const success = await consumeLife(auth.currentUser.uid);
-    if (success) {
-      console.log("✅ Test: Life consumed successfully");
-    } else {
-      console.log("❌ Test: No lives available to consume");
-    }
-  };
 
   return (
     <DashboardLayout>
@@ -613,7 +491,7 @@ const Dashboard = () => {
         <div className="">
           <div className="flex gap-10 pt-4 items-center justify-end mr-9">
             <Link to="/notifications" className="relative">
-              <FaBell className="text-3xl hover:translate-y-[-2px] transition-transform duration-500 cursor-pointer pt-1 text-amber" />
+              <FaBell className="text-3xl hover:translate-y-[-2px] transition-transform duration-500 cursor-pointer pt-1 text-yellow-500" />
               {unreadNotificationCount > 0 && (
                 <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                   {unreadNotificationCount}
@@ -623,7 +501,7 @@ const Dashboard = () => {
             <div className="text-xl flex justify-center gap-2">
               <div className="flex items-center justify-center gap-2">
                 <div>👩‍🦰</div>
-                <div className="text-amber pt-1 font-semibold">
+                <div className="text-yellow-500 pt-1 font-semibold">
                   {userData?.username || "User"}
                 </div>
               </div>
@@ -639,17 +517,17 @@ const Dashboard = () => {
             <img
               src={avatar}
               alt="Avatar"
-              className="w-16 h-16 rounded-full border-2 border-amber"
+              className="w-16 h-16 rounded-full border-2 border-yellow-500"
             />
             <div>
-              <h1 className="text-4xl font-bold text-amber pt-2">
+              <h1 className="text-4xl font-bold text-yellow-500 pt-2">
                 Hi, {userData?.username || "Learner"}!
               </h1>
-              <p className="text-amber py-1 text-lg">{userData.rank}</p>
+              <p className="text-yellow-500 py-1 text-lg">{userData.rank}</p>
             </div>
           </div>
           <Link to={"/lessons"}>
-            <button className="bg-amber text-white py-3 px-8 rounded-lg shadow hover:scale-105 transition-transform my-4 lg:my-0">
+            <button className="bg-yellow-500 text-white py-3 px-8 rounded-lg shadow hover:scale-105 transition-transform my-4 lg:my-0">
               Start Lesson
             </button>
           </Link>
@@ -657,7 +535,7 @@ const Dashboard = () => {
       </div>
 
       <div>
-        <button className=" text-amber text-2xl ">
+        <button className=" text-yellow-500 text-2xl ">
           <Link to="/dashboard/ranking" className="p-3">
             View Ranks
           </Link>
@@ -669,9 +547,8 @@ const Dashboard = () => {
         <div className="grid md:grid-cols-3 md:grid-rows-2 gap-8 bg-gray-50 py-10 px-4 lg:px-12">
           {/* UPDATED XP Card with new progressive system */}
           <div className="bg-white p-6 flex justify-between rounded-2xl shadow items-center">
-            <FaStar className="text-7xl text-amber" />
+            <FaStar className="text-7xl text-yellow-500" />
             <div>
-              {/* CHANGED: Show formatted total XP */}
               <h1 className="text-3xl font-bold">
                 {formatXP(progressData.xpProgress)}
               </h1>
@@ -679,12 +556,11 @@ const Dashboard = () => {
 
               <div className="w-40 h-2 bg-gray-200 rounded mt-2 overflow-hidden">
                 <div
-                  className="h-2 bg-amber rounded transition-all duration-500"
+                  className="h-2 bg-yellow-500 rounded transition-all duration-500"
                   style={{ width: `${progressData.progress}%` }}
                 />
               </div>
 
-              {/* CHANGED: Fixed XP calculation */}
               <p className="text-xs text-gray-400">
                 {progressData.currentLevel >= 100 ? (
                   "Max level reached!"
@@ -696,7 +572,6 @@ const Dashboard = () => {
                 )}
               </p>
 
-              {/* ADDED: Detailed XP info */}
               <p className="text-xs text-gray-500 mt-1">
                 {formatXP(progressData.xpProgress)} /{" "}
                 {formatXP(progressData.xpNeeded)} XP to Level{" "}
@@ -708,8 +583,8 @@ const Dashboard = () => {
           {/* Streak Card */}
           <div className="bg-white p-6 rounded-2xl shadow flex flex-col">
             <div className="flex items-center gap-4 mb-4">
-              <div className="bg-amber-100 p-3 rounded-full">
-                <FaFire className="text-2xl text-amber" />
+              <div className="bg-yellow-100 p-3 rounded-full">
+                <FaFire className="text-2xl text-yellow-500" />
               </div>
               <div>
                 <h2 className="text-xl font-bold">Streak</h2>
@@ -718,11 +593,15 @@ const Dashboard = () => {
             </div>
             <div className="flex items-center justify-between">
               <div className="text-center">
-                <p className="text-3xl font-bold text-amber">{currentStreak}</p>
+                <p className="text-3xl font-bold text-yellow-500">
+                  {userData.current_streak || 0}
+                </p>
                 <p className="text-sm">Current</p>
               </div>
               <div className="text-center">
-                <p className="text-3xl font-bold">{longestStreak}</p>
+                <p className="text-3xl font-bold">
+                  {userData.longest_streak || 0}
+                </p>
                 <p className="text-sm">Longest</p>
               </div>
               <div className="text-center">
@@ -746,7 +625,6 @@ const Dashboard = () => {
                 <p className="text-lg font-bold">
                   Lives: {userData?.lives || 0}/{userData?.max_lives || 5}
                 </p>
-                {/* FIXED: Show countdown timer when lives are not full */}
                 {(userData?.lives || 0) < (userData?.max_lives || 5) && (
                   <div className="flex items-center gap-1">
                     <FaClock className="text-xs text-gray-500" />
@@ -755,13 +633,11 @@ const Dashboard = () => {
                     </p>
                   </div>
                 )}
-                {/* FIXED: Show full status */}
                 {(userData?.lives || 0) >= (userData?.max_lives || 5) && (
                   <p className="text-xs text-green-500">Full lives! 🎉</p>
                 )}
               </div>
             </div>
-            {/* FIXED: Regeneration info */}
             <p className="text-xs text-gray-400 mt-2">
               ⏰ 1 life per hour • Countdown starts when life is lost
             </p>
@@ -787,19 +663,19 @@ const Dashboard = () => {
             <h1 className="text-2xl font-semibold text-center mb-4">
               Try today's Challenge
             </h1>
-            <button className="w-full bg-amber py-2 text-white rounded-2xl shadow font-semibold hover:scale-105 transition-transform duration-200">
+            <button className="w-full bg-yellow-500 py-2 text-white rounded-2xl shadow font-semibold hover:scale-105 transition-transform duration-200">
               Start Challenge
             </button>
           </div>
 
           {/* Explore More */}
-          <div className="bg-amber pt-4 px-2 rounded-2xl flex flex-col justify-between text-white">
+          <div className="bg-yellow-500 pt-4 px-2 rounded-2xl flex flex-col justify-between text-white">
             <div>
               <h1 className="text-3xl font-semibold px-3">Explore More</h1>
               <p className="text-2xl font-semibold px-3">Lessons</p>
             </div>
             <Link to={"/lessons"}>
-              <button className="bg-white text-amber mt-4 py-2 rounded-full w-full font-bold mb-5 hover:bg-gray-200">
+              <button className="bg-white text-yellow-500 mt-4 py-2 rounded-full w-full font-bold mb-5 hover:bg-gray-200">
                 Go to Lessons
               </button>
             </Link>
@@ -810,26 +686,26 @@ const Dashboard = () => {
       <div className="mt-8 transition-transform duration-300 hover:scale-105 px-4 lg:px-12">
         <Badge />
       </div>
-      <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-amber justify-around bg-gray-100 lg:hidden">
+      <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-yellow-500 justify-around bg-gray-100 lg:hidden">
         <Link to={"/lessons"} className="flex flex-col items-center pt-3">
           <FaHome className="text-2xl" />
-          <p className="text-amber text-sm">Home</p>
+          <p className="text-yellow-500 text-sm">Home</p>
         </Link>
         <Link to={"/leaderboard"} className="flex flex-col items-center pt-3">
           <FaChartBar className="text-2xl" />
-          <p className="text-amber text-sm">Ranking</p>
+          <p className="text-yellow-500 text-sm">Ranking</p>
         </Link>
         <Link to={"/dashboard"} className="flex flex-col items-center pt-3">
           <FaKeyboard className="text-2xl " />
-          <p className="text-amber text-sm">Dashboard</p>
+          <p className="text-yellow-500 text-sm">Dashboard</p>
         </Link>
         <Link to={"/notifications"} className="flex flex-col items-center pt-3">
           <FaTree className="text-2xl" />
-          <p className="text-amber text-sm">Feed</p>
+          <p className="text-yellow-500 text-sm">Feed</p>
         </Link>
         <Link to={"/profile"} className="flex flex-col items-center pt-3">
           <FaProcedures className="text-2xl" />
-          <p className="text-amber text-sm">Profile</p>
+          <p className="text-yellow-500 text-sm">Profile</p>
         </Link>
       </div>
       {/* Developer Tools Button */}
@@ -883,14 +759,12 @@ const Dashboard = () => {
                   await updateDoc(userRef, {
                     current_streak: currentStreak + 1,
                   });
-                  console.log("✅ Streak increased to:", currentStreak + 1);
                 }}
                 className="bg-green-500 text-white px-2 py-2 rounded text-xs hover:bg-green-600"
               >
                 +1 Streak
               </button>
 
-              {/* FIXED: Test life consumption */}
               <button
                 onClick={testConsumeLife}
                 className="bg-red-500 text-white px-2 py-2 rounded text-xs hover:bg-red-600"
@@ -906,7 +780,16 @@ const Dashboard = () => {
               </button>
 
               <button
-                onClick={resetTestData}
+                onClick={async () => {
+                  const userRef = doc(db, "users", auth.currentUser.uid);
+                  await updateDoc(userRef, {
+                    level: 1,
+                    xp: 0,
+                    current_streak: 0,
+                    title: "Beginner",
+                  });
+                  setShowLevelUpModal(false);
+                }}
                 className="bg-gray-500 text-white px-2 py-2 rounded text-xs hover:bg-gray-600"
               >
                 Reset Data
@@ -926,7 +809,6 @@ const Dashboard = () => {
                     lives: 3,
                     last_life_update: new Date(),
                   });
-                  console.log("✅ Lives set to 3, countdown started");
                 }}
                 className="bg-orange-500 text-white px-2 py-2 rounded text-xs hover:bg-orange-600"
               >
@@ -938,7 +820,6 @@ const Dashboard = () => {
                   await updateDoc(doc(db, "users", auth.currentUser.uid), {
                     lives: 5,
                   });
-                  console.log("✅ Lives set to full");
                 }}
                 className="bg-green-500 text-white px-2 py-2 rounded text-xs hover:bg-green-600"
               >
@@ -947,13 +828,11 @@ const Dashboard = () => {
 
               <button
                 onClick={async () => {
-                  // Simulate time passing by setting last update to 1 hour ago
                   const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
                   await updateDoc(doc(db, "users", auth.currentUser.uid), {
                     last_life_update: oneHourAgo,
-                    lives: 3, // Set to non-full to trigger regeneration
+                    lives: 3,
                   });
-                  console.log("✅ Set timer to 1 hour ago - should regenerate 1 life");
                 }}
                 className="bg-blue-500 text-white px-2 py-2 rounded text-xs hover:bg-blue-600"
               >
@@ -965,7 +844,6 @@ const Dashboard = () => {
                   await updateDoc(doc(db, "users", auth.currentUser.uid), {
                     last_life_update: new Date(),
                   });
-                  console.log("✅ Timer reset to now");
                 }}
                 className="bg-purple-500 text-white px-2 py-2 rounded text-xs hover:bg-purple-600"
               >
@@ -989,7 +867,6 @@ const Dashboard = () => {
                     progress: { accuracy: 65 },
                     xp: 1500,
                   });
-                  console.log("✅ Set Topaz requirements");
                 }}
                 className="bg-yellow-500 text-white px-2 py-2 rounded text-xs hover:bg-yellow-600"
               >
@@ -1005,7 +882,6 @@ const Dashboard = () => {
                     progress: { accuracy: 70 },
                     xp: 3000,
                   });
-                  console.log("✅ Set Amethyst requirements");
                 }}
                 className="bg-purple-500 text-white px-2 py-2 rounded text-xs hover:bg-purple-600"
               >
@@ -1021,7 +897,6 @@ const Dashboard = () => {
                     progress: { accuracy: 75 },
                     xp: 5000,
                   });
-                  console.log("✅ Set Emerald requirements");
                 }}
                 className="bg-green-600 text-white px-2 py-2 rounded text-xs hover:bg-green-700"
               >
@@ -1038,7 +913,6 @@ const Dashboard = () => {
                     xp: 1500,
                     rank: "Moonstone",
                   });
-                  console.log("🎯 Ready for Topaz rank up!");
                 }}
                 className="bg-red-500 text-white px-2 py-2 rounded text-xs hover:bg-red-600"
               >
@@ -1055,7 +929,6 @@ const Dashboard = () => {
                     xp: 0,
                     rank: "Moonstone",
                   });
-                  console.log("🔄 Reset to Moonstone");
                 }}
                 className="bg-gray-500 text-white px-2 py-2 rounded text-xs hover:bg-gray-600 col-span-2"
               >
@@ -1094,7 +967,6 @@ const Dashboard = () => {
       : "Never"
   }
                   `;
-                  console.log("📊 Current Status:", status);
                   alert(status);
                 } else {
                   alert("No user data available");
@@ -1114,7 +986,7 @@ const Dashboard = () => {
       {/* Level Up Modal */}
       {showLevelUpModal && (
         <LevelUpModal
-          level={currentLevel}
+          level={getLevelProgress(userData?.xp || 0).currentLevel}
           onClose={() => setShowLevelUpModal(false)}
         />
       )}

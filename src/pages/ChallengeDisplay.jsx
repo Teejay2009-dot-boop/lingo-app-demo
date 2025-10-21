@@ -13,7 +13,6 @@ import {
   FaExpand,
   FaClock,
   FaHeart,
-  FaFire,
   FaArrowCircleLeft,
 } from "react-icons/fa";
 import { MainIdea } from "../components/LessonCards/MainIdea";
@@ -24,7 +23,6 @@ import TypeWhatYouHear from "../components/LessonCards/TypeWhatYouHear";
 import RolePlayOptions from "../components/LessonCards/RolePlayOptions";
 import { auth, db } from "../firebase/config/firebase";
 import { doc, updateDoc, increment, onSnapshot, getDoc, arrayUnion } from "firebase/firestore";
-// ADDED: Import XP boost completion component
 import LessonCompletionWithBoost from "../components/LessonCompletionWithBoost";
 
 const ChallengeDisplay = () => {
@@ -46,7 +44,6 @@ const ChallengeDisplay = () => {
   const [finalXP, setFinalXP] = useState(0);
   const [finalCoins, setFinalCoins] = useState(0);
   const [answeredMap, setAnsweredMap] = useState({});
-  const [currentStreak, setCurrentStreak] = useState(0);
   const [user, setUser] = useState(null);
   // ADDED: XP Boost completion state
   const [showXpBoostCompletion, setShowXpBoostCompletion] = useState(false);
@@ -97,7 +94,6 @@ const ChallengeDisplay = () => {
       const userRef = doc(db, "users", uid);
       const unsubUser = onSnapshot(userRef, (snap) => {
         if (snap.exists()) {
-          setCurrentStreak(snap.data().current_streak ?? 0);
           setLives(snap.data().lives ?? 5);
           setUser(snap.data());
         }
@@ -106,6 +102,7 @@ const ChallengeDisplay = () => {
     }
   }, []);
 
+  // FIXED: Removed ALL streak-related code
   const handleAnswer = async (isCorrect) => {
     if (answeredMap[currentExerciseIndex]) return;
 
@@ -117,12 +114,9 @@ const ChallengeDisplay = () => {
     setLastAnswerCorrect(isCorrect);
     setShowModal(true);
 
-    if (isCorrect) {
-      setCurrentStreak((prev) => prev + 1);
-    } else {
+    if (!isCorrect) {
       setCurrentXP((prev) => Math.max(0, prev - 2));
       setLives((prev) => prev - 1);
-      setCurrentStreak(0);
 
       if (lives - 1 <= 0) {
         setTimeout(() => {
@@ -132,18 +126,7 @@ const ChallengeDisplay = () => {
       }
     }
 
-    setTimeout(async () => {
-      if (auth.currentUser && isCorrect) {
-        const userRef = doc(db, "users", auth.currentUser.uid);
-        try {
-          await updateDoc(userRef, {
-            current_streak: increment(1),
-          });
-        } catch (error) {
-          console.error("Error updating streak:", error);
-        }
-      }
-    }, 0);
+    // REMOVED: All streak-related code
   };
 
   const handleNext = () => {
@@ -156,7 +139,7 @@ const ChallengeDisplay = () => {
     }
   };
 
-  // UPDATED: completeChallenge function with same XP/coins calculation as lessons
+  // UPDATED: completeChallenge function - removed streak bonuses
   const completeChallenge = async (success) => {
     setChallengeCompleted(true);
 
@@ -168,23 +151,14 @@ const ChallengeDisplay = () => {
     const accuracy =
       totalQuestions > 0 ? Math.round((correctAnswers / totalQuestions) * 100) : 0;
 
-    // SAME CALCULATION AS LESSONS:
     // Calculate base XP (20 minus 2 for each wrong answer)
     let baseXP = 20 - wrongAnswers * 2;
     baseXP = Math.max(0, baseXP); // Ensure XP doesn't go below 0
 
-    // Calculate streak bonus for XP
-    let streakBonusXP = 0;
-    if (currentStreak >= 7) {
-      streakBonusXP = 7;
-    } else if (currentStreak >= 3) {
-      streakBonusXP = 5;
-    } else if (currentStreak >= 1) {
-      streakBonusXP = 2;
-    }
+    // REMOVED: All streak bonus calculations
 
-    // Calculate final XP (can exceed 20)
-    const finalXP = baseXP + streakBonusXP;
+    // Calculate final XP (no streak bonus)
+    const finalXP = baseXP;
 
     // NEW: Check for active XP boost
     const hasXpBoost = user?.active_xp_boost && 
@@ -193,28 +167,14 @@ const ChallengeDisplay = () => {
     const bonusXP = hasXpBoost ? Math.floor(finalXP * (boostMultiplier - 1)) : 0;
     const totalXPWithBoost = finalXP + bonusXP;
 
-    // SAME COINS CALCULATION AS LESSONS:
+    // COINS CALCULATION (no streak bonus)
     const baseCoin = 10;
     const accuracyBonusCoin = Math.floor(accuracy / 10);
-    let coinReward = baseCoin + accuracyBonusCoin;
-
-    // Calculate streak bonus for coins (same as XP streak bonus)
-    let streakBonusCoin = 0;
-    if (currentStreak >= 7) {
-      streakBonusCoin = 7;
-    } else if (currentStreak >= 3) {
-      streakBonusCoin = 5;
-    } else if (currentStreak >= 1) {
-      streakBonusCoin = 2;
-    }
-
-    // Total coin reward
-    const totalCoinReward = coinReward + streakBonusCoin;
+    const totalCoinReward = baseCoin + accuracyBonusCoin;
 
     console.log("💰 CHALLENGE XP Calculation:", {
       baseXP,
       wrongAnswers,
-      streakBonusXP,
       finalXP,
       hasXpBoost,
       boostMultiplier,
@@ -225,8 +185,6 @@ const ChallengeDisplay = () => {
     console.log("💰 CHALLENGE COINS Calculation:", {
       baseCoin,
       accuracyBonusCoin,
-      coinReward,
-      streakBonusCoin,
       totalCoinReward,
       accuracy,
     });
@@ -370,12 +328,11 @@ const ChallengeDisplay = () => {
     ).length;
     const totalQuestions = exercises.length;
 
-    // Calculate base values for display (same as lesson calculation)
+    // Calculate base values for display (no streak bonus)
     const wrongAnswers = totalQuestions - correctAnswers;
     let baseXP = 20 - wrongAnswers * 2;
     baseXP = Math.max(0, baseXP);
-    const streakBonusXP = currentStreak >= 7 ? 7 : currentStreak >= 3 ? 5 : currentStreak >= 1 ? 2 : 0;
-    const finalBaseXP = baseXP + streakBonusXP;
+    const finalBaseXP = baseXP; // No streak bonus
     const boostMultiplier = user?.active_xp_boost?.multiplier || 1;
     const bonusXP = Math.floor(finalBaseXP * (boostMultiplier - 1));
 
@@ -477,9 +434,6 @@ const ChallengeDisplay = () => {
       <div className="flex justify-between items-center pt-10 mb-4">
         <div className="flex items-center gap-4">
           <p className="font-semibold">❤ Lives: {lives}</p>
-          <p className="font-semibold flex items-center gap-1">
-            <FaFire className="text-red-500" /> {currentStreak}
-          </p>
           <p className="font-semibold">XP: {currentXP}</p>
         </div>
 
@@ -534,7 +488,7 @@ const ChallengeDisplay = () => {
             </h2>
             <p className="text-lg mb-2">
               {lastAnswerCorrect
-                ? "Great job! Streak increased!"
+                ? "Great job!"
                 : `-2 XP | ${lives} lives remaining`}
             </p>
             <button

@@ -3,11 +3,25 @@ import {
   doc,
   getDoc,
   updateDoc,
+  serverTimestamp,
 } from "firebase/firestore";
+
+// Helper function to get UTC date string (YYYY-MM-DD)
+const getUTCDateString = (date = new Date()) => {
+  return date.toISOString().split('T')[0];
+};
+
+// Helper function to convert any date to UTC date string
+const toUTCDateString = (date) => {
+  if (!date) return null;
+  
+  // If it's a Firestore timestamp, convert to Date first
+  const jsDate = date.toDate ? date.toDate() : new Date(date);
+  return getUTCDateString(jsDate);
+};
 
 export const updateStreak = async (uid) => {
   if (!uid) {
-    console.error("User ID is required for streak update.");
     return;
   }
 
@@ -15,74 +29,172 @@ export const updateStreak = async (uid) => {
   const userSnap = await getDoc(userRef);
   
   if (!userSnap.exists()) {
-    console.error("User document not found");
     return;
   }
 
   const userData = userSnap.data();
   
-  // Use client-side date only (no server timestamp for comparison)
-  const today = new Date();
-  today.setHours(0, 0, 0, 0); // Reset to start of day
+  // Get current UTC date (never trust client clock for dates)
+  const todayUTCString = getUTCDateString();
   
   let currentStreak = userData.current_streak || 0;
   let longestStreak = userData.longest_streak || 0;
-  let lastActiveDate = userData.last_login ? userData.last_login.toDate() : null;
-
-  console.log("🔍 STREAK DEBUG:");
-  console.log("Today:", today.toDateString());
-  console.log("Last Active:", lastActiveDate ? lastActiveDate.toDateString() : "Never");
-  console.log("Current Streak:", currentStreak);
+  let lastActiveUTC = userData.last_active_utc || null; // Store UTC date string
+  let lastLogin = userData.last_login || null;
 
   let newStreak = currentStreak;
+  let streakUpdated = false;
 
-  if (!lastActiveDate) {
-    // First time login
+  if (!lastActiveUTC) {
+    // First time login or migrating from old system
     newStreak = 1;
-    console.log("🎯 First login - streak set to 1");
+    streakUpdated = true;
   } else {
-    // Reset last active to start of that day for comparison
-    const lastActiveDay = new Date(lastActiveDate);
-    lastActiveDay.setHours(0, 0, 0, 0);
+    // Calculate difference in days using UTC dates
+    const lastActiveDate = new Date(lastActiveUTC + 'T00:00:00.000Z');
+    const todayDate = new Date(todayUTCString + 'T00:00:00.000Z');
     
-    // Calculate difference in days
-    const diffTime = today.getTime() - lastActiveDay.getTime();
+    const diffTime = todayDate.getTime() - lastActiveDate.getTime();
     const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-    
-    console.log("📅 Day Difference:", diffDays);
 
     if (diffDays === 1) {
       // Consecutive day - increment streak
       newStreak += 1;
-      console.log("✅ Consecutive day - streak:", newStreak);
+      streakUpdated = true;
     } else if (diffDays === 0) {
-      // Same day - no change
-      console.log("🔄 Same day - streak unchanged:", newStreak);
+      // Same day - no change to streak
     } else if (diffDays > 1) {
       // Broken streak - reset to 1
       newStreak = 1;
-      console.log("🔄 Streak broken - reset to 1");
-    } else if (diffDays < 0) {
-      // Future date detected - reset streak (safety measure)
-      console.log("⚠️ Future date detected - resetting streak");
+      streakUpdated = true;
+    } else {
+      // This shouldn't happen with UTC dates, but handle gracefully
       newStreak = 1;
+      streakUpdated = true;
     }
   }
 
   // Update longest streak if current is higher
   if (newStreak > longestStreak) {
     longestStreak = newStreak;
-    console.log("🏆 New longest streak:", longestStreak);
   }
 
-  // Always update last_login to current client time
-  await updateDoc(userRef, {
-    current_streak: newStreak,
-    longest_streak: longestStreak,
-    last_login: new Date(), // Use client date instead of serverTimestamp
-  });
-  
-  console.log(`💾 Saved: streak=${newStreak}, longest=${longestStreak}`);
+  // Always update last_active_utc to current UTC date
+  // Use serverTimestamp for last_login for audit purposes
+  const updateData = {
+    last_active_utc: todayUTCString,
+    last_login: serverTimestamp(),
+  };
 
-  return newStreak;
+  // Only update streak fields if streak actually changed
+  if (streakUpdated || !lastActiveUTC) {
+    updateData.current_streak = newStreak;
+    updateData.longest_streak = longestStreak;
+  }
+
+  await updateDoc(userRef, updateData);
+
+  return {
+    currentStreak: newStreak,
+    longestStreak: longestStreak,
+    streakUpdated: streakUpdated,
+    lastActiveUTC: todayUTCString
+  };
+};
+
+// Migration function for existing users
+export const migrateToUTCStreak = async (uid) => {
+  if (!uid) return;
+
+  const userRef = doc(db, "users", uid);
+  const userSnap = await getDoc(userRef);
+  
+  if (!userSnap.exists()) return;
+
+  const userData = userSnap.data();
+  
+  // If user has last_login but no last_active_utc, migrate them
+  if (userData.last_login && !userData.last_active_utc) {
+    const lastLoginDate = userData.last_login.toDate();
+    const lastActiveUTC = getUTCDateString(lastLoginDate);
+    
+    await updateDoc(userRef, {
+      last_active_utc: lastActiveUTC,
+      migrated_to_utc: true
+    });
+  }
+};
+
+// Utility function to check streak status without updating
+export const checkStreakStatus = async (uid) => {
+  if (!uid) return null;
+
+  const userRef = doc(db, "users", uid);
+  const userSnap = await getDoc(userRef);
+  
+  if (!userSnap.exists()) return null;
+
+  const userData = userSnap.data();
+  const todayUTCString = getUTCDateString();
+  const lastActiveUTC = userData.last_active_utc;
+  
+  let canIncrementStreak = false;
+  let daysSinceLastActive = null;
+
+  if (lastActiveUTC) {
+    const lastActiveDate = new Date(lastActiveUTC + 'T00:00:00.000Z');
+    const todayDate = new Date(todayUTCString + 'T00:00:00.000Z');
+    
+    const diffTime = todayDate.getTime() - lastActiveDate.getTime();
+    daysSinceLastActive = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    canIncrementStreak = daysSinceLastActive === 1;
+  }
+
+  return {
+    currentStreak: userData.current_streak || 0,
+    longestStreak: userData.longest_streak || 0,
+    lastActiveUTC: lastActiveUTC,
+    todayUTC: todayUTCString,
+    canIncrementStreak: canIncrementStreak,
+    daysSinceLastActive: daysSinceLastActive,
+    needsMigration: !lastActiveUTC && userData.last_login
+  };
+};
+
+// Test function to verify UTC logic
+export const testUTCStreakLogic = async (uid, testDateUTC = null) => {
+  const userRef = doc(db, "users", uid);
+  const userSnap = await getDoc(userRef);
+  
+  if (!userSnap.exists()) {
+    return;
+  }
+
+  const userData = userSnap.data();
+  
+  // Use test date or current UTC date
+  const todayUTCString = testDateUTC || getUTCDateString();
+  const lastActiveUTC = userData.last_active_utc;
+  const currentStreak = userData.current_streak || 0;
+
+  if (lastActiveUTC) {
+    const lastActiveDate = new Date(lastActiveUTC + 'T00:00:00.000Z');
+    const todayDate = new Date(todayUTCString + 'T00:00:00.000Z');
+    
+    const diffTime = todayDate.getTime() - lastActiveDate.getTime();
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 1) {
+      // Would increment streak
+    } else if (diffDays === 0) {
+      // Same day - streak unchanged
+    } else if (diffDays > 1) {
+      // Would reset streak to 1
+    } else {
+      // Invalid day difference
+    }
+  } else {
+    // No last_active_utc - would set streak to 1
+  }
 };

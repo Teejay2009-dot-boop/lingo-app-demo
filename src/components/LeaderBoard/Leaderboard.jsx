@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   collection,
   query,
@@ -27,11 +27,16 @@ const Leaderboard = () => {
   const [leaderboardMode, setLeaderboardMode] = useState("general");
   const [currentUserPosition, setCurrentUserPosition] = useState(null);
   const [currentUserData, setCurrentUserData] = useState(null);
+  
+  // Add refs to track mounted state and prevent infinite loops
+  const mountedRef = useRef(true);
+  const currentUserDataRef = useRef(null);
 
-  // Fetch current user's data
+  // Fetch current user's data - FIXED: Only run once
   useEffect(() => {
     if (!auth.currentUser) {
       setCurrentUserData(null);
+      currentUserDataRef.current = null;
       return;
     }
 
@@ -39,31 +44,48 @@ const Leaderboard = () => {
     const unsubscribe = onSnapshot(
       userDocRef,
       (docSnap) => {
+        if (!mountedRef.current) return;
+        
         if (docSnap.exists()) {
-          setCurrentUserData(docSnap.data());
+          const data = docSnap.data();
+          setCurrentUserData(data);
+          currentUserDataRef.current = data;
         } else {
           setCurrentUserData(null);
+          currentUserDataRef.current = null;
         }
       },
       (error) => {
         console.error("Error fetching currentUserData:", error);
-        setCurrentUserData(null);
+        if (mountedRef.current) {
+          setCurrentUserData(null);
+          currentUserDataRef.current = null;
+        }
       }
     );
-    return unsubscribe;
-  }, [auth.currentUser?.uid]);
+    
+    return () => {
+      unsubscribe();
+    };
+  }, []); // Empty dependency array - only run once
 
+  // Fetch leaderboard data - FIXED: Optimized with proper dependencies
   useEffect(() => {
+    if (!mountedRef.current) return;
+
     let unsubscribe;
+    setLoading(true);
+
     const fetchLeaderboard = async () => {
       try {
-        setLoading(true);
         let q;
 
         if (leaderboardMode === "general") {
           q = query(collection(db, "users"), orderBy("xp", "desc"), limit(50));
         } else if (leaderboardMode === "rank") {
-          if (!currentUserData?.rank) {
+          // Use the ref instead of state to avoid dependency loop
+          const userRank = currentUserDataRef.current?.rank;
+          if (!userRank) {
             setUsers([]);
             setCurrentUserPosition(null);
             setLoading(false);
@@ -71,7 +93,7 @@ const Leaderboard = () => {
           }
           q = query(
             collection(db, "users"),
-            where("rank", "==", currentUserData.rank),
+            where("rank", "==", userRank),
             orderBy("xp", "desc"),
             limit(50)
           );
@@ -80,6 +102,8 @@ const Leaderboard = () => {
         unsubscribe = onSnapshot(
           q,
           (querySnapshot) => {
+            if (!mountedRef.current) return;
+
             const usersData = querySnapshot.docs.map((doc) => ({
               id: doc.id,
               ...doc.data(),
@@ -103,26 +127,40 @@ const Leaderboard = () => {
           },
           (error) => {
             console.error("Error in onSnapshot:", error);
-            setLoading(false);
+            if (mountedRef.current) {
+              setLoading(false);
+            }
           }
         );
       } catch (error) {
         console.error("Error fetching leaderboard:", error);
-        setLoading(false);
+        if (mountedRef.current) {
+          setLoading(false);
+        }
       }
     };
 
-    if (leaderboardMode === "rank" && !currentUserData) {
-      setLoading(true);
+    // Only fetch if we have the necessary data for rank mode
+    if (leaderboardMode === "rank" && !currentUserDataRef.current) {
+      setLoading(false);
       return;
     }
 
     fetchLeaderboard();
 
     return () => {
-      if (unsubscribe) unsubscribe();
+      if (unsubscribe) {
+        unsubscribe();
+      }
     };
-  }, [leaderboardMode, currentUserData]);
+  }, [leaderboardMode]); // Only depend on leaderboardMode
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      mountedRef.current = false;
+    };
+  }, []);
 
   // Format XP to whole numbers
   const formatXP = (xp) => {
@@ -152,7 +190,7 @@ const Leaderboard = () => {
             onClick={() => setLeaderboardMode("general")}
             className={`px-4 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-colors text-sm sm:text-base ${
               leaderboardMode === "general"
-                ? "bg-amber text-white"
+                ? "bg-yellow-500 text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
@@ -162,7 +200,7 @@ const Leaderboard = () => {
             onClick={() => setLeaderboardMode("rank")}
             className={`px-4 sm:px-6 py-2 sm:py-3 rounded-full font-medium transition-colors text-sm sm:text-base ${
               leaderboardMode === "rank"
-                ? "bg-amber text-white"
+                ? "bg-yellow-500 text-white"
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
@@ -185,7 +223,7 @@ const Leaderboard = () => {
                   key={user.id}
                   className={`relative flex items-center py-4 px-3 sm:py-6 sm:px-6 transition-colors ${
                     user.id === auth.currentUser?.uid
-                      ? "bg-amber-50 border-l-4 border-amber-500"
+                      ? "bg-yellow-50 border-l-4 border-yellow-500"
                       : "hover:bg-gray-50"
                   }`}
                 >
@@ -196,7 +234,7 @@ const Leaderboard = () => {
                     ) : index === 1 ? (
                       <FaTrophy className="text-gray-400 text-xl sm:text-2xl" />
                     ) : index === 2 ? (
-                      <FaMedal className="text-amber-600 text-xl sm:text-2xl" />
+                      <FaMedal className="text-yellow-600 text-xl sm:text-2xl" />
                     ) : (
                       <span className="text-gray-500 font-bold text-base sm:text-lg">
                         #{index + 1}
@@ -225,7 +263,7 @@ const Leaderboard = () => {
                       <h3 className="font-semibold text-gray-800 text-sm sm:text-lg truncate">
                         {user.username || "Anonymous"}
                         {user.id === auth.currentUser?.uid && (
-                          <span className="ml-1 sm:ml-2 text-amber-500 text-xs sm:text-sm">
+                          <span className="ml-1 sm:ml-2 text-yellow-500 text-xs sm:text-sm">
                             (You)
                           </span>
                         )}
@@ -241,7 +279,7 @@ const Leaderboard = () => {
                         {formatXP(user.xp)} XP
                       </p>
                       {(user.current_streak || 0) > 3 && (
-                        <div className="flex items-center justify-end text-amber-500 text-xs sm:text-sm">
+                        <div className="flex items-center justify-end text-yellow-500 text-xs sm:text-sm">
                           <FaFire className="mr-1" />
                           <span className="hidden sm:inline">
                             {user.current_streak} day
@@ -261,7 +299,7 @@ const Leaderboard = () => {
 
         {/* Current user's position */}
         {auth.currentUser && currentUserData && (
-          <div className="bg-amber-50 p-4 sm:p-6 rounded-xl border border-amber-200">
+          <div className="bg-yellow-50 p-4 sm:p-6 rounded-xl border border-yellow-200">
             <h2 className="text-lg sm:text-xl font-semibold mb-2 sm:mb-3 text-gray-800">
               Your Position
             </h2>
@@ -273,7 +311,7 @@ const Leaderboard = () => {
                     : `You are #${currentUserPosition} in ${currentUserData.rank} Rank`}
                 </p>
                 {(currentUserData?.current_streak || 0) > 3 && (
-                  <div className="flex items-center text-amber-600 text-sm sm:text-base">
+                  <div className="flex items-center text-yellow-600 text-sm sm:text-base">
                     <FaFire className="mr-1 sm:mr-2" />
                     <span>{currentUserData.current_streak}-day streak</span>
                   </div>
@@ -290,29 +328,29 @@ const Leaderboard = () => {
         )}
 
         {/* Mobile Navigation */}
-        <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-amber justify-around bg-gray-100 lg:hidden">
+        <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-yellow-500 justify-around bg-gray-100 lg:hidden">
           <Link to={"/lessons"} className="flex flex-col items-center pt-3">
             <FaHome className="text-xl" />
-            <p className="text-amber text-xs">Home</p>
+            <p className="text-yellow-500 text-xs">Home</p>
           </Link>
           <Link to={"/leaderboard"} className="flex flex-col items-center pt-3">
             <FaChartBar className="text-xl" />
-            <p className="text-amber text-xs">Ranking</p>
+            <p className="text-yellow-500 text-xs">Ranking</p>
           </Link>
           <Link to={"/dashboard"} className="flex flex-col items-center pt-3">
             <FaKeyboard className="text-xl" />
-            <p className="text-amber text-xs">Dashboard</p>
+            <p className="text-yellow-500 text-xs">Dashboard</p>
           </Link>
           <Link
             to={"/notifications"}
             className="flex flex-col items-center pt-3"
           >
             <FaTree className="text-xl" />
-            <p className="text-amber text-xs">Feed</p>
+            <p className="text-yellow-500 text-xs">Feed</p>
           </Link>
           <Link to={"/profile"} className="flex flex-col items-center pt-3">
             <FaProcedures className="text-xl" />
-            <p className="text-amber text-xs">Profile</p>
+            <p className="text-yellow-500 text-xs">Profile</p>
           </Link>
         </div>
       </div>

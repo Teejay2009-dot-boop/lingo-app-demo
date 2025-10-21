@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import island from "../assets/Rockremovebg-preview.png";
 import avatar from "../assets/girlwithbg.jpg";
 import { Link, useNavigate } from "react-router-dom";
@@ -11,8 +11,7 @@ import {
   FaHome,
 } from "react-icons/fa";
 import { auth, db } from "../firebase/config/firebase";
-import { doc, onSnapshot } from "firebase/firestore";
-import { updateStreak } from "../utils/streak";
+import { doc, getDoc } from "firebase/firestore";
 import { signOut } from "firebase/auth";
 
 export const Lesson = () => {
@@ -20,40 +19,49 @@ export const Lesson = () => {
   const [userData, setUserData] = useState(null);
   const [loading, setLoading] = useState(true);
   const navigate = useNavigate();
+  const mountedRef = useRef(true);
 
   useEffect(() => {
+    const fetchUserData = async (user) => {
+      if (!mountedRef.current) return;
+
+      try {
+        const userRef = doc(db, "users", user.uid);
+        const docSnap = await getDoc(userRef);
+        
+        if (!mountedRef.current) return;
+
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setUserData(data);
+        } else {
+          setUserData(null);
+        }
+      } catch (error) {
+        if (mountedRef.current) {
+          setUserData(null);
+        }
+      } finally {
+        if (mountedRef.current) {
+          setLoading(false);
+        }
+      }
+    };
+
     const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
       if (!user) {
-        // No user logged in
         setLoading(false);
         setUserData(null);
         return;
       }
 
-      console.log("👤 User logged in:", user.uid);
-      
-      const userRef = doc(db, "users", user.uid);
-      const unsubscribeSnapshot = onSnapshot(userRef, (docSnap) => {
-        if (docSnap.exists()) {
-          const data = docSnap.data();
-          console.log("🔥 User Data:", data);
-          setUserData(data);
-          updateStreak(user.uid);
-        } else {
-          console.log("❌ No user data found in Firestore");
-          setUserData(null);
-        }
-        setLoading(false);
-      }, (error) => {
-        console.error("🔥 Firestore error:", error);
-        setLoading(false);
-        setUserData(null);
-      });
-
-      return () => unsubscribeSnapshot();
+      await fetchUserData(user);
     });
 
-    return () => unsubscribeAuth();
+    return () => {
+      mountedRef.current = false;
+      unsubscribeAuth();
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -77,7 +85,9 @@ export const Lesson = () => {
     return (
       <div className="flex flex-col items-center justify-center h-screen text-xl text-black p-4 text-center">
         <h2 className="text-2xl font-bold mb-4">Account Not Found</h2>
-        <p className="mb-6">Your account may have been deleted or there's no user data.</p>
+        <p className="mb-6">
+          Your account may have been deleted or there's no user data.
+        </p>
         <div className="flex gap-4">
           <button
             onClick={handleLogout}
@@ -103,29 +113,18 @@ export const Lesson = () => {
         <div className="">
           <div className="text-lg sm:text-md md:text-lg font-semibold flex items-center gap-2 w-full sm:gap-3 lg:text-lg justify-between lg:justify-end">
             <p className="pl-3 flex items-center">
-              <Link to={'/lessons/shop'}>
-                ${userData.coins || 0}
-              </Link>
+              <Link to={"/lessons/shop"}>${userData.coins || 0}</Link>
             </p>
             <p>XP: {userData.xp || userData.XP || 0}</p>
             <p className="flex gap-2 items-center">
               ❤ Lives: {userData.lives || 0}
             </p>
-            
-            <div className="flex gap-2 items-center"> 
+
+            <div className="flex gap-2 items-center">
               <p className="flex gap-2 items-center">
-                <FaFire className="text-red-500" /> {userData.current_streak || 0}
+                <FaFire className="text-red-500" />{" "}
+                {userData.current_streak || 0}
               </p>
-              {/* <button
-                onClick={() => setShowDropdown(!showDropdown)}
-                className="relative"
-              >
-                <img
-                  src={avatar}
-                  alt="avatar"
-                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full border border-amber shadow"
-                />
-              </button> */}
             </div>
           </div>
         </div>
@@ -149,7 +148,7 @@ export const Lesson = () => {
         </div>
       )}
 
-      {/* Rest of your component remains the same */}
+      {/* Main Content */}
       <div className="flex items-center justify-center min-h-screen px-4">
         <Link to={"/lessons/section"}>
           <button>
@@ -188,23 +187,38 @@ export const Lesson = () => {
 
       {/* Desktop Sidebar */}
       <div className="fixed top-1/2 -translate-y-1/2 left-0 border border-amber bg-gray-900 flex-col h-auto px-2 text-3xl rounded-r-full ml-2 lg:ml-6 justify-around text-amber z-30 hidden lg:flex py-5">
-        <Link to={"/learn"} className="p-2 hover:text-white transition ease-in duration-300 flex flex-col items-center gap-3">
+        <Link
+          to={"/learn"}
+          className="p-2 hover:text-white transition ease-in duration-300 flex flex-col items-center gap-3"
+        >
           <FaHome className="cursor-pointer" />
           <p className="text-sm text-amber">Home</p>
         </Link>
-        <Link to={"/leaderboard"} className="p-2 hover:text-white transition ease-in duration-300 flex flex-col items-center gap-3">
-          <FaChartBar className="cursor-pointer" /> 
+        <Link
+          to={"/leaderboard"}
+          className="p-2 hover:text-white transition ease-in duration-300 flex flex-col items-center gap-3"
+        >
+          <FaChartBar className="cursor-pointer" />
           <p className="text-sm text-amber">Ranking</p>
         </Link>
-        <Link to={"/dashboard"} className="p-2 hover:text-white transition items-center gap-3 flex flex-col ease-in duration-300">
+        <Link
+          to={"/dashboard"}
+          className="p-2 hover:text-white transition items-center gap-3 flex flex-col ease-in duration-300"
+        >
           <FaKeyboard className="cursor-pointer" />
           <p className="text-sm text-amber">Dashboard</p>
         </Link>
-        <Link to={"/notifications"} className="p-2 hover:text-white transition ease-in duration-300 flex flex-col items-center gap-3">
+        <Link
+          to={"/notifications"}
+          className="p-2 hover:text-white transition ease-in duration-300 flex flex-col items-center gap-3"
+        >
           <FaTree className="cursor-pointer" />
           <p className="text-sm text-amber">Feed</p>
         </Link>
-        <Link to={"/profile"} className="p-2 hover:text-white transition ease-in duration-300 flex flex-col items-center gap-3">
+        <Link
+          to={"/profile"}
+          className="p-2 hover:text-white transition ease-in duration-300 flex flex-col items-center gap-3"
+        >
           <FaProcedures className="cursor-pointer" />
           <p className="text-sm text-amber">Profile</p>
         </Link>
