@@ -19,6 +19,7 @@ import Settings from "./pages/Settings";
 import ChallengeDisplay from "./pages/ChallengeDisplay";
 import PracticeDisplay from "./pages/PracticeDisplay";
 import Ranking from "./pages/Ranking";
+import RoleplaySelection from "./pages/RolePlaySelection";
 import RoleplayExercise from "./pages/RolePlay";
 
 function App() {
@@ -31,9 +32,10 @@ function App() {
         <Route path="/" element={<Welcome />} />
         <Route path="/dashboard/ranking" element={<Ranking />} />
         <Route
-          path="/lessons/section/roleplay/:scenarioId"
-          element={<RoleplayExercise />}
+          path="/lessons/section/roleplay"
+          element={<RoleplaySelection />}
         />
+       <Route path="/lessons/section/roleplay/:scenarioId" element={<RoleplayExercise></RoleplayExercise>}></Route>
         <Route path="/challenge/display" element={<ChallengeDisplay />} />
         <Route path="/lessons/section/challenge" element={<Challenge />} />
         <Route path="/practice/display" element={<PracticeDisplay />} />

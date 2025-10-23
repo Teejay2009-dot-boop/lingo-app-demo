@@ -1,115 +1,2576 @@
 {
-  "category_name": "Shopping & Markets",
-  "category_icon": "cart",
-  "category_description": "Practice shopping conversations in local markets and stores",
-  "difficulty_levels": ["Beginner", "Intermediate", "Advanced"],
-  "total_scenarios": 4,
-  "premium_scenarios": 2,
-  "estimated_total_time": "15-20 minutes",
-  "last_updated": "2024-01-15",
-  "version": "1.0",
-  "scenarios": [
+  "category_name": "Nigerian Roleplay Conversations",
+  "category_icon": "users",
+  "category_description": "Practice real-life conversations across various Nigerian contexts",
+  "total_modules": 15,
+  "total_scenarios": 68,
+  "estimated_total_time": "240-300 minutes",
+  "last_updated": "2024-01-20",
+  "version": "3.0",
+  "modules": [
     {
-      "id": "market_onions",
-      "title": "Buying Vegetables",
-      "description": "Practice buying onions and other vegetables at the local market",
-      "difficulty": "Beginner",
-      "estimated_time": "2-3 minutes",
-      "premium": false,
-      "tags": ["vegetables", "market", "basic"],
-      "learning_objectives": [
-        "Learn vegetable names",
-        "Practice basic shopping phrases",
-        "Understand local market culture"
-      ],
-      "conversation_flow": [
+      "module_id": "roleplay_food_dining",
+      "title": "Food & Dining",
+      "description": "Practice conversations in restaurants, markets, and food-related situations",
+      "icon": "utensils",
+      "order": 1,
+      "scenarios": [
         {
-          "character_dialogue": "Welcome to my market! What would you like to buy today?",
-          "character_name": "Market Seller",
-          "user_options": [
+          "id": "market_vegetables",
+          "title": "Buying Vegetables at Market",
+          "description": "Practice buying onions and tomatoes at local market",
+          "difficulty": "Beginner",
+          "estimated_time": "2-3 minutes",
+          "premium": false,
+          "tags": ["market", "vegetables", "shopping"],
+          "learning_objectives": [
+            "Learn vegetable names in local language",
+            "Practice basic shopping phrases",
+            "Understand market bargaining culture"
+          ],
+          "conversation_flow": [
             {
-              "text": "I want to buy onions, please",
-              "is_correct": true,
-              "response": "",
-              "next_step": 1,
-              "cultural_note": "Polite way to request items"
+              "character_dialogue": "Welcome to my market! What would you like to buy today?",
+              "character_name": "Market Seller",
+              "user_options": [
+                {
+                  "text": "I want to buy onions and tomatoes, please",
+                  "is_correct": true,
+                  "response": "",
+                  "next_step": 1,
+                  "cultural_note": "Polite way to request items"
+                },
+                {
+                  "text": "Give me vegetables",
+                  "is_correct": false,
+                  "response": "Please be specific. What vegetables do you want?",
+                  "next_step": 0,
+                  "cultural_note": "Too vague, specify what you need"
+                },
+                {
+                  "text": "Do you have meat?",
+                  "is_correct": false,
+                  "response": "Sorry, I only sell vegetables here. What vegetables would you like?",
+                  "next_step": 0,
+                  "cultural_note": "Asking for wrong type of product"
+                }
+              ]
             },
             {
-              "text": "Do you have beans?",
-              "is_correct": false,
-              "response": "Sorry, I only sell vegetables here. What vegetables would you like?",
-              "next_step": 0,
-              "cultural_note": "Asking for unavailable items"
+              "character_dialogue": "Good choice! Fresh onions are 200 Naira per kg and tomatoes are 300 Naira. How much do you want?",
+              "character_name": "Market Seller",
+              "user_options": [
+                {
+                  "text": "2 kg of onions and 1 kg of tomatoes, please",
+                  "is_correct": true,
+                  "response": "",
+                  "next_step": 2,
+                  "cultural_note": "Specific quantities help the seller"
+                },
+                {
+                  "text": "Just a little",
+                  "is_correct": false,
+                  "response": "Please be specific. How many kilograms do you want?",
+                  "next_step": 1,
+                  "cultural_note": "Vague quantities cause confusion"
+                },
+                {
+                  "text": "Whatever you have",
+                  "is_correct": false,
+                  "response": "You need to tell me how much you want to buy",
+                  "next_step": 1,
+                  "cultural_note": "Seller needs clear instructions"
+                }
+              ]
             },
             {
-              "text": "Give me onions",
-              "is_correct": false,
-              "response": "Please be more polite. What would you like to buy?",
-              "next_step": 0,
-              "cultural_note": "Too direct, considered rude"
+              "character_dialogue": "That will be 700 Naira total. Would you like peppers or other vegetables?",
+              "character_name": "Market Seller",
+              "user_options": [
+                {
+                  "text": "No, that's all. Thank you!",
+                  "is_correct": true,
+                  "response": "",
+                  "next_step": 3,
+                  "cultural_note": "Polite way to complete transaction"
+                },
+                {
+                  "text": "Yes, add some peppers too",
+                  "is_correct": true,
+                  "response": "Good choice! Let me add that for you.",
+                  "next_step": 4,
+                  "cultural_note": "Adding more items to purchase"
+                },
+                {
+                  "text": "That's too expensive",
+                  "is_correct": false,
+                  "response": "These are fresh market prices. Would you like to proceed?",
+                  "next_step": 2,
+                  "cultural_note": "Haggling requires different approach"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Perfect! Your total is 700 Naira. Thank you for shopping with us!",
+              "character_name": "Market Seller",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Great job! You successfully completed the vegetable shopping scenario."
             }
           ]
         },
         {
-          "character_dialogue": "Good choice! We have fresh onions. How many kilograms do you want?",
-          "character_name": "Market Seller",
-          "user_options": [
+          "id": "restaurant_jollof",
+          "title": "Ordering Jollof Rice",
+          "description": "Practice ordering food at a local restaurant",
+          "difficulty": "Beginner",
+          "estimated_time": "3-4 minutes",
+          "premium": false,
+          "tags": ["restaurant", "ordering", "food"],
+          "learning_objectives": [
+            "Learn common Nigerian dishes",
+            "Practice restaurant ordering etiquette",
+            "Understand menu navigation"
+          ],
+          "conversation_flow": [
             {
-              "text": "Two kilograms, please",
-              "is_correct": true,
-              "response": "",
-              "next_step": 2,
-              "cultural_note": "Specific quantity is appreciated"
+              "character_dialogue": "Good afternoon! Welcome to our restaurant. Are you ready to order?",
+              "character_name": "Waiter",
+              "user_options": [
+                {
+                  "text": "Yes, I'd like jollof rice with chicken and plantain",
+                  "is_correct": true,
+                  "response": "Excellent choice! Would you like any soup with that?",
+                  "next_step": 1,
+                  "cultural_note": "Clear order with specific dishes"
+                },
+                {
+                  "text": "What do you have?",
+                  "is_correct": false,
+                  "response": "We have jollof rice, fried rice, egusi soup, and pepper soup. What would you like?",
+                  "next_step": 0,
+                  "cultural_note": "Should check menu first before ordering"
+                },
+                {
+                  "text": "Just bring me food",
+                  "is_correct": false,
+                  "response": "I need to know what specific dish you would like",
+                  "next_step": 0,
+                  "cultural_note": "Too vague for restaurant ordering"
+                }
+              ]
             },
             {
-              "text": "A little",
-              "is_correct": false,
-              "response": "Please be specific. How many kilograms do you want?",
-              "next_step": 1,
-              "cultural_note": "Vague quantities are not helpful"
+              "character_dialogue": "Would you like egusi soup or pepper soup with your meal?",
+              "character_name": "Waiter",
+              "user_options": [
+                {
+                  "text": "Yes, I'll have egusi soup with pounded yam",
+                  "is_correct": true,
+                  "response": "Perfect choice! Anything to drink?",
+                  "next_step": 2,
+                  "cultural_note": "Adding traditional soup to order"
+                },
+                {
+                  "text": "No soup, just the rice",
+                  "is_correct": true,
+                  "response": "Okay, just jollof rice with chicken and plantain. Anything to drink?",
+                  "next_step": 2,
+                  "cultural_note": "Clear about preferences"
+                },
+                {
+                  "text": "Whatever you recommend",
+                  "is_correct": false,
+                  "response": "I need you to make a choice. Would you like soup or not?",
+                  "next_step": 1,
+                  "cultural_note": "Should make own decision"
+                }
+              ]
             },
             {
-              "text": "Just one",
-              "is_correct": true,
-              "response": "",
-              "next_step": 2,
-              "cultural_note": "Acceptable but could be more specific"
+              "character_dialogue": "What would you like to drink? We have water, soft drinks, and fresh juice",
+              "character_name": "Waiter",
+              "user_options": [
+                {
+                  "text": "A bottle of water and Chapman, please",
+                  "is_correct": true,
+                  "response": "Excellent! Your total is 3,500 Naira. Food will be ready in 20 minutes",
+                  "next_step": 3,
+                  "cultural_note": "Specific drink order"
+                },
+                {
+                  "text": "Just bring me anything",
+                  "is_correct": false,
+                  "response": "Please specify what drink you would prefer",
+                  "next_step": 2,
+                  "cultural_note": "Should choose specific drinks"
+                },
+                {
+                  "text": "I don't want anything to drink",
+                  "is_correct": true,
+                  "response": "Okay, your total is 2,800 Naira. Food will be ready in 20 minutes",
+                  "next_step": 3,
+                  "cultural_note": "Clear about not wanting drinks"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Thank you for your order! Your food will be served shortly. Enjoy your meal!",
+              "character_name": "Waiter",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Excellent! You successfully ordered a complete Nigerian meal at the restaurant."
             }
           ]
         },
         {
-          "character_dialogue": "That will be 500 Naira. Would you like anything else?",
-          "character_name": "Market Seller",
-          "user_options": [
+          "id": "street_food",
+          "title": "Buying Street Food",
+          "description": "Practice ordering from street food vendors",
+          "difficulty": "Beginner",
+          "estimated_time": "2-3 minutes",
+          "premium": false,
+          "tags": ["street food", "quick meal", "vendor"],
+          "learning_objectives": [
+            "Learn street food vocabulary",
+            "Practice quick transactions",
+            "Understand street vendor culture"
+          ],
+          "conversation_flow": [
             {
-              "text": "No, that's all. Thank you!",
-              "is_correct": true,
-              "response": "",
-              "next_step": 3,
-              "cultural_note": "Polite way to end transaction"
+              "character_dialogue": "Hot akara! Fresh akara! 50 Naira each! What will you take?",
+              "character_name": "Akara Seller",
+              "user_options": [
+                {
+                  "text": "I'll take 4 pieces of akara, please",
+                  "is_correct": true,
+                  "response": "Good choice! That will be 200 Naira. Want pap with it?",
+                  "next_step": 1,
+                  "cultural_note": "Clear quantity specification"
+                },
+                {
+                  "text": "How much is everything?",
+                  "is_correct": false,
+                  "response": "Akara is 50 Naira each. How many do you want?",
+                  "next_step": 0,
+                  "cultural_note": "Should specify quantity first"
+                }
+              ]
             },
             {
-              "text": "Yes, give me tomatoes too",
-              "is_correct": true,
-              "response": "Great! Let me add that to your order.",
-              "next_step": 4,
-              "cultural_note": "Adding more items to purchase"
+              "character_dialogue": "Would you like pap to go with your akara? It's 100 Naira extra",
+              "character_name": "Akara Seller",
+              "user_options": [
+                {
+                  "text": "Yes, please add pap with milk and sugar",
+                  "is_correct": true,
+                  "response": "Perfect! Total is 300 Naira. Here you go!",
+                  "next_step": 2,
+                  "cultural_note": "Complete breakfast order"
+                },
+                {
+                  "text": "No, just the akara",
+                  "is_correct": true,
+                  "response": "Okay, 200 Naira for 4 akara. Here you go!",
+                  "next_step": 2,
+                  "cultural_note": "Clear about wanting only akara"
+                }
+              ]
             },
             {
-              "text": "That's too expensive",
-              "is_correct": false,
-              "response": "This is our standard price. Would you like to proceed?",
-              "next_step": 2,
-              "cultural_note": "Haggling requires different approach"
+              "character_dialogue": "Enjoy your meal! Come back again for fresh akara tomorrow!",
+              "character_name": "Akara Seller",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Well done! You successfully ordered street food like a local."
             }
           ]
         },
         {
-          "character_dialogue": "Perfect! Your total is 500 Naira. Thank you for shopping with us!",
-          "character_name": "Market Seller",
-          "user_options": [],
-          "is_final": true,
-          "completion_message": "Great job! You successfully completed the market shopping scenario."
+          "id": "supermarket_shopping",
+          "title": "Supermarket Shopping",
+          "description": "Practice finding items and checking out at supermarket",
+          "difficulty": "Intermediate",
+          "estimated_time": "4-5 minutes",
+          "premium": false,
+          "tags": ["supermarket", "shopping", "checkout"],
+          "learning_objectives": [
+            "Learn supermarket vocabulary",
+            "Practice asking for item locations",
+            "Understand checkout procedures"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Welcome to ShopRite! Can I help you find anything today?",
+              "character_name": "Store Assistant",
+              "user_options": [
+                {
+                  "text": "Yes, where can I find rice and beans?",
+                  "is_correct": true,
+                  "response": "Grains are in aisle 3. Follow me, I'll show you",
+                  "next_step": 1,
+                  "cultural_note": "Polite and specific request"
+                },
+                {
+                  "text": "I'm looking for food",
+                  "is_correct": false,
+                  "response": "What type of food are you looking for? We have different sections",
+                  "next_step": 0,
+                  "cultural_note": "Too vague for large supermarket"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Here are the rice and beans. We have local and imported varieties. What would you prefer?",
+              "character_name": "Store Assistant",
+              "user_options": [
+                {
+                  "text": "I'll take 5kg of local rice and 2kg of brown beans",
+                  "is_correct": true,
+                  "response": "Good choice! Anything else you need?",
+                  "next_step": 2,
+                  "cultural_note": "Specific quantities and types"
+                },
+                {
+                  "text": "Just give me any rice",
+                  "is_correct": false,
+                  "response": "We have different types and prices. Which one would you prefer?",
+                  "next_step": 1,
+                  "cultural_note": "Should specify preference"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Will that be all for you today?",
+              "character_name": "Store Assistant",
+              "user_options": [
+                {
+                  "text": "Yes, that's all. Where is the checkout?",
+                  "is_correct": true,
+                  "response": "Checkout is straight ahead. Have a nice day!",
+                  "next_step": 3,
+                  "cultural_note": "Polite completion"
+                },
+                {
+                  "text": "I also need cooking oil and spices",
+                  "is_correct": true,
+                  "response": "Oils are in aisle 2 and spices in aisle 4. I can show you",
+                  "next_step": 4,
+                  "cultural_note": "Adding more items appropriately"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Thank you for shopping with us! Your total is 8,500 Naira at checkout",
+              "character_name": "Store Assistant",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Excellent! You successfully navigated supermarket shopping."
+            }
+          ]
+        },
+        {
+          "id": "dinner_party",
+          "title": "Dinner Party Conversation",
+          "description": "Practice making small talk at a dinner party",
+          "difficulty": "Intermediate",
+          "estimated_time": "5-6 minutes",
+          "premium": true,
+          "tags": ["social", "dinner", "conversation"],
+          "learning_objectives": [
+            "Learn social conversation starters",
+            "Practice making small talk",
+            "Understand dinner party etiquette"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Good evening! I'm Chinedu, the host. Welcome to our dinner party!",
+              "character_name": "Host",
+              "user_options": [
+                {
+                  "text": "Good evening! Thank you for inviting me. The place looks beautiful",
+                  "is_correct": true,
+                  "response": "Thank you! Let me introduce you to some guests",
+                  "next_step": 1,
+                  "cultural_note": "Polite greeting with compliment"
+                },
+                {
+                  "text": "Hi, where's the food?",
+                  "is_correct": false,
+                  "response": "Food will be served shortly. Let me introduce you to other guests first",
+                  "next_step": 0,
+                  "cultural_note": "Too direct, should socialize first"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "This is Ada, she's also in the tech industry like you",
+              "character_name": "Host",
+              "user_options": [
+                {
+                  "text": "Nice to meet you, Ada! What company do you work with?",
+                  "is_correct": true,
+                  "response": "I work with Flutterwave. How about you?",
+                  "next_step": 2,
+                  "cultural_note": "Professional conversation starter"
+                },
+                {
+                  "text": "Hello",
+                  "is_correct": false,
+                  "response": "Hello... so what do you do for work?",
+                  "next_step": 1,
+                  "cultural_note": "Too brief, should engage more"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "I've been there 2 years now. Do you enjoy working in tech?",
+              "character_name": "Ada",
+              "user_options": [
+                {
+                  "text": "Yes, I love the innovation. Currently working on mobile banking apps",
+                  "is_correct": true,
+                  "response": "That sounds interesting! Tell me more about your projects",
+                  "next_step": 3,
+                  "cultural_note": "Engaging conversation with details"
+                },
+                {
+                  "text": "It's okay",
+                  "is_correct": false,
+                  "response": "Oh... well, dinner is being served soon",
+                  "next_step": 3,
+                  "cultural_note": "Conversation killer, too brief"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Dinner is served everyone! Please come to the dining table",
+              "character_name": "Host",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Wonderful! You made great conversation at the dinner party."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "module_id": "roleplay_greetings_intro",
+      "title": "Greetings & Introductions",
+      "description": "Learn proper greetings and introductions in various social contexts",
+      "icon": "handshake",
+      "order": 2,
+      "scenarios": [
+        {
+          "id": "formal_greeting",
+          "title": "Formal Greeting",
+          "description": "Practice formal greetings in professional settings",
+          "difficulty": "Beginner",
+          "estimated_time": "2-3 minutes",
+          "premium": false,
+          "tags": ["formal", "greeting", "professional"],
+          "learning_objectives": [
+            "Learn formal greeting phrases",
+            "Practice professional introductions",
+            "Understand business etiquette"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Good morning sir. Welcome to our office. I'm Mr. Johnson, the manager",
+              "character_name": "Office Manager",
+              "user_options": [
+                {
+                  "text": "Good morning Mr. Johnson. I'm pleased to meet you. I'm Tunde Adebayo",
+                  "is_correct": true,
+                  "response": "Nice to meet you too, Mr. Adebayo. How can I help you today?",
+                  "next_step": 1,
+                  "cultural_note": "Formal greeting with full name"
+                },
+                {
+                  "text": "Hey, what's up?",
+                  "is_correct": false,
+                  "response": "Good morning... I'm Mr. Johnson. How can I assist you?",
+                  "next_step": 0,
+                  "cultural_note": "Too informal for professional setting"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "What brings you to our office today, Mr. Adebayo?",
+              "character_name": "Office Manager",
+              "user_options": [
+                {
+                  "text": "I have an appointment to discuss the marketing manager position",
+                  "is_correct": true,
+                  "response": "Yes, I have your application here. Please have a seat",
+                  "next_step": 2,
+                  "cultural_note": "Clear professional purpose"
+                },
+                {
+                  "text": "I'm just looking around",
+                  "is_correct": false,
+                  "response": "This is a professional office. Do you have specific business here?",
+                  "next_step": 1,
+                  "cultural_note": "Should state professional purpose"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "I see you have extensive experience in digital marketing. Tell me about your previous role",
+              "character_name": "Office Manager",
+              "user_options": [
+                {
+                  "text": "I worked as Digital Marketing Lead at Konga for 3 years, managing a team of 5",
+                  "is_correct": true,
+                  "response": "Impressive experience. Let me get the HR manager to join us",
+                  "next_step": 3,
+                  "cultural_note": "Professional experience description"
+                },
+                {
+                  "text": "I did marketing stuff",
+                  "is_correct": false,
+                  "response": "Could you be more specific about your roles and responsibilities?",
+                  "next_step": 2,
+                  "cultural_note": "Too vague for professional context"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Thank you for coming in today. We'll contact you about next steps",
+              "character_name": "Office Manager",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Excellent! You handled the formal professional greeting perfectly."
+            }
+          ]
+        },
+        {
+          "id": "informal_greeting",
+          "title": "Informal Greeting with Friends",
+          "description": "Practice casual greetings with friends and peers",
+          "difficulty": "Beginner",
+          "estimated_time": "2-3 minutes",
+          "premium": false,
+          "tags": ["informal", "friends", "casual"],
+          "learning_objectives": [
+            "Learn casual greeting phrases",
+            "Practice friendly conversations",
+            "Understand peer interaction culture"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Hey bro! Long time no see! How you dey?",
+              "character_name": "Friend",
+              "user_options": [
+                {
+                  "text": "I dey fine my guy! How you sef?",
+                  "is_correct": true,
+                  "response": "I dey kampe! Wetin you don dey do these days?",
+                  "next_step": 1,
+                  "cultural_note": "Casual Nigerian English response"
+                },
+                {
+                  "text": "Good morning sir. I am doing well, thank you",
+                  "is_correct": false,
+                  "response": "Bro, why you dey talk like say na office? How body?",
+                  "next_step": 0,
+                  "cultural_note": "Too formal for friends"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "I hear say you don change work. How the new place dey?",
+              "character_name": "Friend",
+              "user_options": [
+                {
+                  "text": "The work sweet die! Better salary and flexible hours",
+                  "is_correct": true,
+                  "response": "That's good to hear! Make you no forget us when you don rich",
+                  "next_step": 2,
+                  "cultural_note": "Casual positive update"
+                },
+                {
+                  "text": "The new employment situation is quite satisfactory",
+                  "is_correct": false,
+                  "response": "Guy, why you dey use big big English? How work dey?",
+                  "next_step": 1,
+                  "cultural_note": "Too formal for casual setting"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Make we hang out this weekend. My place dey available",
+              "character_name": "Friend",
+              "user_options": [
+                {
+                  "text": "Sure thing! I go come with some drinks and plantain chips",
+                  "is_correct": true,
+                  "response": "Perfect! I go fry some chicken. See you then!",
+                  "next_step": 3,
+                  "cultural_note": "Accepting invitation with contribution"
+                },
+                {
+                  "text": "I shall consider your invitation and revert accordingly",
+                  "is_correct": false,
+                  "response": "Bro, you don turn lawyer? Just tell me if you go come!",
+                  "next_step": 2,
+                  "cultural_note": "Too formal for friends"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Alright my guy! Make we yarn better when you come. Safe!",
+              "character_name": "Friend",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Perfect! You nailed the casual Nigerian conversation with friends."
+            }
+          ]
+        },
+        {
+          "id": "elder_respect",
+          "title": "Greeting Elders",
+          "description": "Learn respectful greetings for older people",
+          "difficulty": "Beginner",
+          "estimated_time": "3-4 minutes",
+          "premium": false,
+          "tags": ["elders", "respect", "culture"],
+          "learning_objectives": [
+            "Learn respectful elder greetings",
+            "Practice showing proper respect",
+            "Understand Nigerian elder culture"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Good morning, my child. You are welcome",
+              "character_name": "Elderly Woman",
+              "user_options": [
+                {
+                  "text": "Good morning, ma. How are you doing today?",
+                  "is_correct": true,
+                  "response": "I am fine, my dear. Thank you for asking. Who are you looking for?",
+                  "next_step": 1,
+                  "cultural_note": "Polite greeting with 'ma' honorific"
+                },
+                {
+                  "text": "Hey, what's up?",
+                  "is_correct": false,
+                  "response": "Young man, is that how you greet your elders?",
+                  "next_step": 0,
+                  "cultural_note": "Too casual for elders"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "I am Mama Bisi. Are you visiting someone in this compound?",
+              "character_name": "Elderly Woman",
+              "user_options": [
+                {
+                  "text": "Yes ma, I'm here to see Mr. Adekunle. I'm his nephew from Lagos",
+                  "is_correct": true,
+                  "response": "Ah, Adekunle's nephew! He's inside. Please come in",
+                  "next_step": 2,
+                  "cultural_note": "Clear identity and purpose"
+                },
+                {
+                  "text": "I'm just passing by",
+                  "is_correct": false,
+                  "response": "In our culture, we don't just pass by elders without proper greeting",
+                  "next_step": 1,
+                  "cultural_note": "Should show proper respect and purpose"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Your uncle told me about you. I hear you are doing well in school",
+              "character_name": "Elderly Woman",
+              "user_options": [
+                {
+                  "text": "Yes ma, by God's grace. I just finished my exams",
+                  "is_correct": true,
+                  "response": "Well done, my child. Education is very important",
+                  "next_step": 3,
+                  "cultural_note": "Humble response acknowledging God"
+                },
+                {
+                  "text": "Yeah, I'm smart",
+                  "is_correct": false,
+                  "response": "Don't be proud, my child. Always be humble",
+                  "next_step": 2,
+                  "cultural_note": "Too boastful for elder conversation"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "May God continue to bless you and your studies. Your uncle is waiting for you inside",
+              "character_name": "Elderly Woman",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Excellent! You showed perfect respect and cultural understanding when greeting elders."
+            }
+          ]
+        },
+        {
+          "id": "business_intro",
+          "title": "Business Introduction",
+          "description": "Practice introducing yourself in business settings",
+          "difficulty": "Intermediate",
+          "estimated_time": "4-5 minutes",
+          "premium": false,
+          "tags": ["business", "introduction", "professional"],
+          "learning_objectives": [
+            "Learn professional self-introduction",
+            "Practice business card exchange",
+            "Understand networking etiquette"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Good afternoon. I don't believe we've met. I'm Chika Okoro from GTBank",
+              "character_name": "Business Professional",
+              "user_options": [
+                {
+                  "text": "Good afternoon, Ms. Okoro. I'm Femi Balogun from Flutterwave. Pleasure to meet you",
+                  "is_correct": true,
+                  "response": "Likewise, Mr. Balogun. I've heard great things about Flutterwave",
+                  "next_step": 1,
+                  "cultural_note": "Professional introduction with company names"
+                },
+                {
+                  "text": "Hi, I'm Femi",
+                  "is_correct": false,
+                  "response": "Nice to meet you, Femi. What company are you with?",
+                  "next_step": 0,
+                  "cultural_note": "Incomplete professional introduction"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Here's my business card. What department do you work in at Flutterwave?",
+              "character_name": "Business Professional",
+              "user_options": [
+                {
+                  "text": "Thank you. Here's mine. I'm a Product Manager in the payments division",
+                  "is_correct": true,
+                  "response": "Interesting! We're actually looking at payment integrations",
+                  "next_step": 2,
+                  "cultural_note": "Proper business card exchange with role details"
+                },
+                {
+                  "text": "I don't have cards with me",
+                  "is_correct": false,
+                  "response": "No problem. So what exactly do you do at Flutterwave?",
+                  "next_step": 1,
+                  "cultural_note": "Should be prepared with business cards"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "We should connect about potential collaboration. Are you available for coffee next week?",
+              "character_name": "Business Professional",
+              "user_options": [
+                {
+                  "text": "That would be great. I'm available Tuesday or Wednesday morning",
+                  "is_correct": true,
+                  "response": "Perfect. Let's do Tuesday at 10 AM at the cafe downstairs",
+                  "next_step": 3,
+                  "cultural_note": "Professional availability with specific times"
+                },
+                {
+                  "text": "I'm busy",
+                  "is_correct": false,
+                  "response": "Perhaps we can connect another time then",
+                  "next_step": 2,
+                  "cultural_note": "Too abrupt, should be more diplomatic"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Looking forward to our meeting. It was great connecting with you",
+              "character_name": "Business Professional",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Outstanding! You handled the business introduction and networking perfectly."
+            }
+          ]
+        },
+        {
+          "id": "family_gathering",
+          "title": "Family Gathering Greetings",
+          "description": "Practice greetings at family events and gatherings",
+          "difficulty": "Intermediate",
+          "estimated_time": "4-5 minutes",
+          "premium": true,
+          "tags": ["family", "gathering", "relatives"],
+          "learning_objectives": [
+            "Learn family relationship terms",
+            "Practice extended family greetings",
+            "Understand family gathering etiquette"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Welcome, welcome! My brother's child! Come inside, the family is here",
+              "character_name": "Uncle",
+              "user_options": [
+                {
+                  "text": "Good afternoon, Uncle Tunde. Thank you for having me. How is the family?",
+                  "is_correct": true,
+                  "response": "We are all fine, my child. Your aunty and cousins are inside",
+                  "next_step": 1,
+                  "cultural_note": "Respectful family greeting with inquiry"
+                },
+                {
+                  "text": "Hey, what's going on?",
+                  "is_correct": false,
+                  "response": "Is that how you greet your uncle? Where are your manners?",
+                  "next_step": 0,
+                  "cultural_note": "Too casual for family elder"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Your cousin Ngozi just arrived from America. Do you remember her?",
+              "character_name": "Uncle",
+              "user_options": [
+                {
+                  "text": "Yes Uncle, we grew up together. I look forward to seeing her again",
+                  "is_correct": true,
+                  "response": "She's in the living room with the others. Go and greet everyone",
+                  "next_step": 2,
+                  "cultural_note": "Acknowledging family relationships"
+                },
+                {
+                  "text": "I don't remember her",
+                  "is_correct": false,
+                  "response": "She's your family! You should make effort to remember your relatives",
+                  "next_step": 1,
+                  "cultural_note": "Should show family connection"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Ngozi, look who's here! Your cousin from Lagos",
+              "character_name": "Uncle",
+              "user_options": [
+                {
+                  "text": "Ngozi! Long time! You look wonderful. How was your flight?",
+                  "is_correct": true,
+                  "response": "Thank you! The flight was long but I'm happy to be home",
+                  "next_step": 3,
+                  "cultural_note": "Warm cousin greeting with关心"
+                },
+                {
+                  "text": "Hi",
+                  "is_correct": false,
+                  "response": "Is that all you have to say to your cousin after years?",
+                  "next_step": 2,
+                  "cultural_note": "Too brief for family reunion"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "The family is complete now! Let's take pictures before dinner",
+              "character_name": "Uncle",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Perfect! You showed excellent family values and cultural respect at the gathering."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "module_id": "roleplay_shopping_markets",
+      "title": "Shopping & Markets",
+      "description": "Master shopping conversations and bargaining techniques",
+      "icon": "shopping-cart",
+      "order": 3,
+      "scenarios": [
+        {
+          "id": "fabric_bargain",
+          "title": "Bargaining for Fabric",
+          "description": "Practice price negotiation at fabric market",
+          "difficulty": "Intermediate",
+          "estimated_time": "5-6 minutes",
+          "premium": false,
+          "tags": ["bargaining", "fabric", "market"],
+          "learning_objectives": [
+            "Learn bargaining techniques",
+            "Practice price negotiation",
+            "Understand market culture"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Welcome! These are beautiful Ankara fabrics from Ghana. 8,000 Naira per piece",
+              "character_name": "Fabric Seller",
+              "user_options": [
+                {
+                  "text": "They are beautiful, but 8,000 is quite high. Can you do 5,000?",
+                  "is_correct": true,
+                  "response": "5,000 is too low! This is quality fabric. I can do 7,000 for you",
+                  "next_step": 1,
+                  "cultural_note": "Reasonable counter-offer starts negotiation"
+                },
+                {
+                  "text": "That's too expensive, I'm leaving",
+                  "is_correct": false,
+                  "response": "Wait, wait! Let's talk about the price. What can you afford?",
+                  "next_step": 0,
+                  "cultural_note": "Too aggressive, might end negotiation"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "7,000 is my best price. Look at the quality!",
+              "character_name": "Fabric Seller",
+              "user_options": [
+                {
+                  "text": "If I buy two pieces, can you give me both for 12,000?",
+                  "is_correct": true,
+                  "response": "You drive hard bargain! Okay, for two pieces, 12,000 Naira",
+                  "next_step": 2,
+                  "cultural_note": "Bulk purchase gets better deal"
+                },
+                {
+                  "text": "Okay, I'll take it for 7,000",
+                  "is_correct": true,
+                  "response": "Good decision! This fabric will make beautiful clothes",
+                  "next_step": 2,
+                  "cultural_note": "Accepting fair price is also good"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Do you need matching thread or any other accessories?",
+              "character_name": "Fabric Seller",
+              "user_options": [
+                {
+                  "text": "Yes, please add matching thread and 2 meters of lining",
+                  "is_correct": true,
+                  "response": "Perfect! Your total is 14,500 Naira for everything",
+                  "next_step": 3,
+                  "cultural_note": "Adding complementary items"
+                },
+                {
+                  "text": "No, that's all",
+                  "is_correct": true,
+                  "response": "Okay, 12,000 Naira for two fabrics. Thank you!",
+                  "next_step": 3,
+                  "cultural_note": "Clear about completion"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Thank you for your business! Come back for more beautiful fabrics!",
+              "character_name": "Fabric Seller",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Excellent bargaining! You got a great deal on quality fabrics."
+            }
+          ]
+        },
+        {
+          "id": "electronics_purchase",
+          "title": "Buying Electronics",
+          "description": "Practice asking about features and warranties",
+          "difficulty": "Intermediate",
+          "estimated_time": "4-5 minutes",
+          "premium": false,
+          "tags": ["electronics", "purchase", "features"],
+          "learning_objectives": [
+            "Learn electronics vocabulary",
+            "Practice asking about specifications",
+            "Understand warranty procedures"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Good afternoon! Interested in smartphones? We have latest Samsung and iPhone",
+              "character_name": "Electronics Seller",
+              "user_options": [
+                {
+                  "text": "Yes, I'm looking for a phone with good camera and long battery life",
+                  "is_correct": true,
+                  "response": "Perfect! This Samsung A54 has 128GB storage and excellent camera",
+                  "next_step": 1,
+                  "cultural_note": "Specific feature requirements"
+                },
+                {
+                  "text": "I want a phone",
+                  "is_correct": false,
+                  "response": "What type of phone? What features are important to you?",
+                  "next_step": 0,
+                  "cultural_note": "Too vague for electronics purchase"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "This model is 150,000 Naira. It comes with 1-year warranty",
+              "character_name": "Electronics Seller",
+              "user_options": [
+                {
+                  "text": "Does the warranty cover screen damage? And can I pay in installments?",
+                  "is_correct": true,
+                  "response": "Warranty covers manufacturing defects only. We have 3-month installment plan",
+                  "next_step": 2,
+                  "cultural_note": "Important warranty and payment questions"
+                },
+                {
+                  "text": "I'll take it",
+                  "is_correct": false,
+                  "response": "Don't you want to know about warranty and payment options?",
+                  "next_step": 1,
+                  "cultural_note": "Should ask important questions first"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Would you like screen protector and case? It's 5,000 Naira extra",
+              "character_name": "Electronics Seller",
+              "user_options": [
+                {
+                  "text": "Yes, please include screen protector and a good quality case",
+                  "is_correct": true,
+                  "response": "Excellent! Your total is 155,000 Naira. Let me package everything",
+                  "next_step": 3,
+                  "cultural_note": "Protecting investment with accessories"
+                },
+                {
+                  "text": "No, I don't need protection",
+                  "is_correct": false,
+                  "response": "I strongly recommend protection for your new phone",
+                  "next_step": 2,
+                  "cultural_note": "Should protect expensive electronics"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Here's your phone with all accessories and warranty card. Enjoy!",
+              "character_name": "Electronics Seller",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Well done! You made a smart electronics purchase with all the right questions."
+            }
+          ]
+        },
+        {
+          "id": "grocery_shopping",
+          "title": "Weekly Grocery Shopping",
+          "description": "Practice comprehensive grocery shopping",
+          "difficulty": "Beginner",
+          "estimated_time": "4-5 minutes",
+          "premium": false,
+          "tags": ["grocery", "shopping", "essentials"],
+          "learning_objectives": [
+            "Learn grocery item names",
+            "Practice shopping list management",
+            "Understand supermarket navigation"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Welcome to our store! Do you need help finding anything?",
+              "character_name": "Store Assistant",
+              "user_options": [
+                {
+                  "text": "Yes, I'm looking for rice, beans, vegetable oil, and tomatoes",
+                  "is_correct": true,
+                  "response": "Grains are in aisle 3, cooking oil in aisle 2, fresh produce at the back",
+                  "next_step": 1,
+                  "cultural_note": "Clear grocery list"
+                },
+                {
+                  "text": "I need food",
+                  "is_correct": false,
+                  "response": "What specific food items are you looking for?",
+                  "next_step": 0,
+                  "cultural_note": "Too vague for grocery store"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "We have different rice varieties. Local ofada rice is 2,500 per kg, imported is 1,800",
+              "character_name": "Store Assistant",
+              "user_options": [
+                {
+                  "text": "I'll take 5kg of local ofada rice and 2kg of brown beans",
+                  "is_correct": true,
+                  "response": "Good choice! Local rice has better flavor. Anything else?",
+                  "next_step": 2,
+                  "cultural_note": "Supporting local products"
+                },
+                {
+                  "text": "Just give me any rice",
+                  "is_correct": false,
+                  "response": "We have different types and prices. Which do you prefer?",
+                  "next_step": 1,
+                  "cultural_note": "Should make informed choice"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Your total so far is 18,500 Naira. Will you need spices and seasonings?",
+              "character_name": "Store Assistant",
+              "user_options": [
+                {
+                  "text": "Yes, add curry, thyme, and 2 cubes of Maggi",
+                  "is_correct": true,
+                  "response": "Perfect! Your final total is 20,000 Naira. Proceed to checkout",
+                  "next_step": 3,
+                  "cultural_note": "Complete grocery shopping"
+                },
+                {
+                  "text": "No, that's too much",
+                  "is_correct": false,
+                  "response": "These are essential cooking ingredients. Would you like to adjust your quantities?",
+                  "next_step": 2,
+                  "cultural_note": "Should plan grocery budget better"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Thank you for shopping with us! Have a wonderful day!",
+              "character_name": "Store Assistant",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Excellent! You completed your weekly grocery shopping efficiently."
+            }
+          ]
+        },
+        {
+          "id": "return_item",
+          "title": "Returning Faulty Item",
+          "description": "Practice returning defective products to store",
+          "difficulty": "Intermediate",
+          "estimated_time": "5-6 minutes",
+          "premium": true,
+          "tags": ["return", "complaint", "customer service"],
+          "learning_objectives": [
+            "Learn complaint vocabulary",
+            "Practice returning items politely",
+            "Understand consumer rights"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Good morning. How can I help you?",
+              "character_name": "Customer Service",
+              "user_options": [
+                {
+                  "text": "Good morning. I'd like to return this blender I bought last week. It's not working",
+                  "is_correct": true,
+                  "response": "I'm sorry to hear that. Do you have your receipt?",
+                  "next_step": 1,
+                  "cultural_note": "Polite complaint with details"
+                },
+                {
+                  "text": "This thing you sold me is rubbish!",
+                  "is_correct": false,
+                  "response": "Sir, please calm down. Can you explain the problem?",
+                  "next_step": 0,
+                  "cultural_note": "Too aggressive, should be polite"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Let me check the receipt. What exactly is wrong with the blender?",
+              "character_name": "Customer Service",
+              "user_options": [
+                {
+                  "text": "The motor makes loud noise and doesn't blend properly. I've only used it twice",
+                  "is_correct": true,
+                  "response": "I see. Let me test it. Yes, there's definitely a problem",
+                  "next_step": 2,
+                  "cultural_note": "Clear problem description"
+                },
+                {
+                  "text": "It just doesn't work",
+                  "is_correct": false,
+                  "response": "Can you be more specific about what's not working?",
+                  "next_step": 1,
+                  "cultural_note": "Should provide specific details"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "You're within our 14-day return period. Would you like refund or exchange?",
+              "character_name": "Customer Service",
+              "user_options": [
+                {
+                  "text": "I'd prefer an exchange for the same model, please",
+                  "is_correct": true,
+                  "response": "Certainly! Let me get you a new one from stock",
+                  "next_step": 3,
+                  "cultural_note": "Reasonable exchange request"
+                },
+                {
+                  "text": "I want my money back and compensation!",
+                  "is_correct": false,
+                  "response": "We can offer refund or exchange, but compensation is not our policy",
+                  "next_step": 2,
+                  "cultural_note": "Unreasonable demand"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Here's your new blender with updated warranty. We apologize for the inconvenience",
+              "character_name": "Customer Service",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Well handled! You successfully returned the faulty item while maintaining good relations."
+            }
+          ]
+        },
+        {
+          "id": "market_fresh_fish",
+          "title": "Buying Fresh Fish",
+          "description": "Practice selecting and buying fresh fish",
+          "difficulty": "Intermediate",
+          "estimated_time": "4-5 minutes",
+          "premium": false,
+          "tags": ["fish", "market", "fresh food"],
+          "learning_objectives": [
+            "Learn fish types and names",
+            "Practice assessing freshness",
+            "Understand market fish buying"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Welcome! Fresh fish from Port Harcourt! Titus, croaker, and barracuda available!",
+              "character_name": "Fish Seller",
+              "user_options": [
+                {
+                  "text": "The Titus fish looks fresh. How much per kg?",
+                  "is_correct": true,
+                  "response": "Titus is 1,800 Naira per kg. Very fresh, came this morning!",
+                  "next_step": 1,
+                  "cultural_note": "Asking about specific fish type"
+                },
+                {
+                  "text": "I want fish",
+                  "is_correct": false,
+                  "response": "What type of fish? We have different types and prices",
+                  "next_step": 0,
+                  "cultural_note": "Should specify fish type"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "How many kg do you want? I can clean and scale it for you",
+              "character_name": "Fish Seller",
+              "user_options": [
+                {
+                  "text": "I'll take 2 kg of Titus. Please clean and remove the scales",
+                  "is_correct": true,
+                  "response": "Good choice! That will be 3,600 Naira. Want pepper and onions too?",
+                  "next_step": 2,
+                  "cultural_note": "Specific quantity with cleaning request"
+                },
+                {
+                  "text": "Just give me one fish",
+                  "is_correct": false,
+                  "response": "Fish is sold by weight, not by piece. How many kg?",
+                  "next_step": 1,
+                  "cultural_note": "Should understand fish selling by weight"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Your fish is cleaned and ready! Need ingredients for pepper soup?",
+              "character_name": "Fish Seller",
+              "user_options": [
+                {
+                  "text": "Yes, add utazi leaves, uziza, and small peppers for pepper soup",
+                  "is_correct": true,
+                  "response": "Perfect! Total is 4,200 Naira for everything",
+                  "next_step": 3,
+                  "cultural_note": "Complete fish meal preparation"
+                },
+                {
+                  "text": "No, that's all",
+                  "is_correct": true,
+                  "response": "Okay, 3,600 Naira for the fish. Enjoy your meal!",
+                  "next_step": 3,
+                  "cultural_note": "Clear about completion"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Thank you! Come back for fresh fish every Tuesday and Friday!",
+              "character_name": "Fish Seller",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Excellent! You successfully bought fresh fish and ingredients for a perfect Nigerian meal."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "module_id": "roleplay_transportation",
+      "title": "Transportation",
+      "description": "Navigate various transportation situations in Nigeria",
+      "icon": "bus",
+      "order": 4,
+      "scenarios": [
+        {
+          "id": "bus_commute",
+          "title": "Bus Commute to Work",
+          "description": "Practice taking bus for daily commute",
+          "difficulty": "Beginner",
+          "estimated_time": "3-4 minutes",
+          "premium": false,
+          "tags": ["bus", "commute", "transport"],
+          "learning_objectives": [
+            "Learn bus route vocabulary",
+            "Practice buying bus tickets",
+            "Understand daily commute conversations"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Oshodi! Oshodi! Enter quick! We dey go Oshodi!",
+              "character_name": "Bus Conductor",
+              "user_options": [
+                {
+                  "text": "Does this bus go through Yaba? I'm going to UNILAG",
+                  "is_correct": true,
+                  "response": "Yes, we pass Yaba. Enter quick! Fare na 300 Naira",
+                  "next_step": 1,
+                  "cultural_note": "Clear destination inquiry"
+                },
+                {
+                  "text": "I'm going far",
+                  "is_correct": false,
+                  "response": "Where exactly? We need to know your stop",
+                  "next_step": 0,
+                  "cultural_note": "Should specify destination"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Fare na 300 Naira to Yaba. You get change?",
+              "character_name": "Bus Conductor",
+              "user_options": [
+                {
+                  "text": "Yes, here's 500 Naira",
+                  "is_correct": true,
+                  "response": "Thank you. Here's your 200 Naira change. Find seat",
+                  "next_step": 2,
+                  "cultural_note": "Prepared with appropriate payment"
+                },
+                {
+                  "text": "I only have 1,000 Naira note",
+                  "is_correct": false,
+                  "response": "Oga, no change for 1,000. You get smaller money?",
+                  "next_step": 1,
+                  "cultural_note": "Large notes problematic for bus fare"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Traffic don hold for Third Mainland Bridge. We go reach Yaba for about 30 minutes",
+              "character_name": "Bus Conductor",
+              "user_options": [
+                {
+                  "text": "No problem. Please let me know when we reach UNILAG junction",
+                  "is_correct": true,
+                  "response": "I go call you. No worry!",
+                  "next_step": 3,
+                  "cultural_note": "Polite request for stop notification"
+                },
+                {
+                  "text": "That's too long!",
+                  "is_correct": false,
+                  "response": "Na Lagos traffic, my brother. Nothing we fit do",
+                  "next_step": 2,
+                  "cultural_note": "Should understand Lagos traffic realities"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "UNILAG junction don reach! Safe journey to your destination!",
+              "character_name": "Bus Conductor",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Perfect! You successfully navigated the bus commute like a true Lagosian."
+            }
+          ]
+        },
+        {
+          "id": "taxi_negotiation",
+          "title": "Taxi Fare Negotiation",
+          "description": "Practice negotiating taxi fares",
+          "difficulty": "Intermediate",
+          "estimated_time": "4-5 minutes",
+          "premium": false,
+          "tags": ["taxi", "fare", "negotiation"],
+          "learning_objectives": [
+            "Learn taxi negotiation phrases",
+            "Practice fare bargaining",
+            "Understand taxi culture"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Taxi! Where you dey go?",
+              "character_name": "Taxi Driver",
+              "user_options": [
+                {
+                  "text": "Good afternoon. I'm going to Victoria Island, from here to Ajose Adeogun",
+                  "is_correct": true,
+                  "response": "VI? That one na 5,000 Naira",
+                  "next_step": 1,
+                  "cultural_note": "Clear destination with specific address"
+                },
+                {
+                  "text": "I'm going far",
+                  "is_correct": false,
+                  "response": "Oga, where exactly? I need to know the place",
+                  "next_step": 0,
+                  "cultural_note": "Should specify destination"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "5,000 Naira to VI. Traffic heavy for Lekki road",
+              "character_name": "Taxi Driver",
+              "user_options": [
+                {
+                  "text": "5,000 is too much. I can pay 3,500",
+                  "is_correct": true,
+                  "response": "3,500 no reach at all! Make we do 4,200",
+                  "next_step": 2,
+                  "cultural_note": "Reasonable counter-offer"
+                },
+                {
+                  "text": "That's robbery! I'll find another taxi",
+                  "is_correct": false,
+                  "response": "No problem. Check other taxis, you go see say my price fair",
+                  "next_step": 1,
+                  "cultural_note": "Too aggressive, might not get better deal"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "4,200 na last price. You want enter or you go find another taxi?",
+              "character_name": "Taxi Driver",
+              "user_options": [
+                {
+                  "text": "Okay, 4,200 is fair. Please use the meter",
+                  "is_correct": true,
+                  "response": "Meter dey work. Enter make we dey go!",
+                  "next_step": 3,
+                  "cultural_note": "Agreeing on price with meter request"
+                },
+                {
+                  "text": "I'll pay 4,000, final offer",
+                  "is_correct": true,
+                  "response": "Okay, since you talk am like that. Enter!",
+                  "next_step": 3,
+                  "cultural_note": "Successful final negotiation"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "We don reach your destination! Thank you for your patronage!",
+              "character_name": "Taxi Driver",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Excellent negotiation! You got a fair taxi fare for your journey."
+            }
+          ]
+        },
+        {
+          "id": "airport_checkin",
+          "title": "Airport Check-in",
+          "description": "Practice airport procedures and check-in",
+          "difficulty": "Intermediate",
+          "estimated_time": "5-6 minutes",
+          "premium": true,
+          "tags": ["airport", "check-in", "travel"],
+          "learning_objectives": [
+            "Learn airport vocabulary",
+            "Practice check-in procedures",
+            "Understand travel documentation"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Good morning. Passport and ticket please. How many bags are you checking in?",
+              "character_name": "Airline Agent",
+              "user_options": [
+                {
+                  "text": "Good morning. Here's my passport and e-ticket. I have one suitcase to check in",
+                  "is_correct": true,
+                  "response": "Thank you. Please place your bag on the scale",
+                  "next_step": 1,
+                  "cultural_note": "Professional airport interaction"
+                },
+                {
+                  "text": "I'm traveling",
+                  "is_correct": false,
+                  "response": "I need to see your passport and ticket please",
+                  "next_step": 0,
+                  "cultural_note": "Should have documents ready"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Your bag is 22kg. The limit is 23kg, so you're good. Window or aisle seat?",
+              "character_name": "Airline Agent",
+              "user_options": [
+                {
+                  "text": "I'd prefer a window seat, please. Towards the front if possible",
+                  "is_correct": true,
+                  "response": "I have 14A available. Is that okay?",
+                  "next_step": 2,
+                  "cultural_note": "Clear seat preference"
+                },
+                {
+                  "text": "Any seat is fine",
+                  "is_correct": false,
+                  "response": "I need you to choose between window or aisle seat",
+                  "next_step": 1,
+                  "cultural_note": "Should make seat selection"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "14A it is. Any dangerous items in your luggage? Batteries, lighters, sharp objects?",
+              "character_name": "Airline Agent",
+              "user_options": [
+                {
+                  "text": "No dangerous items. Just clothes and personal toiletries",
+                  "is_correct": true,
+                  "response": "Perfect. Here's your boarding pass. Gate 15, boarding at 2:30 PM",
+                  "next_step": 3,
+                  "cultural_note": "Honest declaration of luggage contents"
+                },
+                {
+                  "text": "I have my kitchen knife for protection",
+                  "is_correct": false,
+                  "response": "Knives are not allowed in checked luggage. You'll need to remove it",
+                  "next_step": 2,
+                  "cultural_note": "Should know prohibited items"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Have a pleasant flight! Proceed through security to your gate",
+              "character_name": "Airline Agent",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Perfect! You handled the airport check-in process smoothly and professionally."
+            }
+          ]
+        },
+        {
+          "id": "directions_city",
+          "title": "Asking for City Directions",
+          "description": "Practice getting directions within the city",
+          "difficulty": "Beginner",
+          "estimated_time": "3-4 minutes",
+          "premium": false,
+          "tags": ["directions", "city", "navigation"],
+          "learning_objectives": [
+            "Learn directional vocabulary",
+            "Practice asking for help",
+            "Understand local landmarks"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "You look lost. Can I help you find something?",
+              "character_name": "Local Resident",
+              "user_options": [
+                {
+                  "text": "Yes please, I'm trying to find the National Theatre. Am I going the right way?",
+                  "is_correct": true,
+                  "response": "National Theatre? You're actually going opposite direction. Turn back",
+                  "next_step": 1,
+                  "cultural_note": "Polite and specific request"
+                },
+                {
+                  "text": "Where is that big building?",
+                  "is_correct": false,
+                  "response": "Which big building? There are many big buildings in Lagos",
+                  "next_step": 0,
+                  "cultural_note": "Should be specific about destination"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Go straight down this road until you see Eko Hotel on your left",
+              "character_name": "Local Resident",
+              "user_options": [
+                {
+                  "text": "Straight until Eko Hotel on left. Then where?",
+                  "is_correct": true,
+                  "response": "Then turn right at the junction. National Theatre will be on your right",
+                  "next_step": 2,
+                  "cultural_note": "Repeating directions shows understanding"
+                },
+                {
+                  "text": "Okay, thanks",
+                  "is_correct": false,
+                  "response": "Do you understand the directions? Should I repeat?",
+                  "next_step": 1,
+                  "cultural_note": "Should confirm understanding"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "It's about 15 minutes walk from here. You can't miss it - big white building",
+              "character_name": "Local Resident",
+              "user_options": [
+                {
+                  "text": "Thank you so much for your help! Straight to Eko Hotel, then right. Got it!",
+                  "is_correct": true,
+                  "response": "Exactly! Safe journey!",
+                  "next_step": 3,
+                  "cultural_note": "Grateful and confirming directions"
+                },
+                {
+                  "text": "Is it far?",
+                  "is_correct": false,
+                  "response": "I already told you it's 15 minutes. Do you need a taxi?",
+                  "next_step": 2,
+                  "cultural_note": "Should listen carefully to information given"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "You're welcome! Enjoy your visit to National Theatre!",
+              "character_name": "Local Resident",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Excellent! You successfully asked for and understood directions in the city."
+            }
+          ]
+        },
+        {
+          "id": "okada_ride",
+          "title": "Taking Okada Ride",
+          "description": "Practice using motorcycle taxi service",
+          "difficulty": "Intermediate",
+          "estimated_time": "3-4 minutes",
+          "premium": false,
+          "tags": ["okada", "motorcycle", "transport"],
+          "learning_objectives": [
+            "Learn okada transportation terms",
+            "Practice motorcycle taxi negotiation",
+            "Understand safety precautions"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Okada! Where you dey go?",
+              "character_name": "Okada Rider",
+              "user_options": [
+                {
+                  "text": "I'm going to Allen Junction. How much?",
+                  "is_correct": true,
+                  "response": "Allen? 500 Naira. Traffic don hold for road",
+                  "next_step": 1,
+                  "cultural_note": "Clear destination with fare inquiry"
+                },
+                {
+                  "text": "Take me somewhere",
+                  "is_correct": false,
+                  "response": "Oga, I need to know where you dey go before I talk price",
+                  "next_step": 0,
+                  "cultural_note": "Should specify destination"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "500 Naira to Allen. You get helmet?",
+              "character_name": "Okada Rider",
+              "user_options": [
+                {
+                  "text": "500 is okay. Do you have an extra helmet for me?",
+                  "is_correct": true,
+                  "response": "Yes, I get extra helmet. Enter make we dey go!",
+                  "next_step": 2,
+                  "cultural_note": "Safety-conscious request"
+                },
+                {
+                  "text": "I don't need helmet",
+                  "is_correct": false,
+                  "response": "Oga, safety first. You must wear helmet",
+                  "next_step": 1,
+                  "cultural_note": "Should prioritize safety"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Hold the back well well. I go avoid potholes for road",
+              "character_name": "Okada Rider",
+              "user_options": [
+                {
+                  "text": "Okay, please drive safely. There are many potholes on this road",
+                  "is_correct": true,
+                  "response": "No worry! I know this road like my hand. We go reach soon",
+                  "next_step": 3,
+                  "cultural_note": "Safety reminder and awareness"
+                },
+                {
+                  "text": "Drive fast, I'm in a hurry",
+                  "is_correct": false,
+                  "response": "No, I no go rush. Safety first, my brother",
+                  "next_step": 2,
+                  "cultural_note": "Should not encourage reckless driving"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Allen don reach! Safe landing!",
+              "character_name": "Okada Rider",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Well done! You took an okada ride safely and negotiated properly."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "module_id": "roleplay_health_emergency",
+      "title": "Health & Emergencies",
+      "description": "Handle medical situations and emergency conversations",
+      "icon": "heartbeat",
+      "order": 5,
+      "scenarios": [
+        {
+          "id": "doctor_appointment",
+          "title": "Doctor's Appointment",
+          "description": "Practice describing symptoms to doctor",
+          "difficulty": "Intermediate",
+          "estimated_time": "6-7 minutes",
+          "premium": false,
+          "tags": ["doctor", "appointment", "symptoms"],
+          "learning_objectives": [
+            "Learn medical vocabulary",
+            "Practice describing symptoms",
+            "Understand doctor-patient communication"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Good morning. I'm Dr. Adebayo. What seems to be the problem?",
+              "character_name": "Doctor",
+              "user_options": [
+                {
+                  "text": "Good morning doctor. I've had fever and body pains since yesterday",
+                  "is_correct": true,
+                  "response": "I see. What's your temperature? Any cough or cold?",
+                  "next_step": 1,
+                  "cultural_note": "Clear symptom description with timeline"
+                },
+                {
+                  "text": "I'm not feeling well",
+                  "is_correct": false,
+                  "response": "Can you be more specific about your symptoms?",
+                  "next_step": 0,
+                  "cultural_note": "Too vague for medical diagnosis"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Any other symptoms besides fever and body pains?",
+              "character_name": "Doctor",
+              "user_options": [
+                {
+                  "text": "Yes, I also have headache and I've been feeling very weak",
+                  "is_correct": true,
+                  "response": "Have you taken any medication for these symptoms?",
+                  "next_step": 2,
+                  "cultural_note": "Complete symptom description"
+                },
+                {
+                  "text": "Just give me injection",
+                  "is_correct": false,
+                  "response": "I need to understand your condition before prescribing treatment",
+                  "next_step": 1,
+                  "cultural_note": "Should not self-diagnose"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Let me check your temperature and blood pressure. Any allergies to medications?",
+              "character_name": "Doctor",
+              "user_options": [
+                {
+                  "text": "No known allergies. I've taken paracetamol before without issues",
+                  "is_correct": true,
+                  "response": "Good to know. Your temperature is 38.5°C. I'll prescribe antibiotics",
+                  "next_step": 3,
+                  "cultural_note": "Important medical history information"
+                },
+                {
+                  "text": "I don't know about allergies",
+                  "is_correct": false,
+                  "response": "It's important to know your medication allergies for safe treatment",
+                  "next_step": 2,
+                  "cultural_note": "Should know basic medical history"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Take this prescription to the pharmacy. Rest well and drink plenty of water",
+              "character_name": "Doctor",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Excellent! You effectively communicated your health issues to the doctor."
+            }
+          ]
+        },
+        {
+          "id": "pharmacy_purchase",
+          "title": "Pharmacy Medicine Purchase",
+          "description": "Practice buying medicine at pharmacy",
+          "difficulty": "Beginner",
+          "estimated_time": "4-5 minutes",
+          "premium": false,
+          "tags": ["pharmacy", "medicine", "health"],
+          "learning_objectives": [
+            "Learn pharmacy vocabulary",
+            "Practice medicine purchase",
+            "Understand dosage instructions"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Good afternoon. How can I help you?",
+              "character_name": "Pharmacist",
+              "user_options": [
+                {
+                  "text": "Good afternoon. I have a prescription from my doctor for antibiotics",
+                  "is_correct": true,
+                  "response": "Let me see the prescription. Ah, amoxicillin for 5 days",
+                  "next_step": 1,
+                  "cultural_note": "Professional pharmacy interaction"
+                },
+                {
+                  "text": "I need medicine for fever",
+                  "is_correct": false,
+                  "response": "Do you have a prescription? What did the doctor recommend?",
+                  "next_step": 0,
+                  "cultural_note": "Should have proper prescription"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "This medication should be taken twice daily after meals. Any allergies?",
+              "character_name": "Pharmacist",
+              "user_options": [
+                {
+                  "text": "No allergies. Should I avoid any foods or other medications?",
+                  "is_correct": true,
+                  "response": "Avoid alcohol and take with plenty of water. That will be 3,500 Naira",
+                  "next_step": 2,
+                  "cultural_note": "Important medication questions"
+                },
+                {
+                  "text": "Just give me the medicine",
+                  "is_correct": false,
+                  "response": "I need to explain the dosage and precautions first",
+                  "next_step": 1,
+                  "cultural_note": "Should listen to medication instructions"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Do you need pain relievers or vitamin C supplements with this?",
+              "character_name": "Pharmacist",
+              "user_options": [
+                {
+                  "text": "Yes, please add vitamin C and paracetamol for the fever",
+                  "is_correct": true,
+                  "response": "Good choice. Your total is 5,200 Naira. Get well soon!",
+                  "next_step": 3,
+                  "cultural_note": "Complementary health products"
+                },
+                {
+                  "text": "No, that's too expensive",
+                  "is_correct": false,
+                  "response": "These are recommended to help your recovery. Would you like just the antibiotics?",
+                  "next_step": 2,
+                  "cultural_note": "Should consider health recommendations"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Remember to complete the full course of antibiotics. Feel better!",
+              "character_name": "Pharmacist",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Well done! You handled the pharmacy purchase professionally and asked important questions."
+            }
+          ]
+        },
+        {
+          "id": "emergency_room",
+          "title": "Emergency Room Visit",
+          "description": "Practice emergency medical situations",
+          "difficulty": "Advanced",
+          "estimated_time": "7-8 minutes",
+          "premium": true,
+          "tags": ["emergency", "hospital", "urgent"],
+          "learning_objectives": [
+            "Learn emergency vocabulary",
+            "Practice urgent medical communication",
+            "Understand emergency procedures"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Emergency! What happened?",
+              "character_name": "Emergency Nurse",
+              "user_options": [
+                {
+                  "text": "My friend collapsed and can't breathe properly! He has asthma history!",
+                  "is_correct": true,
+                  "response": "Asthma attack! Bring him quickly! Does he have an inhaler?",
+                  "next_step": 1,
+                  "cultural_note": "Urgent and clear emergency description"
+                },
+                {
+                  "text": "He's sick",
+                  "is_correct": false,
+                  "response": "What exactly happened? I need specific symptoms!",
+                  "next_step": 0,
+                  "cultural_note": "Too vague for emergency"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "We need his medical history quickly! Any known allergies? Current medications?",
+              "character_name": "Emergency Nurse",
+              "user_options": [
+                {
+                  "text": "He's allergic to penicillin! Takes ventolin inhaler daily! No other medications!",
+                  "is_correct": true,
+                  "response": "Penicillin allergy noted! Doctor is coming! Oxygen administered!",
+                  "next_step": 2,
+                  "cultural_note": "Critical medical information"
+                },
+                {
+                  "text": "I don't know about allergies",
+                  "is_correct": false,
+                  "response": "This is important! Try to remember any medical information!",
+                  "next_step": 1,
+                  "cultural_note": "Should know friend's critical medical info"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "We're stabilizing him. Are you family? We need contact information",
+              "character_name": "Emergency Nurse",
+              "user_options": [
+                {
+                  "text": "I'm his colleague. Here's his wife's number and his ID card",
+                  "is_correct": true,
+                  "response": "Thank you! We'll contact his family. Please wait in the waiting area",
+                  "next_step": 3,
+                  "cultural_note": "Providing essential contact information"
+                },
+                {
+                  "text": "I don't know his family",
+                  "is_correct": false,
+                  "response": "Check his phone for emergency contacts. We need to notify family",
+                  "next_step": 2,
+                  "cultural_note": "Should help locate family contacts"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Patient is stable now. You acted quickly and saved his life. Thank you!",
+              "character_name": "Emergency Nurse",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Outstanding emergency response! Your quick thinking and clear communication saved a life."
+            }
+          ]
+        },
+        {
+          "id": "dental_checkup",
+          "title": "Dental Check-up",
+          "description": "Practice dental appointment conversation",
+          "difficulty": "Intermediate",
+          "estimated_time": "5-6 minutes",
+          "premium": false,
+          "tags": ["dental", "checkup", "teeth"],
+          "learning_objectives": [
+            "Learn dental vocabulary",
+            "Practice describing dental issues",
+            "Understand dental procedures"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Good morning. I'm Dr. Bello. What brings you to the dental clinic today?",
+              "character_name": "Dentist",
+              "user_options": [
+                {
+                  "text": "Good morning doctor. I have tooth pain on my lower left side when eating",
+                  "is_correct": true,
+                  "response": "I see. How long have you had this pain? Is it sensitive to hot or cold?",
+                  "next_step": 1,
+                  "cultural_note": "Specific dental complaint description"
+                },
+                {
+                  "text": "My mouth hurts",
+                  "is_correct": false,
+                  "response": "Can you be more specific? Which tooth? When does it hurt?",
+                  "next_step": 0,
+                  "cultural_note": "Too vague for dental diagnosis"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Open wide please. I see some cavities. When was your last dental checkup?",
+              "character_name": "Dentist",
+              "user_options": [
+                {
+                  "text": "It's been about two years. I've been brushing twice daily but still get cavities",
+                  "is_correct": true,
+                  "response": "Regular checkups are important. I recommend cleaning and fillings",
+                  "next_step": 2,
+                  "cultural_note": "Honest dental history"
+                },
+                {
+                  "text": "I never go to dentist",
+                  "is_correct": false,
+                  "response": "Dental health is important. You should have regular checkups",
+                  "next_step": 1,
+                  "cultural_note": "Should prioritize dental health"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "We'll do cleaning today and schedule fillings for next week. Any questions?",
+              "character_name": "Dentist",
+              "user_options": [
+                {
+                  "text": "How can I prevent more cavities? Should I change my toothpaste?",
+                  "is_correct": true,
+                  "response": "Use fluoride toothpaste, floss daily, and reduce sugary drinks. Your toothpaste is fine",
+                  "next_step": 3,
+                  "cultural_note": "Proactive dental health questions"
+                },
+                {
+                  "text": "Just fix the pain",
+                  "is_correct": false,
+                  "response": "Treatment is important, but prevention is better. Let's discuss dental care",
+                  "next_step": 2,
+                  "cultural_note": "Should care about prevention"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Your cleaning is done. Schedule your filling appointment on the way out",
+              "character_name": "Dentist",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Excellent! You handled the dental appointment professionally and asked important health questions."
+            }
+          ]
+        },
+        {
+          "id": "first_aid_help",
+          "title": "First Aid Assistance",
+          "description": "Practice helping someone with minor injury",
+          "difficulty": "Intermediate",
+          "estimated_time": "4-5 minutes",
+          "premium": false,
+          "tags": ["first aid", "help", "injury"],
+          "learning_objectives": [
+            "Learn first aid vocabulary",
+            "Practice emergency assistance",
+            "Understand basic medical help"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Help! I cut my hand with a kitchen knife! It's bleeding!",
+              "character_name": "Injured Person",
+              "user_options": [
+                {
+                  "text": "Stay calm! Let me see the cut. Do you have a first aid kit?",
+                  "is_correct": true,
+                  "response": "Yes, in the kitchen cabinet! It's bleeding a lot!",
+                  "next_step": 1,
+                  "cultural_note": "Calm and practical emergency response"
+                },
+                {
+                  "text": "Oh no! You're going to die!",
+                  "is_correct": false,
+                  "response": "Please don't panic! I need help, not drama!",
+                  "next_step": 0,
+                  "cultural_note": "Should not panic in emergencies"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Here's the first aid kit! What should we do?",
+              "character_name": "Injured Person",
+              "user_options": [
+                {
+                  "text": "Apply pressure with this clean cloth to stop bleeding. Keep the hand elevated",
+                  "is_correct": true,
+                  "response": "Okay, applying pressure. The bleeding is slowing down",
+                  "next_step": 2,
+                  "cultural_note": "Correct first aid procedure"
+                },
+                {
+                  "text": "Put some pepper on it",
+                  "is_correct": false,
+                  "response": "No! That's not proper first aid! We need to clean it properly",
+                  "next_step": 1,
+                  "cultural_note": "Should use proper medical knowledge"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "The bleeding has stopped. Should we go to hospital?",
+              "character_name": "Injured Person",
+              "user_options": [
+                {
+                  "text": "Yes, for deep cuts you need tetanus shot and proper cleaning. I'll drive you",
+                  "is_correct": true,
+                  "response": "Thank you! You saved me from serious infection",
+                  "next_step": 3,
+                  "cultural_note": "Appropriate follow-up care"
+                },
+                {
+                  "text": "No, it's fine now",
+                  "is_correct": false,
+                  "response": "Knife cuts can cause serious infections. We should see a doctor",
+                  "next_step": 2,
+                  "cultural_note": "Should understand infection risks"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Thank you for your quick thinking and help! You're a lifesaver!",
+              "character_name": "Injured Person",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Excellent first aid response! You remained calm and provided proper emergency assistance."
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "module_id": "roleplay_social_events",
+      "title": "Social Events",
+      "description": "Navigate conversations at various social gatherings",
+      "icon": "calendar",
+      "order": 6,
+      "scenarios": [
+        {
+          "id": "wedding_reception",
+          "title": "Wedding Reception",
+          "description": "Practice conversations at wedding celebration",
+          "difficulty": "Intermediate",
+          "estimated_time": "5-6 minutes",
+          "premium": false,
+          "tags": ["wedding", "reception", "celebration"],
+          "learning_objectives": [
+            "Learn wedding celebration vocabulary",
+            "Practice social conversations",
+            "Understand wedding etiquette"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Congratulations! Beautiful wedding, isn't it? Are you friend of the bride or groom?",
+              "character_name": "Wedding Guest",
+              "user_options": [
+                {
+                  "text": "Thank you! I'm friend of the bride from university. The ceremony was wonderful",
+                  "is_correct": true,
+                  "response": "Ah, university friends! I'm the groom's cousin from Abuja",
+                  "next_step": 1,
+                  "cultural_note": "Polite wedding conversation starter"
+                },
+                {
+                  "text": "I'm just here for food",
+                  "is_correct": false,
+                  "response": "Oh... well, the food looks good indeed",
+                  "next_step": 0,
+                  "cultural_note": "Should show genuine interest in wedding"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "The couple looks so happy! How do you know the bride?",
+              "character_name": "Wedding Guest",
+              "user_options": [
+                {
+                  "text": "We were roommates in UNILAG. I'm so happy she found such a wonderful partner",
+                  "is_correct": true,
+                  "response": "That's beautiful! The groom is my favorite cousin. Such a good match!",
+                  "next_step": 2,
+                  "cultural_note": "Sharing positive connection to couple"
+                },
+                {
+                  "text": "We used to date",
+                  "is_correct": false,
+                  "response": "Oh... that's... interesting. Let's talk about something else",
+                  "next_step": 1,
+                  "cultural_note": "Inappropriate wedding conversation"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "The food is being served! Have you tried the jollof rice? It's delicious!",
+              "character_name": "Wedding Guest",
+              "user_options": [
+                {
+                  "text": "Not yet! The small chops were amazing. Let's get some jollof rice together",
+                  "is_correct": true,
+                  "response": "Great idea! Let's join the food line. This is such a joyful celebration!",
+                  "next_step": 3,
+                  "cultural_note": "Positive social engagement"
+                },
+                {
+                  "text": "I don't like wedding food",
+                  "is_correct": false,
+                  "response": "Oh... well, the cake looks nice at least",
+                  "next_step": 2,
+                  "cultural_note": "Should be positive at celebrations"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "What a beautiful celebration! May their marriage be blessed!",
+              "character_name": "Wedding Guest",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Perfect! You engaged in lovely wedding conversations and showed genuine happiness for the couple."
+            }
+          ]
+        },
+        {
+          "id": "birthday_party",
+          "title": "Birthday Party",
+          "description": "Practice socializing at birthday celebration",
+          "difficulty": "Beginner",
+          "estimated_time": "4-5 minutes",
+          "premium": false,
+          "tags": ["birthday", "party", "celebration"],
+          "learning_objectives": [
+            "Learn birthday celebration phrases",
+            "Practice party conversations",
+            "Understand birthday etiquette"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Happy birthday! Welcome to my party! So glad you could make it!",
+              "character_name": "Birthday Person",
+              "user_options": [
+                {
+                  "text": "Happy birthday! Thank you for inviting me. Here's a small gift for you",
+                  "is_correct": true,
+                  "response": "Thank you so much! You shouldn't have! Please enjoy the party!",
+                  "next_step": 1,
+                  "cultural_note": "Proper birthday greeting with gift"
+                },
+                {
+                  "text": "Hey, where's the cake?",
+                  "is_correct": false,
+                  "response": "Cake will be served later. Nice to see you too...",
+                  "next_step": 0,
+                  "cultural_note": "Should greet properly before asking about food"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "The music is great! Are you enjoying the party?",
+              "character_name": "Birthday Person",
+              "user_options": [
+                {
+                  "text": "Yes, the atmosphere is wonderful! The decorations are beautiful too",
+                  "is_correct": true,
+                  "response": "Thank you! My sisters helped with decorations. Let me introduce you to friends",
+                  "next_step": 2,
+                  "cultural_note": "Positive and engaging response"
+                },
+                {
+                  "text": "It's okay",
+                  "is_correct": false,
+                  "response": "Oh... well, I hope it gets better. Let me check on other guests",
+                  "next_step": 1,
+                  "cultural_note": "Should show more enthusiasm"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "This is my friend Tunde from work. Tunde, this is my friend from childhood",
+              "character_name": "Birthday Person",
+              "user_options": [
+                {
+                  "text": "Nice to meet you, Tunde! What department do you work in?",
+                  "is_correct": true,
+                  "response": "I'm in IT support. Nice to meet you too! How do you know the birthday girl?",
+                  "next_step": 3,
+                  "cultural_note": "Polite introduction and conversation starter"
+                },
+                {
+                  "text": "Hi",
+                  "is_correct": false,
+                  "response": "Hello... so, how's the party going?",
+                  "next_step": 2,
+                  "cultural_note": "Should engage in conversation"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Time for cake cutting! Everyone gather around!",
+              "character_name": "Birthday Person",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Wonderful! You were the perfect birthday guest - engaging, positive, and socially appropriate."
+            }
+          ]
+        },
+        {
+          "id": "funeral_condolences",
+          "title": "Funeral Condolences",
+          "description": "Practice offering condolences at funeral",
+          "difficulty": "Advanced",
+          "estimated_time": "4-5 minutes",
+          "premium": true,
+          "tags": ["funeral", "condolences", "sympathy"],
+          "learning_objectives": [
+            "Learn condolence phrases",
+            "Practice sensitive conversations",
+            "Understand funeral etiquette"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Thank you for coming. This is a difficult time for our family",
+              "character_name": "Bereaved Family Member",
+              "user_options": [
+                {
+                  "text": "I'm so sorry for your loss. Mama was a wonderful woman. May her soul rest in peace",
+                  "is_correct": true,
+                  "response": "Thank you. She spoke highly of you. Please sign the condolence register",
+                  "next_step": 1,
+                  "cultural_note": "Respectful condolence with personal touch"
+                },
+                {
+                  "text": "What happened? How did she die?",
+                  "is_correct": false,
+                  "response": "This is not the time for such questions. Please be respectful",
+                  "next_step": 0,
+                  "cultural_note": "Inappropriate funeral conversation"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "She fought bravely. We take comfort that she's no longer suffering",
+              "character_name": "Bereaved Family Member",
+              "user_options": [
+                {
+                  "text": "She was so strong. I'll always remember her kindness and wisdom",
+                  "is_correct": true,
+                  "response": "Thank you for those kind words. They mean a lot to us",
+                  "next_step": 2,
+                  "cultural_note": "Comforting with positive memories"
+                },
+                {
+                  "text": "At least she lived long",
+                  "is_correct": false,
+                  "response": "Length of life doesn't make the loss easier to bear",
+                  "next_step": 1,
+                  "cultural_note": "Should be more sensitive"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "The service will start soon. Please take a program and find a seat",
+              "character_name": "Bereaved Family Member",
+              "user_options": [
+                {
+                  "text": "Of course. Please let me know if there's anything I can do to help the family",
+                  "is_correct": true,
+                  "response": "Thank you for your support. It means everything during this time",
+                  "next_step": 3,
+                  "cultural_note": "Offering practical support"
+                },
+                {
+                  "text": "Okay, see you later",
+                  "is_correct": false,
+                  "response": "Yes... thank you for coming",
+                  "next_step": 2,
+                  "cultural_note": "Should show more empathy and support"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Thank you for your support and kind words. They comfort us greatly",
+              "character_name": "Bereaved Family Member",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Compassionate and respectful. You offered perfect condolences during a difficult time."
+            }
+          ]
+        },
+        {
+          "id": "naming_ceremony",
+          "title": "Naming Ceremony",
+          "description": "Practice conversations at baby naming ceremony",
+          "difficulty": "Intermediate",
+          "estimated_time": "4-5 minutes",
+          "premium": false,
+          "tags": ["naming", "ceremony", "baby"],
+          "learning_objectives": [
+            "Learn naming ceremony vocabulary",
+            "Practice baby-related conversations",
+            "Understand cultural naming traditions"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Welcome to our baby's naming ceremony! So glad you could join us!",
+              "character_name": "New Parent",
+              "user_options": [
+                {
+                  "text": "Congratulations! What a beautiful baby! What name have you chosen?",
+                  "is_correct": true,
+                  "response": "Thank you! We named her Ifeoluwa - God's love. The ceremony starts soon",
+                  "next_step": 1,
+                  "cultural_note": "Appropriate naming ceremony greeting"
+                },
+                {
+                  "text": "Another baby? Population is increasing o!",
+                  "is_correct": false,
+                  "response": "This is a blessed occasion. Please be respectful",
+                  "next_step": 0,
+                  "cultural_note": "Inappropriate comment for celebration"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "The grandmother will perform the naming rites. Do you understand Yoruba traditions?",
+              "character_name": "New Parent",
+              "user_options": [
+                {
+                  "text": "I'm familiar with some traditions. Will there be symbolic items like honey and salt?",
+                  "is_correct": true,
+                  "response": "Yes! Honey for sweetness, salt for flavor of life. You know our culture well!",
+                  "next_step": 2,
+                  "cultural_note": "Cultural knowledge and interest"
+                },
+                {
+                  "text": "I don't care about traditions",
+                  "is_correct": false,
+                  "response": "These traditions are important to our family. Please respect them",
+                  "next_step": 1,
+                  "cultural_note": "Should respect cultural practices"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "The baby is receiving blessings from elders. Would you like to give a blessing?",
+              "character_name": "New Parent",
+              "user_options": [
+                {
+                  "text": "I would be honored. May Ifeoluwa grow in wisdom, health, and God's favor",
+                  "is_correct": true,
+                  "response": "Beautiful blessing! Thank you! Now time for food and celebration!",
+                  "next_step": 3,
+                  "cultural_note": "Appropriate cultural blessing"
+                },
+                {
+                  "text": "I don't know what to say",
+                  "is_correct": false,
+                  "response": "A simple good wish for the baby's future would be fine",
+                  "next_step": 2,
+                  "cultural_note": "Should participate in cultural rituals"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "Thank you for celebrating with us! Ifeoluwa is blessed to have you in her life!",
+              "character_name": "New Parent",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Perfect! You respected the cultural traditions and celebrated the new baby appropriately."
+            }
+          ]
+        },
+        {
+          "id": "office_party",
+          "title": "Office End of Year Party",
+          "description": "Practice socializing at work party",
+          "difficulty": "Intermediate",
+          "estimated_time": "5-6 minutes",
+          "premium": false,
+          "tags": ["office", "party", "work"],
+          "learning_objectives": [
+            "Learn office social vocabulary",
+            "Practice work party conversations",
+            "Understand professional socializing"
+          ],
+          "conversation_flow": [
+            {
+              "character_dialogue": "Great party! The HR team really outdid themselves this year!",
+              "character_name": "Colleague",
+              "user_options": [
+                {
+                  "text": "They did! The food is amazing and it's nice to see everyone relaxing",
+                  "is_correct": true,
+                  "response": "Yes! No spreadsheets tonight! How was your year in accounting?",
+                  "next_step": 1,
+                  "cultural_note": "Positive work party conversation"
+                },
+                {
+                  "text": "I hate office parties",
+                  "is_correct": false,
+                  "response": "Oh... well, try to enjoy yourself. It's a team building event",
+                  "next_step": 0,
+                  "cultural_note": "Should maintain professional positivity"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "I heard your team exceeded their targets this quarter! Congratulations!",
+              "character_name": "Colleague",
+              "user_options": [
+                {
+                  "text": "Thank you! It was a team effort. Your marketing campaigns really helped drive sales",
+                  "is_correct": true,
+                  "response": "That's great to hear! Collaboration between departments really works!",
+                  "next_step": 2,
+                  "cultural_note": "Professional appreciation and teamwork acknowledgment"
+                },
+                {
+                  "text": "Yeah, I'm the best",
+                  "is_correct": false,
+                  "response": "Well... it's usually a team effort in our company",
+                  "next_step": 1,
+                  "cultural_note": "Should acknowledge teamwork"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "The MD is giving a speech. Should we move closer to hear?",
+              "character_name": "Colleague",
+              "user_options": [
+                {
+                  "text": "Good idea. It's always inspiring to hear the year-end review and plans for next year",
+                  "is_correct": true,
+                  "response": "Absolutely! Let's grab our drinks and find good spots",
+                  "next_step": 3,
+                  "cultural_note": "Professional engagement with company leadership"
+                },
+                {
+                  "text": "I don't care about speeches",
+                  "is_correct": false,
+                  "response": "It's important to show respect for leadership, especially at company events",
+                  "next_step": 2,
+                  "cultural_note": "Should maintain professional respect"
+                }
+              ]
+            },
+            {
+              "character_dialogue": "What a wonderful way to end the year! Looking forward to working with you next year!",
+              "character_name": "Colleague",
+              "user_options": [],
+              "is_final": true,
+              "completion_message": "Excellent! You maintained perfect professional-social balance at the office party."
+            }
+          ]
         }
       ]
     }

@@ -26,6 +26,7 @@ const RoleplayExercise = () => {
   const navigate = useNavigate();
 
   const [currentScenario, setCurrentScenario] = useState(null);
+  const [currentModule, setCurrentModule] = useState(null);
   const [currentStep, setCurrentStep] = useState(0);
   const [conversationHistory, setConversationHistory] = useState([]);
   const [showCompletion, setShowCompletion] = useState(false);
@@ -43,13 +44,27 @@ const RoleplayExercise = () => {
   const [boostMultiplier, setBoostMultiplier] = useState(1);
 
   useEffect(() => {
-    // Find the scenario by ID
-    const scenario = roleplayData.scenarios.find((s) => s.id === scenarioId);
-    if (scenario) {
-      setCurrentScenario(scenario);
+    // Find the scenario by ID across all modules
+    let foundScenario = null;
+    let foundModule = null;
+
+    // Search through all modules for the scenario
+    for (const module of roleplayData.modules) {
+      const scenario = module.scenarios.find((s) => s.id === scenarioId);
+      if (scenario) {
+        foundScenario = scenario;
+        foundModule = module;
+        break;
+      }
+    }
+
+    if (foundScenario) {
+      setCurrentScenario(foundScenario);
+      setCurrentModule(foundModule);
+
       // Initialize conversation history with first message
-      if (scenario.conversation_flow.length > 0) {
-        const firstStep = scenario.conversation_flow[0];
+      if (foundScenario.conversation_flow.length > 0) {
+        const firstStep = foundScenario.conversation_flow[0];
         setConversationHistory([
           {
             speaker: firstStep.character_name,
@@ -59,6 +74,10 @@ const RoleplayExercise = () => {
           },
         ]);
       }
+    } else {
+      console.error("Scenario not found:", scenarioId);
+      // Redirect back to roleplay selection if scenario not found
+      navigate("/lessons/section/roleplay");
     }
 
     // Fetch user data
@@ -81,7 +100,7 @@ const RoleplayExercise = () => {
         }
       });
     }
-  }, [scenarioId]);
+  }, [scenarioId, navigate]);
 
   // UPDATED: Complete lesson function with XP boost support
   const completeLesson = async () => {
@@ -305,6 +324,15 @@ const RoleplayExercise = () => {
     }
   };
 
+  // UPDATED: Navigation handlers
+  const handleBackToChallenges = () => {
+    navigate("/lessons/section");
+  };
+
+  const handleBackToRoleplay = () => {
+    navigate("/lessons/section/roleplay");
+  };
+
   const currentStepData = currentScenario?.conversation_flow[currentStep];
 
   // ADDED: XP Boost Completion Screen
@@ -325,7 +353,7 @@ const RoleplayExercise = () => {
       <LessonCompletionWithBoost
         basicXP={finalBaseXP}
         boostMultiplier={boostMultiplier}
-        onContinue={() => navigate("/lessons")}
+        onContinue={handleBackToRoleplay}
         lessonTitle="Roleplay Complete! 🎭"
       />
     );
@@ -348,17 +376,24 @@ const RoleplayExercise = () => {
       <nav className="bg-white shadow-sm border-b border-gray-200 flex-shrink-0">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
-            {/* Go Back Button */}
+            {/* Go Back Button - UPDATED */}
             <button
-              onClick={() => navigate("/lessons/section")}
+              onClick={handleBackToRoleplay}
               className="flex items-center text-yellow-600 hover:text-yellow-700 font-semibold"
             >
               <FaArrowLeft className="mr-2" />
-              Back to Challenges
+              Back to Roleplay
             </button>
 
-            {/* Scenario Info and XP Display */}
+            {/* Scenario Info and XP Display - UPDATED with module info */}
             <div className="flex items-center space-x-6">
+              {currentModule && (
+                <div className="flex items-center space-x-2">
+                  <span className="text-sm text-gray-500">
+                    {currentModule.title} →
+                  </span>
+                </div>
+              )}
               <div className="flex items-center space-x-2">
                 <FaShoppingCart className="text-blue-500" />
                 <span className="font-semibold text-gray-700">
@@ -398,8 +433,15 @@ const RoleplayExercise = () => {
       </nav>
 
       <div className="flex-1 flex flex-col max-w-4xl mx-auto w-full py-6 px-4 sm:px-6 lg:px-8">
-        {/* Scenario Header */}
+        {/* Scenario Header - UPDATED with module context */}
         <div className="bg-white rounded-lg shadow-sm p-6 mb-6 flex-shrink-0">
+          {currentModule && (
+            <div className="mb-2">
+              <span className="text-sm text-gray-500 bg-gray-100 px-3 py-1 rounded-full">
+                {currentModule.title}
+              </span>
+            </div>
+          )}
           <h1 className="text-3xl font-bold text-gray-800 mb-2">
             {currentScenario.title}
           </h1>
@@ -411,6 +453,11 @@ const RoleplayExercise = () => {
             <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm">
               {currentScenario.estimated_time}
             </span>
+            {currentScenario.premium && (
+              <span className="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm">
+                Premium
+              </span>
+            )}
           </div>
         </div>
 
@@ -459,7 +506,7 @@ const RoleplayExercise = () => {
               <ScenarioCompletion
                 completionMessage={currentStepData?.completion_message}
                 onRestart={handleRestart}
-                onReturn={() => navigate("/lessons/section")}
+                onReturn={handleBackToRoleplay} // UPDATED
                 finalLessonXp={finalLessonXp}
                 finalLessonCoins={finalLessonCoins}
                 wrongAnswersCount={wrongAnswersCount}
@@ -493,12 +540,15 @@ const ResponseOptions = ({ options, onOptionSelect }) => (
         className="w-full text-left bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-lg p-4 transition-colors duration-200 hover:border-yellow-300"
       >
         <span className="text-yellow-600 font-medium">{option.text}</span>
+        {option.cultural_note && (
+          <p className="text-xs text-gray-500 mt-1">{option.cultural_note}</p>
+        )}
       </button>
     ))}
   </div>
 );
 
-// Component for scenario completion
+// Component for scenario completion - UPDATED navigation
 const ScenarioCompletion = ({
   completionMessage,
   onRestart,
@@ -559,7 +609,7 @@ const ScenarioCompletion = ({
             onClick={onReturn}
             className="bg-yellow-500 hover:bg-yellow-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-200"
           >
-            Back to Challenges
+            Back to Roleplay
           </button>
         </div>
       </div>
