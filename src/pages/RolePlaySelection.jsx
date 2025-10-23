@@ -208,7 +208,7 @@ const RoleplaySelection = () => {
               className="flex items-center text-yellow-600 hover:text-yellow-700 font-semibold"
             >
               <FaArrowLeft className="mr-2" />
-              Back to Section
+          
             </Link>
 
             {/* Page Title */}
@@ -250,7 +250,7 @@ const RoleplaySelection = () => {
               </p>
             </div>
             <div className="text-right">
-              <div className="flex items-center space-x-4 text-sm text-gray-500">
+              {/* <div className="flex items-center space-x-4 text-sm text-gray-500">
                 <div className="flex items-center space-x-1">
                   <FaClock className="text-gray-400" />
                   <span>{roleplayData.estimated_total_time}</span>
@@ -261,7 +261,7 @@ const RoleplaySelection = () => {
                 <div className="flex items-center space-x-1">
                   <span>{roleplayData.modules.length} modules</span>
                 </div>
-              </div>
+              </div> */}
             </div>
           </div>
 
@@ -445,10 +445,10 @@ const RoleplaySelection = () => {
                             : "border-yellow-200 bg-white hover:border-yellow-300 hover:shadow-md cursor-pointer"
                         } ${isCompleted ? "ring-2 ring-green-200" : ""}`}
                       >
-                        <div className="flex items-center justify-between">
+                        <div className="flex flex-col items-start justify-start">
                           <div className="flex items-center space-x-3 flex-1">
                             <div
-                              className={`p-2 rounded-lg ${
+                              className={`p-1 rounded-lg ${
                                 status === "locked" 
                                   ? "bg-gray-100" 
                                   : isCompleted 
@@ -480,8 +480,7 @@ const RoleplaySelection = () => {
                                 </span>
                                 {scenario.premium && (
                                   <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                    <FaCrown className="mr-1" />
-                                    Premium
+                                    
                                   </span>
                                 )}
                               </div>
@@ -499,7 +498,7 @@ const RoleplaySelection = () => {
                           </div>
 
                           {/* Status Indicator */}
-                          <div className="ml-4">
+                          <div className="ml-10 mt-3">
                             {status === "locked" && (
                               <FaLock className="text-gray-400 text-xl" />
                             )}
