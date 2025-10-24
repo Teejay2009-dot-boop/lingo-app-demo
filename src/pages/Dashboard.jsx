@@ -44,7 +44,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 
-// FIXED: Lives regeneration utility functions - ONLY 1 LIFE PER HOUR
+// CORRECTED: Lives regeneration utility functions - PROPER 1 HOUR COUNTDOWN
 const checkLivesRegeneration = async (uid) => {
   if (!uid) return;
 
@@ -63,42 +63,56 @@ const checkLivesRegeneration = async (uid) => {
 
   // If lives are already full, no need to regenerate
   if (currentLives >= maxLives) {
-    return currentLives;
+    return { currentLives, updated: false };
   }
 
-  // If no lastLifeUpdate (first time), set it to now but DON'T add lives
+  // If no lastLifeUpdate (first time), set it to now
   if (!lastLifeUpdate) {
     await updateDoc(userRef, {
-      last_life_update: new Date(),
+      last_life_update: now,
     });
-    return currentLives;
+    return { currentLives, updated: false };
   }
 
-  let newLives = currentLives;
-  const timePassed = (now - lastLifeUpdate) / (1000 * 60 * 60); // Convert to hours
+  // Calculate how many full hours have passed
+  const timePassedMs = now.getTime() - lastLifeUpdate.getTime();
+  const hoursPassed = Math.floor(timePassedMs / (1000 * 60 * 60));
 
-  // FIXED: Only add 1 life if exactly 1+ hours passed
-  if (timePassed >= 1 && currentLives < maxLives) {
-    newLives = currentLives + 1;
+  // If at least 1 hour has passed and we have room for more lives
+  if (hoursPassed >= 1 && currentLives < maxLives) {
+    const livesToAdd = Math.min(hoursPassed, maxLives - currentLives);
+    const newLives = currentLives + livesToAdd;
+
+    // Calculate the exact time for the next regeneration
+    const hoursUsed = Math.min(hoursPassed, maxLives - currentLives);
+    const nextUpdateTime = new Date(
+      lastLifeUpdate.getTime() + hoursUsed * 60 * 60 * 1000
+    );
 
     await updateDoc(userRef, {
       lives: newLives,
-      last_life_update: new Date(), // Reset timer
+      last_life_update: nextUpdateTime,
     });
 
     // Send notification for life regeneration
-    addNotification(uid, {
-      type: "life-regenerated",
-      title: "Life Regenerated! ❤️",
-      message: "You gained 1 life back!",
-      timestamp: new Date(),
-    });
+    if (livesToAdd > 0) {
+      addNotification(uid, {
+        type: "life-regenerated",
+        title: "Life Regenerated! ❤️",
+        message: `You gained ${livesToAdd} life${
+          livesToAdd > 1 ? "s" : ""
+        } back!`,
+        timestamp: new Date(),
+      });
+    }
+
+    return { currentLives: newLives, updated: true };
   }
 
-  return newLives;
+  return { currentLives, updated: false };
 };
 
-// FIXED: Get time until next life (1 hour countdown)
+// CORRECTED: Get time until next life (1 hour countdown from last update)
 const getTimeUntilNextLife = (lastLifeUpdate, currentLives, maxLives = 5) => {
   // If lives are full, show completed
   if (currentLives >= maxLives) {
@@ -109,23 +123,25 @@ const getTimeUntilNextLife = (lastLifeUpdate, currentLives, maxLives = 5) => {
 
   const now = new Date();
   const lastUpdate = lastLifeUpdate.toDate();
-  const timePassed = (now - lastUpdate) / 1000; // seconds
-  const timeRemaining = 3600 - timePassed; // 1 hour in seconds
+  const timePassedMs = now.getTime() - lastUpdate.getTime();
+  const timeRemainingMs = 60 * 60 * 1000 - timePassedMs; // 1 hour in milliseconds
 
-  if (timeRemaining <= 0) {
+  if (timeRemainingMs <= 0) {
     return "Ready!";
   }
 
-  const hours = Math.floor(timeRemaining / 3600);
-  const minutes = Math.floor((timeRemaining % 3600) / 60);
-  const seconds = Math.floor(timeRemaining % 60);
+  const hours = Math.floor(timeRemainingMs / (1000 * 60 * 60));
+  const minutes = Math.floor(
+    (timeRemainingMs % (1000 * 60 * 60)) / (1000 * 60)
+  );
+  const seconds = Math.floor((timeRemainingMs % (1000 * 60)) / 1000);
 
   return `${hours.toString().padStart(2, "0")}:${minutes
     .toString()
     .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 };
 
-// FIXED: Function to consume a life and start countdown
+// CORRECTED: Function to consume a life and start countdown
 export const consumeLife = async (uid) => {
   if (!uid) return false;
 
@@ -141,13 +157,33 @@ export const consumeLife = async (uid) => {
     return false;
   }
 
-  // Decrease life and set regeneration timer
+  // Decrease life and set regeneration timer to NOW
   await updateDoc(userRef, {
     lives: increment(-1),
     last_life_update: new Date(), // Reset timer when life is consumed
   });
 
   return true;
+};
+
+// NEW: Initialize lives system for new users
+export const initializeUserLives = async (uid) => {
+  if (!uid) return;
+
+  const userRef = doc(db, "users", uid);
+  const userSnap = await getDoc(userRef);
+
+  if (userSnap.exists()) {
+    const userData = userSnap.data();
+    // Only initialize if not already set
+    if (userData.lives === undefined || userData.max_lives === undefined) {
+      await updateDoc(userRef, {
+        lives: 5,
+        max_lives: 5,
+        last_life_update: new Date(),
+      });
+    }
+  }
 };
 
 const Dashboard = () => {
@@ -164,6 +200,7 @@ const Dashboard = () => {
   const [newlyEarnedBadge, setNewlyEarnedBadge] = useState(null);
   const [unreadNotificationCount, setUnreadNotificationCount] = useState(0);
   const [timeUntilNextLife, setTimeUntilNextLife] = useState("01:00:00");
+  const livesCheckIntervalRef = useRef(null);
 
   // FIXED: formatXP function with proper null/undefined handling
   const formatXP = (xp) => {
@@ -337,7 +374,7 @@ const Dashboard = () => {
     };
   }, [userData]);
 
-  // FIXED: Lives regeneration effect - check every 5 minutes instead of 1
+  // CORRECTED: Lives regeneration effect - check every 30 seconds
   useEffect(() => {
     if (!auth.currentUser || !userData) return;
 
@@ -351,8 +388,8 @@ const Dashboard = () => {
     // Check immediately
     checkLives();
 
-    // Set up interval to check every 5 minutes (reduced frequency)
-    const interval = setInterval(checkLives, 300000);
+    // Set up interval to check every 30 seconds
+    const interval = setInterval(checkLives, 30000);
 
     return () => {
       mounted = false;
@@ -360,7 +397,7 @@ const Dashboard = () => {
     };
   }, [userData]);
 
-  // FIXED: Lives countdown timer effect - update every 5 seconds instead of 1
+  // CORRECTED: Lives countdown timer effect - update every second
   useEffect(() => {
     if (!userData) return;
 
@@ -376,7 +413,7 @@ const Dashboard = () => {
       setTimeUntilNextLife(time);
     };
 
-    const timer = setInterval(updateTimer, 5000); // Reduced from 1000ms to 5000ms
+    const timer = setInterval(updateTimer, 1000);
 
     // Initial update
     updateTimer();
@@ -392,10 +429,13 @@ const Dashboard = () => {
     let unsubscribeSnapshot = null;
     let mounted = true;
 
-    const unsubscribeAuth = auth.onAuthStateChanged((user) => {
+    const unsubscribeAuth = auth.onAuthStateChanged(async (user) => {
       if (!mounted) return;
 
       if (user) {
+        // Initialize lives system for new users
+        await initializeUserLives(user.uid);
+
         const userRef = doc(db, "users", user.uid);
 
         unsubscribeSnapshot = onSnapshot(userRef, (docSnap) => {
@@ -444,9 +484,14 @@ const Dashboard = () => {
     };
   }, []);
 
-  // FIXED: Test functions
+  // CORRECTED: Test functions
   const testConsumeLife = async () => {
     const success = await consumeLife(auth.currentUser.uid);
+    if (success) {
+      console.log("Life consumed successfully");
+    } else {
+      console.log("No lives available to consume");
+    }
   };
 
   const initializeLivesSystem = async () => {
@@ -456,6 +501,7 @@ const Dashboard = () => {
       max_lives: 5,
       last_life_update: new Date(),
     });
+    console.log("Lives system initialized");
   };
 
   if (loading) {
@@ -613,11 +659,11 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* FIXED: Coins & Lives - CORRECT 1-HOUR REGENERATION SYSTEM */}
+          {/* CORRECTED: Coins & Lives - PROPER 1-HOUR REGENERATION SYSTEM */}
           <div className="bg-white p-6 rounded-2xl shadow flex flex-col justify-between">
             <div className="flex items-center gap-4">
               <FaWallet className="text-3xl text-yellow-500" />
-              <p className="text-lg font-bold">Coins: {userData?.coins}</p>
+              <p className="text-lg font-bold">Coins: {userData?.coins || 0}</p>
             </div>
             <div className="flex items-center gap-4 mt-3">
               <FaHeart className="text-red-500 text-3xl" />
@@ -797,7 +843,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* FIXED: Lives System Testing Section */}
+          {/* CORRECTED: Lives System Testing Section */}
           <div className="mb-4">
             <h4 className="font-semibold mb-2 text-gray-700">
               Lives System Testing ❤️
