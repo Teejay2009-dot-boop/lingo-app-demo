@@ -14,11 +14,18 @@ import {
   FaCheckCircle,
   FaChevronLeft,
   FaChevronRight,
-  FaBolt, // ADDED FOR XP BOOST
+  FaBolt,
 } from "react-icons/fa";
 import mascot from "../assets/IMG-20250724-WA0115-removebg-preview.png";
 import { auth, db } from "../firebase/config/firebase";
-import { doc, onSnapshot, updateDoc, increment } from "firebase/firestore";
+import {
+  doc,
+  onSnapshot,
+  updateDoc,
+  increment,
+  getDoc,
+  arrayUnion,
+} from "firebase/firestore";
 import DashboardLayout from "../components/dashboard/DashboardLayout";
 import Confetti from "react-confetti";
 
@@ -50,31 +57,106 @@ const shopItems = [
     action: { streak_freezes: 1 },
     description: "Protect your streak for one day",
   },
-  // UPDATED XP BOOST ITEMS:
   {
     id: 4,
     name: "XP Boost (30min)",
     icon: <FaBolt className="text-yellow-500" />,
     cost: 15,
     type: "30min_50%",
-    description: "50% more XP for 30 minutes"
+    description: "50% more XP for 30 minutes",
   },
   {
     id: 5,
-    name: "XP Boost (45min)", 
+    name: "XP Boost (45min)",
     icon: <FaBolt className="text-yellow-500" />,
     cost: 25,
     type: "45min_75%",
     description: "75% more XP for 45 minutes",
-    bestValue: true
+    bestValue: true,
   },
-  // REMOVED THE OLD 6th ITEM
 ];
+
+// STREAK FREEZE LOGIC FUNCTIONS
+const checkAndApplyStreakFreeze = async (uid) => {
+  if (!uid) return false;
+
+  try {
+    const userRef = doc(db, "users", uid);
+    const userSnap = await getDoc(userRef);
+
+    if (!userSnap.exists()) return false;
+
+    const userData = userSnap.data();
+    const currentStreak = userData.current_streak || 0;
+    const streakFreezes = userData.streak_freezes || 0;
+    const lastLessonDate = userData.last_lesson_date?.toDate();
+    const today = new Date();
+
+    // If user has no streak or no freezes, nothing to do
+    if (currentStreak === 0 || streakFreezes === 0) return false;
+
+    // Check if user missed a day (last lesson was more than 1 day ago but less than 2 days)
+    if (lastLessonDate) {
+      const timeDiff = today.getTime() - lastLessonDate.getTime();
+      const daysDiff = timeDiff / (1000 * 60 * 60 * 24);
+
+      // If user missed exactly one day (between 1 and 2 days ago)
+      if (daysDiff > 1 && daysDiff <= 2) {
+        // Apply streak freeze automatically
+        await updateDoc(userRef, {
+          streak_freezes: increment(-1),
+          streak_freeze_used: arrayUnion(new Date()),
+          streak_freeze_applied: new Date(),
+        });
+
+        console.log("✅ Streak freeze applied automatically");
+        return true;
+      }
+    }
+
+    return false;
+  } catch (error) {
+    console.error("Error applying streak freeze:", error);
+    return false;
+  }
+};
+
+const getStreakFreezeStatus = (userData) => {
+  if (!userData) return { hasFreezes: false, count: 0, status: "No freezes" };
+
+  const streakFreezes = userData.streak_freezes || 0;
+  const lastFreezeApplied = userData.streak_freeze_applied?.toDate();
+  const today = new Date();
+
+  let status = "";
+  if (streakFreezes === 0) {
+    status = "No streak freezes available";
+  } else if (lastFreezeApplied) {
+    const timeSinceLastFreeze = today.getTime() - lastFreezeApplied.getTime();
+    const hoursSinceLastFreeze = timeSinceLastFreeze / (1000 * 60 * 60);
+
+    if (hoursSinceLastFreeze < 24) {
+      status = `Freeze active (used ${Math.floor(hoursSinceLastFreeze)}h ago)`;
+    } else {
+      status = `${streakFreezes} freeze${streakFreezes !== 1 ? "s" : ""} ready`;
+    }
+  } else {
+    status = `${streakFreezes} freeze${streakFreezes !== 1 ? "s" : ""} ready`;
+  }
+
+  return {
+    hasFreezes: streakFreezes > 0,
+    count: streakFreezes,
+    status,
+  };
+};
 
 const Shop = () => {
   const [coins, setCoins] = useState(0);
   const [xp, setXp] = useState(0);
   const [lives, setLives] = useState(0);
+  const [streakFreezes, setStreakFreezes] = useState(0);
+  const [currentStreak, setCurrentStreak] = useState(0);
   const [message, setMessage] = useState("");
   const [showConfetti, setShowConfetti] = useState(false);
   const [windowSize, setWindowSize] = useState({
@@ -100,21 +182,27 @@ const Shop = () => {
   // Fetch user data live from Firestore
   useEffect(() => {
     if (!auth.currentUser) return;
+
     const unsub = onSnapshot(
       doc(db, "users", auth.currentUser.uid),
-      (docSnap) => {
+      async (docSnap) => {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setCoins(data.coins || 0);
           setXp(data.xp || 0);
           setLives(data.lives || 0);
+          setStreakFreezes(data.streak_freezes || 0);
+          setCurrentStreak(data.current_streak || 0);
+
+          // Check and apply streak freeze automatically if needed
+          await checkAndApplyStreakFreeze(auth.currentUser.uid);
         }
       }
     );
     return () => unsub();
   }, []);
 
-  // UPDATED PURCHASE HANDLER
+  // UPDATED PURCHASE HANDLER WITH STREAK FREEZE LOGIC
   const handlePurchase = async (item) => {
     // Check for life limits
     if (item.action?.lives) {
@@ -143,31 +231,51 @@ const Shop = () => {
     try {
       const userRef = doc(db, "users", auth.currentUser.uid);
 
-      // NEW: Handle XP boost activation
-      if (item.type?.includes('min_')) {
-        const duration = item.type === '30min_50%' ? 30 * 60 * 1000 : 45 * 60 * 1000;
+      // Handle XP boost activation
+      if (item.type?.includes("min_")) {
+        const duration =
+          item.type === "30min_50%" ? 30 * 60 * 1000 : 45 * 60 * 1000;
         const expiresAt = new Date(Date.now() + duration);
-        
+
         await updateDoc(userRef, {
           coins: increment(-item.cost),
           active_xp_boost: {
             type: item.type,
-            multiplier: item.type === '30min_50%' ? 1.5 : 1.75,
+            multiplier: item.type === "30min_50%" ? 1.5 : 1.75,
             expires_at: expiresAt,
-            activated_at: new Date()
-          }
+            activated_at: new Date(),
+          },
         });
-        
+
         setMessage(`✅ ${item.name} activated! Enjoy extra XP!`);
-        
       } else {
-        // Existing logic for other items
+        // Handle other items including streak freezes
         let updateData = { coins: increment(-item.cost) };
-        if (item.action?.lives) updateData.lives = increment(item.action.lives);
-        if (item.action?.streak_freezes) updateData.streak_freezes = increment(item.action.streak_freezes);
-        
+
+        if (item.action?.lives) {
+          updateData.lives = increment(item.action.lives);
+        }
+
+        if (item.action?.streak_freezes) {
+          updateData.streak_freezes = increment(item.action.streak_freezes);
+
+          // Add purchase history for streak freezes
+          updateData.streak_freeze_purchases = arrayUnion({
+            purchased_at: new Date(),
+            cost: item.cost,
+            type: "single_freeze",
+          });
+        }
+
         await updateDoc(userRef, updateData);
-        setMessage(`✅ Purchased ${item.name}!`);
+
+        if (item.action?.streak_freezes) {
+          setMessage(
+            `✅ Purchased ${item.name}! It will activate automatically if you miss a day.`
+          );
+        } else {
+          setMessage(`✅ Purchased ${item.name}!`);
+        }
       }
 
       setShowConfetti(true);
@@ -198,25 +306,26 @@ const Shop = () => {
     setCurrentIndex(index);
   };
 
+  // Get streak freeze status for display
+  const freezeStatus = getStreakFreezeStatus({
+    streak_freezes: streakFreezes,
+    streak_freeze_applied: null, // You might want to track this in your user data
+  });
+
   // Get visible items for the slider - responsive
   const getVisibleItems = () => {
-    // For mobile and tablet (lg breakpoint), show only one card
     if (windowSize.width < 1024) {
       return [shopItems[currentIndex]];
     }
 
-    // For desktop and larger screens, show three cards
     const items = [];
     const totalItems = shopItems.length;
 
-    // Always show current item
     items.push(shopItems[currentIndex]);
 
-    // Show previous item if available
     const prevIndex = currentIndex === 0 ? totalItems - 1 : currentIndex - 1;
     items.unshift(shopItems[prevIndex]);
 
-    // Show next item if available
     const nextIndex = currentIndex === totalItems - 1 ? 0 : currentIndex + 1;
     items.push(shopItems[nextIndex]);
 
@@ -246,11 +355,50 @@ const Shop = () => {
         </div>
 
         {/* Stats */}
-        <div className="flex justify-end items-center mb-6 text-lg font-semibold bg-white p-3 rounded-full shadow-md">
+        <div className="flex justify-between items-center mb-6 text-lg font-semibold bg-white p-3 rounded-full shadow-md">
+          <div className="flex items-center gap-4">
+            {/* Streak Freeze Status */}
+            <div className="flex items-center gap-2 bg-blue-50 px-3 py-1 rounded-full border border-blue-200">
+              <FaSnowflake className="text-blue-400" />
+              <span className="text-blue-700 text-sm">
+                {freezeStatus.count} Freeze{freezeStatus.count !== 1 ? "s" : ""}
+              </span>
+            </div>
+
+            {/* Current Streak */}
+            <div className="flex items-center gap-2 bg-orange-50 px-3 py-1 rounded-full border border-orange-200">
+              <FaStar className="text-orange-500" />
+              <span className="text-orange-700 text-sm">
+                {currentStreak} Day{currentStreak !== 1 ? "s" : ""}
+              </span>
+            </div>
+          </div>
+
           <p className="flex gap-2 items-center text-amber text-2xl px-4 rounded-full">
             <FaCoins /> {coins}
           </p>
         </div>
+
+        {/* Streak Freeze Info Banner */}
+        {streakFreezes > 0 && (
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4 mx-6 lg:mx-20">
+            <div className="flex items-center gap-3">
+              <FaSnowflake className="text-blue-400 text-xl" />
+              <div>
+                <h3 className="font-semibold text-blue-800">
+                  Streak Freeze Active!
+                </h3>
+                <p className="text-blue-600 text-sm">
+                  You have {streakFreezes} freeze
+                  {streakFreezes !== 1 ? "s" : ""}.
+                  {currentStreak > 0
+                    ? ` Your ${currentStreak}-day streak is protected if you miss a day.`
+                    : " Buy more to protect your future streaks!"}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Message */}
         {message && (
@@ -333,6 +481,13 @@ const Shop = () => {
                           </div>
                         )}
 
+                        {/* Streak Freeze Special Info */}
+                        {item.id === 3 && (
+                          <div className="absolute top-0 left-0 bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-br-2xl rounded-tl-2xl">
+                            AUTO-ACTIVATES
+                          </div>
+                        )}
+
                         <div className="p-6 w-full h-full flex flex-col items-center justify-center">
                           <div className="text-6xl mb-6 flex justify-center">
                             {item.icon}
@@ -345,6 +500,15 @@ const Shop = () => {
                               {item.description}
                             </p>
                           )}
+
+                          {/* Additional info for streak freezes */}
+                          {item.id === 3 && (
+                            <p className="text-blue-600 text-sm mb-4 bg-blue-50 px-3 py-2 rounded-lg">
+                              Automatically protects your streak if you miss a
+                              day
+                            </p>
+                          )}
+
                           <p className="text-xl font-semibold mb-6 flex items-center gap-2">
                             <span
                               className={
@@ -439,6 +603,13 @@ const Shop = () => {
                           </div>
                         )}
 
+                        {/* Streak Freeze Special Info */}
+                        {item.id === 3 && (
+                          <div className="absolute top-0 left-0 bg-blue-100 text-blue-800 text-xs font-semibold px-2 py-1 rounded-br-2xl rounded-tl-2xl">
+                            AUTO-ACTIVATES
+                          </div>
+                        )}
+
                         <div className="p-6 w-full flex flex-col items-center justify-between h-full">
                           <div className="flex flex-col items-center">
                             <div className="text-5xl mb-4 flex justify-center">
@@ -450,6 +621,13 @@ const Shop = () => {
                             {item.description && (
                               <p className="text-gray-600 mb-4 text-sm">
                                 {item.description}
+                              </p>
+                            )}
+
+                            {/* Additional info for streak freezes */}
+                            {item.id === 3 && (
+                              <p className="text-blue-600 text-xs mb-2 bg-blue-50 px-2 py-1 rounded">
+                                Automatically protects your streak
                               </p>
                             )}
                           </div>
@@ -534,6 +712,48 @@ const Shop = () => {
             {getRemainingLives() === 1 ? "life" : "lives"}
           </div>
         )}
+
+        {/* How Streak Freezes Work Section */}
+        <div className="bg-white rounded-2xl p-6 mx-6 lg:mx-20 mb-8 shadow-md">
+          <h3 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
+            <FaSnowflake className="text-blue-400" />
+            How Streak Freezes Work
+          </h3>
+          <div className="grid md:grid-cols-2 gap-4 text-sm text-gray-600">
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <div className="w-2 h-2 bg-green-500 rounded-full mt-1 flex-shrink-0"></div>
+                <p>
+                  <strong>Automatic Protection:</strong> Freezes activate
+                  automatically when you miss a day
+                </p>
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="w-2 h-2 bg-blue-500 rounded-full mt-1 flex-shrink-0"></div>
+                <p>
+                  <strong>No Streak Loss:</strong> Your current {currentStreak}
+                  -day streak stays protected
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-start gap-2">
+                <div className="w-2 h-2 bg-purple-500 rounded-full mt-1 flex-shrink-0"></div>
+                <p>
+                  <strong>One Freeze Per Day:</strong> Each freeze protects one
+                  missed day
+                </p>
+              </div>
+              <div className="flex items-start gap-2">
+                <div className="w-2 h-2 bg-orange-500 rounded-full mt-1 flex-shrink-0"></div>
+                <p>
+                  <strong>Stackable:</strong> Buy multiple freezes for extended
+                  protection
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
 
         {/* Subscriptions Section (Unchanged) */}
         <div>

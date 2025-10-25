@@ -31,7 +31,7 @@ const Leaderboard = () => {
   
   const mountedRef = useRef(true);
 
-  // Fetch current user's data - ONE TIME FETCH
+  // Fetch current user's data
   useEffect(() => {
     const fetchCurrentUserData = async () => {
       if (!auth.currentUser || !mountedRef.current) {
@@ -47,11 +47,33 @@ const Leaderboard = () => {
         
         if (docSnap.exists()) {
           const data = docSnap.data();
-          setCurrentUserData(data);
+          // Calculate user's current rank
+          const userRank = getUserRank({
+            level: data.level || 1,
+            accuracy: data.progress?.accuracy || 0,
+            streak: data.current_streak || 0,
+            lessonsCompleted: data.total_lessons || data.lessons || 0,
+          });
+
+          const userData = {
+            ...data,
+            xp: data.xp || 0,
+            level: data.level || 1,
+            // Use calculated rank if stored rank doesn't exist
+            rank: data.rank || userRank.name,
+            calculatedRank: userRank,
+            current_streak: data.current_streak || 0,
+            username: data.username || "Anonymous",
+            progress: data.progress || { accuracy: 0 },
+            total_lessons: data.total_lessons || data.lessons || 0,
+          };
+          setCurrentUserData(userData);
+          console.log("Current user rank:", userData.rank, "Calculated:", userRank.name);
         } else {
           setCurrentUserData(null);
         }
       } catch (error) {
+        console.error("Error fetching current user data:", error);
         if (mountedRef.current) {
           setCurrentUserData(null);
         }
@@ -65,7 +87,7 @@ const Leaderboard = () => {
     };
   }, []);
 
-  // Fetch leaderboard data - ONE TIME FETCH when mode changes
+  // Fetch leaderboard data
   useEffect(() => {
     if (!mountedRef.current) return;
 
@@ -73,50 +95,139 @@ const Leaderboard = () => {
       setLoading(true);
       
       try {
-        let q;
+        let usersQuery;
+        let allUsers = [];
 
         if (leaderboardMode === "general") {
-          q = query(collection(db, "users"), orderBy("xp", "desc"), limit(50));
-        } else if (leaderboardMode === "rank") {
-          const userRank = currentUserData?.rank;
-          if (!userRank) {
-            setUsers([]);
-            setCurrentUserPosition(null);
-            setLoading(false);
-            return;
-          }
-          q = query(
+          // Get all users with XP, sorted by XP descending
+          usersQuery = query(
             collection(db, "users"),
-            where("rank", "==", userRank),
             orderBy("xp", "desc"),
-            limit(50)
+            limit(100)
+          );
+        } else if (leaderboardMode === "rank" && currentUserData) {
+          const targetRank = currentUserData.rank;
+          console.log("Fetching users for rank:", targetRank);
+          
+          // Try to fetch by stored rank first
+          usersQuery = query(
+            collection(db, "users"),
+            where("rank", "==", targetRank),
+            orderBy("xp", "desc"),
+            limit(100)
+          );
+        } else {
+          // Fallback to general if no rank data
+          usersQuery = query(
+            collection(db, "users"),
+            orderBy("xp", "desc"),
+            limit(100)
           );
         }
 
-        const querySnapshot = await getDocs(q);
+        const querySnapshot = await getDocs(usersQuery);
         
         if (!mountedRef.current) return;
 
-        const usersData = querySnapshot.docs.map((doc) => ({
-          id: doc.id,
-          ...doc.data(),
-          rank: getUserRank({
-            level: doc.data().level || 1,
-            accuracy: doc.data().progress?.accuracy || 0,
-            streak: doc.data().current_streak || 0,
-            lessons: doc.data().lessons || 0,
-          }),
-        }));
+        // Process users
+        allUsers = querySnapshot.docs.map((doc) => {
+          const data = doc.data();
+          const userXp = data.xp || 0;
+          const userLevel = data.level || 1;
+          const userAccuracy = data.progress?.accuracy || 0;
+          const userStreak = data.current_streak || 0;
+          const userLessons = data.total_lessons || data.lessons || 0;
 
-        setUsers(usersData);
+          // Calculate rank for each user
+          const userRank = getUserRank({
+            level: userLevel,
+            accuracy: userAccuracy,
+            streak: userStreak,
+            lessonsCompleted: userLessons,
+          });
 
+          return {
+            id: doc.id,
+            username: data.username || "Anonymous",
+            avatar: data.avatar || null,
+            xp: userXp,
+            level: userLevel,
+            current_streak: userStreak,
+            total_lessons: userLessons,
+            progress: data.progress || { accuracy: 0 },
+            rank: data.rank || userRank.name,
+            calculatedRank: userRank,
+            ...data
+          };
+        });
+
+        console.log(`Found ${allUsers.length} users in ${leaderboardMode} mode`);
+
+        // For rank mode, if we didn't find users by stored rank, try calculating ranks
+        if (leaderboardMode === "rank" && allUsers.length === 0 && currentUserData) {
+          console.log("No users found by stored rank, trying general query...");
+          const generalQuery = query(
+            collection(db, "users"),
+            orderBy("xp", "desc"),
+            limit(200) // Get more users to filter client-side
+          );
+          const generalSnapshot = await getDocs(generalQuery);
+          
+          allUsers = generalSnapshot.docs.map((doc) => {
+            const data = doc.data();
+            const userXp = data.xp || 0;
+            const userLevel = data.level || 1;
+            const userAccuracy = data.progress?.accuracy || 0;
+            const userStreak = data.current_streak || 0;
+            const userLessons = data.total_lessons || data.lessons || 0;
+
+            const userRank = getUserRank({
+              level: userLevel,
+              accuracy: userAccuracy,
+              streak: userStreak,
+              lessonsCompleted: userLessons,
+            });
+
+            return {
+              id: doc.id,
+              username: data.username || "Anonymous",
+              avatar: data.avatar || null,
+              xp: userXp,
+              level: userLevel,
+              current_streak: userStreak,
+              total_lessons: userLessons,
+              progress: data.progress || { accuracy: 0 },
+              rank: data.rank || userRank.name,
+              calculatedRank: userRank,
+              ...data
+            };
+          });
+
+          // Filter by calculated rank client-side
+          allUsers = allUsers.filter(user => 
+            user.calculatedRank.name === currentUserData.rank
+          );
+          console.log(`Found ${allUsers.length} users after client-side filtering`);
+        }
+
+        // Sort by XP to ensure correct order
+        allUsers.sort((a, b) => (b.xp || 0) - (a.xp || 0));
+
+        setUsers(allUsers);
+
+        // Find current user's position
         if (auth.currentUser) {
-          const position = usersData.findIndex(
+          const position = allUsers.findIndex(
             (user) => user.id === auth.currentUser.uid
           );
           setCurrentUserPosition(position >= 0 ? position + 1 : null);
+          console.log("Current user position:", position >= 0 ? position + 1 : "Not found");
+        } else {
+          setCurrentUserPosition(null);
         }
+
       } catch (error) {
+        console.error("Error fetching leaderboard:", error);
         if (mountedRef.current) {
           setUsers([]);
           setCurrentUserPosition(null);
@@ -133,7 +244,13 @@ const Leaderboard = () => {
 
   // Format XP to whole numbers
   const formatXP = (xp) => {
-    return Math.round(xp || 0);
+    const xpNumber = Number(xp) || 0;
+    return Math.round(xpNumber);
+  };
+
+  // Get rank display name
+  const getRankDisplayName = (user) => {
+    return user.rank || user.calculatedRank?.name || "Beginner";
   };
 
   if (loading) {
@@ -163,7 +280,7 @@ const Leaderboard = () => {
                 : "bg-gray-100 text-gray-600 hover:bg-gray-200"
             }`}
           >
-            General
+            Global
           </button>
           <button
             onClick={() => setLeaderboardMode("rank")}
@@ -177,13 +294,28 @@ const Leaderboard = () => {
           </button>
         </div>
 
+        {/* Leaderboard info */}
+        <div className="text-center mb-4 text-sm text-gray-600">
+          {leaderboardMode === "general" 
+            ? "Top users by XP" 
+            : currentUserData 
+              ? `Users in ${currentUserData.rank} Rank`
+              : "My Rank"
+          }
+        </div>
+
         {/* Leaderboard table */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
           {users.length === 0 ? (
             <div className="text-center p-8 sm:p-12 text-gray-500 text-sm sm:text-base">
-              {leaderboardMode === "rank" && !currentUserData?.rank
-                ? "Log in to see your rank leaderboard."
-                : "No users found for this leaderboard."}
+              {leaderboardMode === "rank" && currentUserData ? (
+                <div>
+                  <p className="mb-2">No other users found in {currentUserData.rank} Rank.</p>
+                  <p className="text-xs">You're the first one! Invite friends to join your rank.</p>
+                </div>
+              ) : (
+                "No users found. Be the first to earn XP!"
+              )}
             </div>
           ) : (
             <ul className="divide-y divide-gray-100">
@@ -230,7 +362,7 @@ const Leaderboard = () => {
                   <div className="flex-grow min-w-0 flex justify-between items-center">
                     <div className="min-w-0 flex-1 mr-2">
                       <h3 className="font-semibold text-gray-800 text-sm sm:text-lg truncate">
-                        {user.username || "Anonymous"}
+                        {user.username}
                         {user.id === auth.currentUser?.uid && (
                           <span className="ml-1 sm:ml-2 text-yellow-500 text-xs sm:text-sm">
                             (You)
@@ -238,7 +370,8 @@ const Leaderboard = () => {
                         )}
                       </h3>
                       <p className="text-xs sm:text-sm text-gray-500 truncate">
-                        {user.rank || "Beginner"} • Lvl {user.level || 1}
+                        {getRankDisplayName(user)} • Level {user.level || 1}
+                        {user.progress?.accuracy > 0 && ` • ${Math.round(user.progress.accuracy)}% accuracy`}
                       </p>
                     </div>
 
@@ -247,17 +380,19 @@ const Leaderboard = () => {
                       <p className="font-bold text-gray-800 text-sm sm:text-lg">
                         {formatXP(user.xp)} XP
                       </p>
-                      {(user.current_streak || 0) > 3 && (
-                        <div className="flex items-center justify-end text-yellow-500 text-xs sm:text-sm">
-                          <FaFire className="mr-1" />
-                          <span className="hidden sm:inline">
-                            {user.current_streak} day
+                      <div className="flex items-center justify-end gap-2 text-xs sm:text-sm">
+                        {(user.current_streak || 0) > 0 && (
+                          <div className="flex items-center text-yellow-500">
+                            <FaFire className="mr-1" />
+                            <span>{user.current_streak}</span>
+                          </div>
+                        )}
+                        {(user.total_lessons || 0) > 0 && (
+                          <span className="text-gray-500 hidden sm:inline">
+                            {user.total_lessons} lessons
                           </span>
-                          <span className="sm:hidden">
-                            {user.current_streak}d
-                          </span>
-                        </div>
-                      )}
+                        )}
+                      </div>
                     </div>
                   </div>
                 </li>
@@ -274,25 +409,52 @@ const Leaderboard = () => {
             </h2>
             {currentUserPosition !== null ? (
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <p className="text-gray-700 text-sm sm:text-base">
-                  {leaderboardMode === "general"
-                    ? `You are #${currentUserPosition} globally`
-                    : `You are #${currentUserPosition} in ${currentUserData.rank} Rank`}
-                </p>
-                {(currentUserData?.current_streak || 0) > 3 && (
-                  <div className="flex items-center text-yellow-600 text-sm sm:text-base">
-                    <FaFire className="mr-1 sm:mr-2" />
+                <div className="flex-1">
+                  <p className="text-gray-700 text-sm sm:text-base">
+                    {leaderboardMode === "general"
+                      ? `You are #${currentUserPosition} globally with ${formatXP(currentUserData.xp)} XP`
+                      : `You are #${currentUserPosition} in ${currentUserData.rank} Rank`}
+                  </p>
+                  <p className="text-gray-600 text-xs sm:text-sm mt-1">
+                    Level {currentUserData.level || 1} • {currentUserData.total_lessons || 0} lessons completed
+                  </p>
+                </div>
+                {(currentUserData?.current_streak || 0) > 0 && (
+                  <div className="flex items-center text-yellow-600 text-sm sm:text-base bg-yellow-100 px-3 py-1 rounded-full">
+                    <FaFire className="mr-2" />
                     <span>{currentUserData.current_streak}-day streak</span>
                   </div>
                 )}
               </div>
+            ) : leaderboardMode === "rank" ? (
+              <div className="text-gray-700">
+                <p className="text-sm sm:text-base">
+                  You are the only user in {currentUserData.rank} Rank!
+                </p>
+                <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                  Complete more lessons to maintain your rank or invite friends to join you.
+                </p>
+              </div>
             ) : (
-              <p className="text-gray-700 text-sm sm:text-base">
-                {leaderboardMode === "rank"
-                  ? `You are not yet ranked in ${currentUserData.rank} Rank. Complete lessons to earn XP!`
-                  : `You are not on the leaderboard yet. Complete lessons to earn XP!`}
-              </p>
+              <div className="text-gray-700">
+                <p className="text-sm sm:text-base">
+                  You are not on the global leaderboard yet.
+                </p>
+                <p className="text-xs sm:text-sm text-gray-600 mt-1">
+                  Complete lessons and earn XP to climb the ranks!
+                </p>
+              </div>
             )}
+          </div>
+        )}
+
+        {/* Debug info for development */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="mt-4 p-3 bg-gray-100 rounded text-xs text-gray-600">
+            <strong>Debug Info:</strong> Mode: {leaderboardMode} | 
+            Users: {users.length} | 
+            Current User Rank: {currentUserData?.rank} |
+            Current User XP: {formatXP(currentUserData?.xp)}
           </div>
         )}
 

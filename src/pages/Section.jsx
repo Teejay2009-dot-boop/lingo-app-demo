@@ -38,14 +38,14 @@ const Section = () => {
         </Link>
         <Link to={`/lessons/section/challenge`}>
           <div className="section-one border flex justify-center cursor-pointer items-center rounded-3xl shadow-lg translate-y-0.5 hover:translate-y-0 transition duration-300 ease-in">
-            <p className="text-white font-bold text-2xl lg:text-6xl py-20">
+            <p className="text-white font-bold text-2xl lg:text-6xl py-24">
               Challenge
             </p>
           </div>
         </Link>
         <Link to={`/lessons/section/roleplay`}>
         <div className="section-one border flex justify-center cursor-pointer items-center rounded-3xl shadow-lg translate-y-0.5 hover:translate-y-0 transition duration-300 ease-in py-26 px-18">
-          <p className="text-white font-bold text-2xl lg:text-6xl py-20 lg:py-24">
+          <p className="text-white font-bold text-2xl lg:text-6xl py-24 lg:py-24">
             Roleplay
           </p>
         </div></Link>
