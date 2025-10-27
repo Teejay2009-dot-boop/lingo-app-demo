@@ -42,7 +42,7 @@ export const defaultUser = {
   notes: {},
   ad_watches: [],
   completed_lessons: [],
-  lesson_history: [],
+  lesson_history: [], // ✅ ADDED: For tracking lesson analytics
 
   // 🔑 keep practice + challenge stats
   practice_sessions: 0,

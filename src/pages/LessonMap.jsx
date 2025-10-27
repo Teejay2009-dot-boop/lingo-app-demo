@@ -113,7 +113,7 @@ const LessonMap = () => {
 
   return (
     <>
-      <div className="w-full bg-white h-10 flex justify-end justify-between items-center pr-1 md:pr-5 pt-4">
+      <div className="w-full bg-white h-10 flex  justify-between items-center pr-1 md:pr-5 pt-4">
         <div>
           <button
             onClick={() => navigate(-1)}

@@ -96,7 +96,7 @@ const LessonDisplay = () => {
     const userRef = doc(db, "users", uid);
 
     const unsubUser = onSnapshot(userRef, (snap) => {
-      if (snap.exists()) {
+      if (nap.exists()) {
         setLives(snap.data().lives ?? 5);
         setUserXP(snap.data().xp ?? 0);
         setCoins(snap.data().coins ?? 0);
@@ -205,7 +205,7 @@ const LessonDisplay = () => {
     }, 0);
   };
 
-  // UPDATED: completeLesson function with XP boost support
+  // FIXED: completeLesson function with working lesson history
   const completeLesson = async () => {
     if (!auth.currentUser || lessonCompleted || !lesson || !currentModule) {
       console.log("❌ CANNOT COMPLETE - Missing requirements");
@@ -270,32 +270,12 @@ const LessonDisplay = () => {
     // Total coin reward
     const totalCoinReward = coinReward + streakBonusCoin;
 
-    console.log("💰 XP Calculation:", {
-      baseXP,
-      wrongAnswers,
-      streakBonusXP,
-      finalXP,
-      hasXpBoost,
-      boostMultiplier,
-      bonusXP,
-      totalXPWithBoost,
-    });
-
-    console.log("💰 COINS Calculation:", {
-      baseCoin,
-      accuracyBonusCoin,
-      coinReward,
-      streakBonusCoin,
-      totalCoinReward,
-      accuracy,
-    });
-
-    // ✅ SET STATES FIRST - FIXED: Set both completion states explicitly
+    // ✅ SET STATES FIRST - Show completion UI immediately
     setLessonCompleted(true);
     setFinalLessonXp(hasXpBoost ? totalXPWithBoost : finalXP);
     setFinalLessonCoins(totalCoinReward);
 
-    // Show appropriate completion screen - FIXED: Set both states explicitly
+    // Show appropriate completion screen
     if (hasXpBoost) {
       setShowXpBoostCompletion(true);
       setShowCompletionSummary(false);
@@ -304,8 +284,30 @@ const LessonDisplay = () => {
       setShowXpBoostCompletion(false);
     }
 
-    // Then do Firestore updates
+    // FIXED: Simplified Firestore updates
     const uid = auth.currentUser.uid;
+
+    // Create analytics data object
+    const analyticsData = {
+      userId: uid,
+      lessonId: lesson.lesson_id,
+      moduleId: moduleId,
+      moduleTitle: currentModule.title,
+      date: new Date(),
+      accuracy: accuracy,
+      xpEarned: hasXpBoost ? totalXPWithBoost : finalXP,
+      coinsEarned: totalCoinReward,
+      livesRemaining: lives,
+      mistakes: wrongAnswers,
+      timeSpent: Date.now() - startTime,
+      exerciseTypes: exercises.map((ex) => ex.type),
+      exerciseCount: exercises.length,
+      streak: currentStreak,
+      hasXpBoost: hasXpBoost,
+      boostMultiplier: hasXpBoost ? boostMultiplier : 1,
+      completed: true,
+    };
+
     try {
       const userRef = doc(db, "users", uid);
       const userSnap = await getDoc(userRef);
@@ -324,7 +326,7 @@ const LessonDisplay = () => {
           ? Math.round((newCorrectAnswers / newTotalQuestions) * 100)
           : 0;
 
-      // Update user with new XP and coins system
+      // 🔥 FIXED: Single updateDoc call with lesson_history
       await updateDoc(userRef, {
         xp: increment(hasXpBoost ? totalXPWithBoost : finalXP),
         total_xp: increment(hasXpBoost ? totalXPWithBoost : finalXP),
@@ -333,6 +335,7 @@ const LessonDisplay = () => {
         coins: increment(totalCoinReward),
         total_lessons: increment(1),
         completed_lessons: arrayUnion(lesson.lesson_id),
+        lesson_history: arrayUnion(analyticsData), // ✅ This will work now
         progress: {
           ...currentProgress,
           accuracy: newAccuracy,
@@ -342,27 +345,29 @@ const LessonDisplay = () => {
         },
       });
 
+      // Update streak
       await updateStreak(uid);
 
+      // Update module progress
       const moduleProgressRef = doc(db, `users/${uid}/progress`, moduleId);
       const moduleProgressSnap = await getDoc(moduleProgressRef);
       let completedLessonsInModule = moduleProgressSnap.exists()
         ? moduleProgressSnap.data().completedLessons || 0
         : 0;
 
-      const nextCompletedLessons = completedLessonsInModule + 1;
-
       await setDoc(
         moduleProgressRef,
         {
-          completedLessons: nextCompletedLessons,
+          completedLessons: completedLessonsInModule + 1,
           lastLesson: lesson.lesson_id,
           moduleTitle: currentModule.title,
         },
         { merge: true }
       );
 
-      console.log("✅ All Firestore updates completed");
+      console.log(
+        "✅ All Firestore updates completed including lesson_history"
+      );
     } catch (error) {
       console.error("❌ Firestore error:", error);
     }
@@ -446,27 +451,6 @@ const LessonDisplay = () => {
     }
   }, [lessonCompleted, showCompletionSummary, showXpBoostCompletion]);
 
-  // Debug useEffect
-  useEffect(() => {
-    console.log("=== LESSON DEBUG ===");
-    console.log("Exercises length:", exercises.length);
-    console.log("Current index:", currentIndex);
-    console.log("Answered questions:", Object.keys(answeredMap).length);
-    console.log("Lesson completed:", lessonCompleted);
-    console.log("Show completion summary:", showCompletionSummary);
-    console.log("Show XP boost completion:", showXpBoostCompletion);
-    console.log("Current Lesson XP:", currentLessonXP);
-    console.log("====================");
-  }, [
-    currentIndex,
-    answeredMap,
-    lessonCompleted,
-    showCompletionSummary,
-    showXpBoostCompletion,
-    exercises.length,
-    currentLessonXP,
-  ]);
-
   const renderCard = () => {
     if (!currentExercise) return <p>Loading exercise...</p>;
     const isAnswered = answeredMap[currentIndex];
@@ -525,7 +509,7 @@ const LessonDisplay = () => {
     );
   }
 
-  // XP Boost Completion Screen - FIXED: Remove lessonCompleted check
+  // XP Boost Completion Screen
   if (showXpBoostCompletion) {
     console.log("🎉 Rendering XP boost completion...");
     const correctAnswers = Object.values(answeredMap).filter(
@@ -556,7 +540,7 @@ const LessonDisplay = () => {
     );
   }
 
-  // Normal Lesson Completion Summary - FIXED: Remove lessonCompleted check
+  // Normal Lesson Completion Summary
   if (showCompletionSummary) {
     console.log("🎉 Rendering normal completion summary...");
     const correctAnswers = Object.values(answeredMap).filter(
@@ -620,46 +604,6 @@ const LessonDisplay = () => {
 
   return (
     <div className="min-h-screen bg-gray-100 p-6 relative">
-      {/* REMOVED DEBUG BUTTONS */}
-      {/*
-      <button
-        onClick={() => {
-          console.log("🧪 FORCING XP boost completion screen");
-          setShowXpBoostCompletion(true);
-          setLessonCompleted(true);
-          setFinalLessonXp(25);
-          setFinalLessonCoins(10);
-        }}
-        className="fixed bottom-4 right-4 bg-green-500 text-white p-2 rounded z-50"
-      >
-        Test XP Boost
-      </button>
-      <button
-        onClick={() => {
-          console.log("🔧 Manual completion trigger");
-          completeLesson();
-        }}
-        className="fixed bottom-4 left-4 bg-red-500 text-white p-2 rounded z-50"
-      >
-        Debug: Complete Lesson
-      </button>
-      <button
-        onClick={async () => {
-          const userRef = doc(db, "users", auth.currentUser.uid);
-          const userSnap = await getDoc(userRef);
-          if (userSnap.exists()) {
-            const data = userSnap.data();
-            console.log("🔍 CURRENT FIREBASE ACCURACY:", data.progress);
-            console.log("🔍 CURRENT XP BOOST:", data.active_xp_boost);
-            alert(`Current Accuracy: ${data.progress?.accuracy || 0}%\nXP Boost: ${data.active_xp_boost ? 'Active' : 'None'}`);
-          }
-        }}
-        className="fixed top-4 right-4 bg-blue-500 text-white p-2 rounded z-50"
-      >
-        Check Boost
-      </button>
-      */}
-
       <GoBackBtn />
       <div className="flex justify-between items-center pt-10 mb-4">
         <p className="font-semibold">❤ Lives: {lives}</p>
@@ -677,8 +621,6 @@ const LessonDisplay = () => {
         />
       </div>
       {renderCard()}
-
-      {/* REMOVED THE BUTTONS SECTION - No more Skip/Previous buttons */}
 
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50 p-4">
