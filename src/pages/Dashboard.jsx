@@ -44,7 +44,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 
-// CORRECTED: Lives regeneration utility functions - PROPER 1 HOUR COUNTDOWN
+// FIXED: Regenerate 1 life per hour, timer starts only on loss
 const checkLivesRegeneration = async (uid) => {
   if (!uid) return;
 
@@ -56,92 +56,74 @@ const checkLivesRegeneration = async (uid) => {
   const userData = userSnap.data();
   const currentLives = userData.lives || 0;
   const maxLives = userData.max_lives || 5;
-  const lastLifeUpdate = userData.last_life_update
-    ? userData.last_life_update.toDate()
-    : null;
+  const lastLifeUpdate = userData.last_life_update?.toDate();
   const now = new Date();
 
-  // If lives are already full, no need to regenerate
-  if (currentLives >= maxLives) {
-    return { currentLives, updated: false };
-  }
+  if (currentLives >= maxLives) return { currentLives, updated: false };
 
-  // If no lastLifeUpdate (first time), set it to now
   if (!lastLifeUpdate) {
-    await updateDoc(userRef, {
-      last_life_update: now,
-    });
+    await updateDoc(userRef, { last_life_update: now });
     return { currentLives, updated: false };
   }
 
-  // Calculate how many full hours have passed
-  const timePassedMs = now.getTime() - lastLifeUpdate.getTime();
-  const hoursPassed = Math.floor(timePassedMs / (1000 * 60 * 60));
+  const msSinceLastUpdate = now.getTime() - lastLifeUpdate.getTime();
+  const hoursSinceLastUpdate = msSinceLastUpdate / (1000 * 60 * 60);
 
-  // If at least 1 hour has passed and we have room for more lives
-  if (hoursPassed >= 1 && currentLives < maxLives) {
-    const livesToAdd = Math.min(hoursPassed, maxLives - currentLives);
-    const newLives = currentLives + livesToAdd;
-
-    // Calculate the exact time for the next regeneration
-    const hoursUsed = Math.min(hoursPassed, maxLives - currentLives);
-    const nextUpdateTime = new Date(
-      lastLifeUpdate.getTime() + hoursUsed * 60 * 60 * 1000
+  if (hoursSinceLastUpdate >= 1) {
+    const livesToAdd = Math.min(
+      Math.floor(hoursSinceLastUpdate),
+      maxLives - currentLives
     );
 
-    await updateDoc(userRef, {
-      lives: newLives,
-      last_life_update: nextUpdateTime,
-    });
-
-    // Send notification for life regeneration
     if (livesToAdd > 0) {
+      const nextUpdateTime = new Date(
+        lastLifeUpdate.getTime() + livesToAdd * 60 * 60 * 1000
+      );
+
+      await updateDoc(userRef, {
+        lives: currentLives + livesToAdd,
+        last_life_update: nextUpdateTime,
+      });
+
       addNotification(uid, {
         type: "life-regenerated",
-        title: "Life Regenerated! ❤️",
+        title: "Life Regenerated!",
         message: `You gained ${livesToAdd} life${
           livesToAdd > 1 ? "s" : ""
         } back!`,
         timestamp: new Date(),
       });
-    }
 
-    return { currentLives: newLives, updated: true };
+      return { currentLives: currentLives + livesToAdd, updated: true };
+    }
   }
 
   return { currentLives, updated: false };
 };
 
-// CORRECTED: Get time until next life (1 hour countdown from last update)
+// FIXED: Show time to next life (only if not full)
 const getTimeUntilNextLife = (lastLifeUpdate, currentLives, maxLives = 5) => {
-  // If lives are full, show completed
-  if (currentLives >= maxLives) {
-    return "Full";
-  }
-
+  if (currentLives >= maxLives) return "Full";
   if (!lastLifeUpdate) return "01:00:00";
 
-  const now = new Date();
   const lastUpdate = lastLifeUpdate.toDate();
-  const timePassedMs = now.getTime() - lastUpdate.getTime();
-  const timeRemainingMs = 60 * 60 * 1000 - timePassedMs; // 1 hour in milliseconds
+  const now = new Date();
+  const msPassed = now.getTime() - lastUpdate.getTime();
+  const msPerHour = 60 * 60 * 1000;
+  const msRemaining = msPerHour - (msPassed % msPerHour);
 
-  if (timeRemainingMs <= 0) {
-    return "Ready!";
-  }
+  if (msRemaining <= 0) return "Ready!";
 
-  const hours = Math.floor(timeRemainingMs / (1000 * 60 * 60));
-  const minutes = Math.floor(
-    (timeRemainingMs % (1000 * 60 * 60)) / (1000 * 60)
-  );
-  const seconds = Math.floor((timeRemainingMs % (1000 * 60)) / 1000);
+  const hours = Math.floor(msRemaining / msPerHour);
+  const minutes = Math.floor((msRemaining % msPerHour) / (60 * 1000));
+  const seconds = Math.floor((msRemaining % (60 * 1000)) / 1000);
 
   return `${hours.toString().padStart(2, "0")}:${minutes
     .toString()
     .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 };
 
-// CORRECTED: Function to consume a life and start countdown
+// CORRECT: Consume life and reset timer
 export const consumeLife = async (uid) => {
   if (!uid) return false;
 
@@ -153,20 +135,17 @@ export const consumeLife = async (uid) => {
   const userData = userSnap.data();
   const currentLives = userData.lives || 0;
 
-  if (currentLives <= 0) {
-    return false;
-  }
+  if (currentLives <= 0) return false;
 
-  // Decrease life and set regeneration timer to NOW
   await updateDoc(userRef, {
     lives: increment(-1),
-    last_life_update: new Date(), // Reset timer when life is consumed
+    last_life_update: new Date(),
   });
 
   return true;
 };
 
-// NEW: Initialize lives system for new users
+// Initialize lives for new users
 export const initializeUserLives = async (uid) => {
   if (!uid) return;
 
@@ -175,7 +154,6 @@ export const initializeUserLives = async (uid) => {
 
   if (userSnap.exists()) {
     const userData = userSnap.data();
-    // Only initialize if not already set
     if (userData.lives === undefined || userData.max_lives === undefined) {
       await updateDoc(userRef, {
         lives: 5,
@@ -252,7 +230,6 @@ const Dashboard = () => {
     // Check achievements
     const newAchievements = checkForNewAchievements(userData);
     if (newAchievements.length > 0) {
-      // Award each new achievement and show modal for the first one
       for (const [index, achievement] of newAchievements.entries()) {
         const success = await awardAchievement(uid, achievement.id);
         if (success) {
@@ -263,7 +240,7 @@ const Dashboard = () => {
 
           addNotification(uid, {
             type: "achievement",
-            title: "Achievement Unlocked! 💎",
+            title: "Achievement Unlocked!",
             message: `You earned "${achievement.name}"!`,
             achievementId: achievement.id,
             timestamp: new Date(),
@@ -275,7 +252,6 @@ const Dashboard = () => {
     // Check badges
     const newBadges = checkForNewBadges(userData);
     if (newBadges.length > 0) {
-      // Award each new badge and show modal for the first one
       for (const [index, badge] of newBadges.entries()) {
         const success = await awardBadge(uid, badge.id);
         if (success) {
@@ -286,7 +262,7 @@ const Dashboard = () => {
 
           addNotification(uid, {
             type: "badge",
-            title: "Badge Earned! 🏆",
+            title: "Badge Earned!",
             message: `You unlocked the "${badge.name}" badge!`,
             badgeId: badge.id,
             timestamp: new Date(),
@@ -300,30 +276,26 @@ const Dashboard = () => {
   useEffect(() => {
     if (!userData || !auth.currentUser) return;
 
-    // Prevent re-running if we already processed this data
     if (lastComputedRef.current?.xp === userData.xp) return;
 
     const userCurrentLevel = userData.level || 1;
     const userCurrentXP = userData.xp || 0;
     const updatedUserLevelInfo = getLevelProgress(userCurrentXP);
 
-    // Check for level up
     if (updatedUserLevelInfo.currentLevel > userCurrentLevel) {
       setShowLevelUpModal(true);
 
       addNotification(auth.currentUser.uid, {
         type: "level-up",
-        message: `You reached Level ${updatedUserLevelInfo.currentLevel}! 🎉`,
+        message: `You reached Level ${updatedUserLevelInfo.currentLevel}!`,
         level: updatedUserLevelInfo.currentLevel,
       });
 
-      // Update user document
       updateDoc(doc(db, "users", auth.currentUser.uid), {
         level: updatedUserLevelInfo.currentLevel,
       });
     }
 
-    // Check for rank up
     const currentUserData = {
       level: userData.level || 1,
       accuracy: userData.progress?.accuracy || 0,
@@ -354,7 +326,7 @@ const Dashboard = () => {
 
       addNotification(auth.currentUser.uid, {
         type: "rankup",
-        message: `You've been promoted to ${rankChange.newRank}! 🏆`,
+        message: `You've been promoted to ${rankChange.newRank}!`,
         rank: rankChange.newRank,
       });
 
@@ -363,10 +335,8 @@ const Dashboard = () => {
       });
     }
 
-    // Check achievements and badges
     checkAchievementsAndBadges.current(userData, auth.currentUser.uid);
 
-    // Update last computed snapshot
     lastComputedRef.current = {
       level: updatedUserLevelInfo.currentLevel,
       xp: userCurrentXP,
@@ -374,35 +344,31 @@ const Dashboard = () => {
     };
   }, [userData]);
 
-  // CORRECTED: Lives regeneration effect - check every 30 seconds
+  // FIXED: Only check regeneration if lives < max
   useEffect(() => {
     if (!auth.currentUser || !userData) return;
+    if (userData.lives >= (userData.max_lives || 5)) return;
 
     let mounted = true;
-
     const checkLives = async () => {
       if (!mounted) return;
       await checkLivesRegeneration(auth.currentUser.uid);
     };
 
-    // Check immediately
     checkLives();
-
-    // Set up interval to check every 30 seconds
     const interval = setInterval(checkLives, 30000);
 
     return () => {
       mounted = false;
       clearInterval(interval);
     };
-  }, [userData]);
+  }, [userData?.lives, userData?.max_lives]);
 
-  // CORRECTED: Lives countdown timer effect - update every second
+  // FIXED: Update timer every second
   useEffect(() => {
     if (!userData) return;
 
     let mounted = true;
-
     const updateTimer = () => {
       if (!mounted) return;
       const time = getTimeUntilNextLife(
@@ -413,10 +379,8 @@ const Dashboard = () => {
       setTimeUntilNextLife(time);
     };
 
-    const timer = setInterval(updateTimer, 1000);
-
-    // Initial update
     updateTimer();
+    const timer = setInterval(updateTimer, 1000);
 
     return () => {
       mounted = false;
@@ -424,7 +388,7 @@ const Dashboard = () => {
     };
   }, [userData?.last_life_update, userData?.lives, userData?.max_lives]);
 
-  // FIXED: Single Firestore listener with cleanup
+  // Single Firestore listener
   useEffect(() => {
     let unsubscribeSnapshot = null;
     let mounted = true;
@@ -433,17 +397,13 @@ const Dashboard = () => {
       if (!mounted) return;
 
       if (user) {
-        // Initialize lives system for new users
         await initializeUserLives(user.uid);
-
         const userRef = doc(db, "users", user.uid);
 
         unsubscribeSnapshot = onSnapshot(userRef, (docSnap) => {
           if (!mounted) return;
-
           if (docSnap.exists()) {
-            const data = docSnap.data();
-            setUserData(data);
+            setUserData(docSnap.data());
           }
           setLoading(false);
         });
@@ -456,13 +416,11 @@ const Dashboard = () => {
     return () => {
       mounted = false;
       unsubscribeAuth();
-      if (unsubscribeSnapshot) {
-        unsubscribeSnapshot();
-      }
+      if (unsubscribeSnapshot) unsubscribeSnapshot();
     };
   }, []);
 
-  // FIXED: Optimized notifications listener
+  // Notifications listener
   useEffect(() => {
     if (!auth.currentUser) return;
 
@@ -484,19 +442,14 @@ const Dashboard = () => {
     };
   }, []);
 
-  // CORRECTED: Test functions
+  // Test functions
   const testConsumeLife = async () => {
     const success = await consumeLife(auth.currentUser.uid);
-    if (success) {
-      console.log("Life consumed successfully");
-    } else {
-      console.log("No lives available to consume");
-    }
+    console.log(success ? "Life consumed successfully" : "No lives available");
   };
 
   const initializeLivesSystem = async () => {
-    const userRef = doc(db, "users", auth.currentUser.uid);
-    await updateDoc(userRef, {
+    await updateDoc(doc(db, "users", auth.currentUser.uid), {
       lives: 5,
       max_lives: 5,
       last_life_update: new Date(),
@@ -546,7 +499,7 @@ const Dashboard = () => {
             </Link>
             <div className="text-xl flex justify-center gap-2">
               <div className="flex items-center justify-center gap-2">
-                <div>👩‍🦰</div>
+                <div>USER</div>
                 <div className="text-yellow-500 pt-1 font-semibold">
                   {userData?.username || "User"}
                 </div>
@@ -591,7 +544,7 @@ const Dashboard = () => {
       {/* Stats */}
       {userData && (
         <div className="grid md:grid-cols-3 md:grid-rows-2 gap-8 bg-gray-50 py-10 px-4 lg:px-12">
-          {/* UPDATED XP Card with new progressive system */}
+          {/* XP Card */}
           <div className="bg-white p-6 flex justify-between rounded-2xl shadow items-center">
             <FaStar className="text-7xl text-yellow-500" />
             <div>
@@ -659,7 +612,7 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* CORRECTED: Coins & Lives - PROPER 1-HOUR REGENERATION SYSTEM */}
+          {/* Coins & Lives */}
           <div className="bg-white p-6 rounded-2xl shadow flex flex-col justify-between">
             <div className="flex items-center gap-4">
               <FaWallet className="text-3xl text-yellow-500" />
@@ -680,12 +633,12 @@ const Dashboard = () => {
                   </div>
                 )}
                 {(userData?.lives || 0) >= (userData?.max_lives || 5) && (
-                  <p className="text-xs text-green-500">Full lives! 🎉</p>
+                  <p className="text-xs text-green-500">Full lives!</p>
                 )}
               </div>
             </div>
             <p className="text-xs text-gray-400 mt-2">
-              ⏰ 1 life per hour • Countdown starts when life is lost
+              1 life per hour • Countdown starts when life is lost
             </p>
           </div>
 
@@ -705,7 +658,7 @@ const Dashboard = () => {
 
           {/* Challenge Card */}
           <div className="bg-white rounded-2xl shadow p-6 flex flex-col items-center justify-center">
-            <span className="text-4xl mb-2">⚡</span>
+            <span className="text-4xl mb-2">LIGHTNING</span>
             <h1 className="text-2xl font-semibold text-center mb-4">
               Try today's Challenge
             </h1>
@@ -728,10 +681,13 @@ const Dashboard = () => {
           </div>
         </div>
       )}
+
       {/* Badges */}
       <div className="mt-8 transition-transform duration-300 hover:scale-105 px-4 lg:px-12">
         <Badge />
       </div>
+
+      {/* Mobile Bottom Nav */}
       <div className="fixed bottom-0 left-0 w-full h-16 flex items-center text-yellow-500 justify-around bg-gray-100 lg:hidden">
         <Link to={"/lessons"} className="flex flex-col items-center pt-3">
           <FaHome className="text-2xl" />
@@ -754,21 +710,23 @@ const Dashboard = () => {
           <p className="text-yellow-500 text-sm">Profile</p>
         </Link>
       </div>
+
       {/* Developer Tools Button */}
       <button
         onClick={() => setShowDevTools(!showDevTools)}
         className="fixed bottom-4 right-4 bg-red-500 text-white p-3 rounded-full shadow-lg z-50"
       >
-        {showDevTools ? "❌" : "🧪"}
+        {showDevTools ? "X" : "DEV"}
       </button>
+
       {/* Developer Tools Panel */}
       {showDevTools && (
         <div className="fixed bottom-24 right-4 bg-white p-4 rounded-lg shadow-xl border-2 border-red-500 z-50 max-w-sm w-80 overflow-y-auto max-h-96">
           <h3 className="font-bold text-lg mb-3 text-red-600">
-            Developer Tools 🛠️
+            Developer Tools
           </h3>
 
-          {/* Quick Actions Section */}
+          {/* Quick Actions */}
           <div className="mb-4">
             <h4 className="font-semibold mb-2 text-gray-700">Quick Actions</h4>
             <div className="grid grid-cols-2 gap-2">
@@ -788,7 +746,7 @@ const Dashboard = () => {
                 onClick={() =>
                   addNotification(auth.currentUser.uid, {
                     title: "Test Notification",
-                    message: "This is only a test 🔔",
+                    message: "This is only a test",
                     type: "test",
                   })
                 }
@@ -801,7 +759,6 @@ const Dashboard = () => {
                 onClick={async () => {
                   const userRef = doc(db, "users", auth.currentUser.uid);
                   const currentStreak = userData?.current_streak || 0;
-
                   await updateDoc(userRef, {
                     current_streak: currentStreak + 1,
                   });
@@ -843,10 +800,10 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* CORRECTED: Lives System Testing Section */}
+          {/* Lives System Testing */}
           <div className="mb-4">
             <h4 className="font-semibold mb-2 text-gray-700">
-              Lives System Testing ❤️
+              Lives System Testing
             </h4>
             <div className="grid grid-cols-2 gap-2">
               <button
@@ -898,11 +855,9 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Rank Testing Section */}
+          {/* Rank Testing */}
           <div className="mb-4">
-            <h4 className="font-semibold mb-2 text-gray-700">
-              Rank Testing 🏆
-            </h4>
+            <h4 className="font-semibold mb-2 text-gray-700">Rank Testing</h4>
             <div className="grid grid-cols-2 gap-2">
               <button
                 onClick={async () => {
@@ -983,11 +938,9 @@ const Dashboard = () => {
             </div>
           </div>
 
-          {/* Current Status Section */}
+          {/* Current Status */}
           <div className="mb-4 p-3 bg-gray-50 rounded border">
-            <h4 className="font-semibold mb-2 text-gray-700">
-              Current Status 📊
-            </h4>
+            <h4 className="font-semibold mb-2 text-gray-700">Current Status</h4>
             <button
               onClick={() => {
                 if (userData) {
@@ -1013,7 +966,7 @@ const Dashboard = () => {
       : "Never"
   }
                   `;
-                  alert(status);
+                  alert(status.trim());
                 } else {
                   alert("No user data available");
                 }
@@ -1025,18 +978,18 @@ const Dashboard = () => {
           </div>
 
           <p className="text-xs text-gray-500 text-center">
-            🚀 Test all rank levels instantly!
+            Test all rank levels instantly!
           </p>
         </div>
       )}
-      {/* Level Up Modal */}
+
+      {/* Modals */}
       {showLevelUpModal && (
         <LevelUpModal
           level={getLevelProgress(userData?.xp || 0).currentLevel}
           onClose={() => setShowLevelUpModal(false)}
         />
       )}
-      {/* Badge Earned Modal */}
       {showBadgeModal && newlyEarnedBadge && (
         <BadgeEarnedModal
           badge={newlyEarnedBadge}
@@ -1044,7 +997,6 @@ const Dashboard = () => {
           onClose={() => setShowBadgeModal(false)}
         />
       )}
-      {/* Achievement Earned Modal */}
       {showAchievementModal && newlyEarnedAchievement && (
         <AchievementEarnedModal
           achievement={newlyEarnedAchievement}
@@ -1052,7 +1004,6 @@ const Dashboard = () => {
           onClose={() => setShowAchievementModal(false)}
         />
       )}
-      {/* Rank Up Screen */}
       {showRankUpScreen && rankUpData && (
         <RankUpScreen
           isOpen={showRankUpScreen}

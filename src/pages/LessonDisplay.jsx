@@ -96,7 +96,7 @@ const LessonDisplay = () => {
     const userRef = doc(db, "users", uid);
 
     const unsubUser = onSnapshot(userRef, (snap) => {
-      if (nap.exists()) {
+      if (snap.exists()) {
         setLives(snap.data().lives ?? 5);
         setUserXP(snap.data().xp ?? 0);
         setCoins(snap.data().coins ?? 0);
