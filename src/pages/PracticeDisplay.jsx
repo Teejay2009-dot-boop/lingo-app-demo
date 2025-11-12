@@ -29,7 +29,7 @@ import { doc, updateDoc, increment, onSnapshot } from "firebase/firestore";
 const PracticeDisplay = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { practiceType, practiceName } = location.state || {};
+  const { practiceType, practiceName, difficulty, exerciseCount, timeLimit } = location.state || {};
 
   // Practice states
   const [currentExercise, setCurrentExercise] = useState(null);
@@ -48,17 +48,38 @@ const PracticeDisplay = () => {
   const [sessionDuration, setSessionDuration] = useState(0);
   const [showScoreboard, setShowScoreboard] = useState(false);
   const [maxStreak, setMaxStreak] = useState(0);
+  const [timeRemaining, setTimeRemaining] = useState((timeLimit || 5) * 60); // Convert to seconds
+  const [exercisesCompleted, setExercisesCompleted] = useState(0);
 
-  // Timer for session duration
+  // Timer for session duration and time limit
   useEffect(() => {
     const timer = setInterval(() => {
-      setSessionDuration(Math.floor((Date.now() - startTime) / 1000));
+      const newDuration = Math.floor((Date.now() - startTime) / 1000);
+      setSessionDuration(newDuration);
+      
+      // Update time remaining if time limit is set
+      if (timeLimit) {
+        const remaining = (timeLimit * 60) - newDuration;
+        setTimeRemaining(Math.max(0, remaining));
+        
+        // End session if time runs out
+        if (remaining <= 0) {
+          endPracticeSession();
+        }
+      }
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [startTime]);
+  }, [startTime, timeLimit]);
 
-  // Get all exercises filtered by type
+  // End session if exercise count is reached
+  useEffect(() => {
+    if (exerciseCount && exercisesCompleted >= exerciseCount) {
+      endPracticeSession();
+    }
+  }, [exercisesCompleted, exerciseCount]);
+
+  // Get all exercises filtered by type and difficulty
   const getFilteredExercises = () => {
     const allLessons = Object.values(getAllLessons);
     const allExercises = allLessons.flatMap((lesson) => lesson.exercises || []);
@@ -76,9 +97,18 @@ const PracticeDisplay = () => {
     };
 
     const allowedTypes = typeMapping[practiceType] || [practiceType];
-    return allExercises.filter((exercise) =>
+    let filteredExercises = allExercises.filter((exercise) =>
       allowedTypes.includes(exercise.type)
     );
+
+    // Filter by difficulty if specified
+    if (difficulty && difficulty !== "beginner") {
+      filteredExercises = filteredExercises.filter(exercise => 
+        exercise.difficulty === difficulty || !exercise.difficulty
+      );
+    }
+
+    return filteredExercises;
   };
 
   // Get random exercise from filtered list
@@ -112,7 +142,7 @@ const PracticeDisplay = () => {
       });
       return () => unsubUser();
     }
-  }, [practiceType]);
+  }, [practiceType, difficulty]);
 
   const calculateQuestionXP = (isCorrect, timeTaken) => {
     const base = 2;
@@ -121,7 +151,14 @@ const PracticeDisplay = () => {
     const timeRatio = 15 / Math.max(1, timeTaken);
     const speedFactor = Math.min(1.3, Math.max(0.9, timeRatio));
 
-    return Math.round(base * accuracy * streakBonus * speedFactor);
+    // Difficulty multiplier
+    const difficultyMultiplier = {
+      beginner: 1,
+      intermediate: 1.5,
+      expert: 2
+    }[difficulty] || 1;
+
+    return Math.round(base * accuracy * streakBonus * speedFactor * difficultyMultiplier);
   };
 
   const handleAnswer = async (isCorrect) => {
@@ -131,6 +168,7 @@ const PracticeDisplay = () => {
     setLastAnswerCorrect(isCorrect);
     setShowModal(true);
     setTotalAnswered((prev) => prev + 1);
+    setExercisesCompleted((prev) => prev + 1);
 
     // Update stats
     const newCorrect = isCorrect ? practiceStats.correct + 1 : practiceStats.correct;
@@ -207,8 +245,10 @@ const PracticeDisplay = () => {
     setMaxStreak(0);
     setSessionXP(0);
     setSessionDuration(0);
+    setExercisesCompleted(0);
     setPracticeStats({ correct: 0, incorrect: 0, accuracy: 0 });
     setStartTime(Date.now());
+    setTimeRemaining((timeLimit || 5) * 60);
     
     const exercise = getRandomExercise();
     if (exercise) {
@@ -227,12 +267,12 @@ const PracticeDisplay = () => {
     if (!currentExercise) {
       return (
         <div className="text-center p-8">
-          <p className="text-xl text-gray-600">
+          <p className="text-xl text-yellow-400-600">
             No exercises available for {practiceName} practice.
           </p>
           <button
             onClick={exitPractice}
-            className="mt-4 bg-amber-500 text-white px-6 py-2 rounded-lg hover:bg-amber-600 transition-colors"
+            className="mt-4 bg-amber-500 text-white bg-yellow-400 px-6 py-2 rounded-lg hover:bg-yellow-600 transition-colors"
           >
             Return to Practice Selection
           </button>
@@ -283,7 +323,7 @@ const PracticeDisplay = () => {
           <div className="mb-6">
             <FaTrophy className="text-5xl text-yellow-500 mx-auto mb-4" />
             <h1 className="text-3xl font-bold text-gray-800 mb-2">Practice Complete!</h1>
-            <p className="text-gray-600">{practiceName} Practice</p>
+            <p className="text-gray-600">{practiceName} Practice • {difficulty}</p>
           </div>
 
           {/* Score Summary */}
@@ -344,27 +384,34 @@ const PracticeDisplay = () => {
     <div className="min-h-screen bg-gray-100 p-6 relative">
       <GoBackBtn />
 
-      {/* Practice Header */}
-      {/* <div className="flex justify-between items-center pt-10 mb-6">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-amber-600">
-            {practiceName} Practice
-          </h1>
-          <p className="text-gray-600">Practice mode - No time limit</p>
-        </div>
-
-        <div className="text-center">
-          <div className="text-2xl font-bold text-green-600">
-            Score: {score}
+      {/* Session Info Header */}
+      <div className="bg-white rounded-lg p-4 mb-6 mt-16 shadow-sm">
+        <div className="flex justify-between items-center flex-wrap gap-4">
+          <div className="text-center">
+            <div className="font-semibold text-gray-800 capitalize">{difficulty}</div>
+            <div className="text-sm text-gray-500">Difficulty</div>
           </div>
-          <div className="text-sm text-gray-600">
-            Streak: {currentStreak} | Accuracy: {accuracy}%
+          <div className="text-center">
+            <div className="font-semibold text-gray-800">
+              {exercisesCompleted}/{exerciseCount || '∞'}
+            </div>
+            <div className="text-sm text-gray-500">Exercises</div>
+          </div>
+          <div className="text-center">
+            <div className="font-semibold text-gray-800">
+              {timeLimit ? formatTime(timeRemaining) : '∞'}
+            </div>
+            <div className="text-sm text-gray-500">Time Left</div>
+          </div>
+          <div className="text-center">
+            <div className="font-semibold text-green-600">{score}</div>
+            <div className="text-sm text-gray-500">Score</div>
           </div>
         </div>
-      </div> */}
+      </div>
 
       {/* Stats Bar */}
-      <div className="bg-white rounded-lg p-4 mb-6 mt-16 shadow-sm">
+      <div className="bg-white rounded-lg p-4 mb-6 shadow-sm">
         <div className="flex justify-between items-center text-sm">
           <div className="text-center">
             <div className="font-semibold text-green-600">

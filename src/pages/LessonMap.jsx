@@ -253,30 +253,7 @@ const LessonMap = () => {
                 {selectedModule.title}
               </h3>
 
-              {/* Module Progress */}
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <div className="flex justify-between text-sm text-gray-600 mb-2">
-                  <span>Progress</span>
-                  <span>
-                    {moduleProgress[selectedModule.module_id]
-                      ?.completedLessons || 0}
-                    /{selectedModule.lessons.length} lessons
-                  </span>
-                </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div
-                    className="bg-green-500 h-2 rounded-full transition-all duration-300"
-                    style={{
-                      width: `${
-                        ((moduleProgress[selectedModule.module_id]
-                          ?.completedLessons || 0) /
-                          selectedModule.lessons.length) *
-                        100
-                      }%`,
-                    }}
-                  />
-                </div>
-              </div>
+              {/* Module Progress - REMOVED the progress bar section completely */}
 
               <div className="space-y-4">
                 {selectedModule.lessons.map((lesson, lessonIdx) => {

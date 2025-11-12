@@ -44,7 +44,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 
-// FIXED: Regenerate 1 life per hour, timer starts only on loss
+// FIXED: Regenerate 1 life per hour, NO stored lives
 const checkLivesRegeneration = async (uid) => {
   if (!uid) return;
 
@@ -56,46 +56,55 @@ const checkLivesRegeneration = async (uid) => {
   const userData = userSnap.data();
   const currentLives = userData.lives || 0;
   const maxLives = userData.max_lives || 5;
+
+  // If lives are already full, do nothing
+  if (currentLives >= maxLives) return { currentLives, updated: false };
+
   const lastLifeUpdate = userData.last_life_update?.toDate();
   const now = new Date();
 
-  if (currentLives >= maxLives) return { currentLives, updated: false };
-
+  // If no last update time, set it to now and return
   if (!lastLifeUpdate) {
-    await updateDoc(userRef, { last_life_update: now });
+    await updateDoc(userRef, { 
+      last_life_update: now 
+    });
     return { currentLives, updated: false };
   }
 
+  // Calculate time passed since last update
   const msSinceLastUpdate = now.getTime() - lastLifeUpdate.getTime();
   const hoursSinceLastUpdate = msSinceLastUpdate / (1000 * 60 * 60);
 
+  // If at least 1 hour has passed, add one life
   if (hoursSinceLastUpdate >= 1) {
-    const livesToAdd = Math.min(
-      Math.floor(hoursSinceLastUpdate),
-      maxLives - currentLives
+    const newLives = Math.min(currentLives + 1, maxLives);
+    
+    // Calculate the exact time for the next regeneration
+    // This ensures we don't accumulate multiple lives at once
+    const hoursToAdd = Math.floor(hoursSinceLastUpdate);
+    const nextUpdateTime = new Date(
+      lastLifeUpdate.getTime() + hoursToAdd * 60 * 60 * 1000
     );
 
-    if (livesToAdd > 0) {
-      const nextUpdateTime = new Date(
-        lastLifeUpdate.getTime() + livesToAdd * 60 * 60 * 1000
-      );
+    await updateDoc(userRef, {
+      lives: newLives,
+      last_life_update: nextUpdateTime,
+    });
 
-      await updateDoc(userRef, {
-        lives: currentLives + livesToAdd,
-        last_life_update: nextUpdateTime,
-      });
-
+    // Only send notification if a life was actually added
+    if (newLives > currentLives) {
       addNotification(uid, {
         type: "life-regenerated",
         title: "Life Regenerated!",
-        message: `You gained ${livesToAdd} life${
-          livesToAdd > 1 ? "s" : ""
-        } back!`,
+        message: `You gained 1 life back!`,
         timestamp: new Date(),
       });
-
-      return { currentLives: currentLives + livesToAdd, updated: true };
     }
+
+    return { 
+      currentLives: newLives, 
+      updated: newLives > currentLives 
+    };
   }
 
   return { currentLives, updated: false };
@@ -132,14 +141,14 @@ export const consumeLife = async (uid) => {
 
   if (!userSnap.exists()) return false;
 
-  const userData = userSnap.data();
+  const userData = userDataSnap.data();
   const currentLives = userData.lives || 0;
 
   if (currentLives <= 0) return false;
 
   await updateDoc(userRef, {
     lives: increment(-1),
-    last_life_update: new Date(),
+    last_life_update: new Date(), // Reset timer when life is lost
   });
 
   return true;
@@ -344,31 +353,41 @@ const Dashboard = () => {
     };
   }, [userData]);
 
-  // FIXED: Only check regeneration if lives < max
+  // FIXED: Lives regeneration - only check when lives are not full
   useEffect(() => {
     if (!auth.currentUser || !userData) return;
-    if (userData.lives >= (userData.max_lives || 5)) return;
+    
+    const currentLives = userData.lives || 0;
+    const maxLives = userData.max_lives || 5;
+    
+    // Only check regeneration if lives are not full
+    if (currentLives >= maxLives) return;
 
     let mounted = true;
+
     const checkLives = async () => {
       if (!mounted) return;
       await checkLivesRegeneration(auth.currentUser.uid);
     };
 
+    // Check immediately
     checkLives();
+    
+    // Check every 30 seconds if lives are not full
     const interval = setInterval(checkLives, 30000);
 
     return () => {
       mounted = false;
       clearInterval(interval);
     };
-  }, [userData?.lives, userData?.max_lives]);
+  }, [userData?.lives, userData?.max_lives, userData?.last_life_update]);
 
   // FIXED: Update timer every second
   useEffect(() => {
     if (!userData) return;
 
     let mounted = true;
+
     const updateTimer = () => {
       if (!mounted) return;
       const time = getTimeUntilNextLife(

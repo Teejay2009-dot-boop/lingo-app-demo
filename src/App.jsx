@@ -21,6 +21,7 @@ import PracticeDisplay from "./pages/PracticeDisplay";
 import Ranking from "./pages/Ranking";
 import RoleplaySelection from "./pages/RolePlaySelection";
 import RoleplayExercise from "./pages/RolePlay";
+import PracticeCustomization from "./pages/PracticeCustomization";
 
 function App() {
   useEffect(() => {
@@ -51,7 +52,7 @@ function App() {
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/notifications" element={<NotificationFeed />} />
-        <Route path="/lessons/section/practice" element={<PracticeSection />} />
+        <Route path="/lessons/section/practice" element={<PracticeCustomization />} />
         <Route path="/badges" element={<Badges />} />
         <Route path="/lessons/section" element={<Section />} />
         <Route path="/achievements" element={<Achievements />} />
