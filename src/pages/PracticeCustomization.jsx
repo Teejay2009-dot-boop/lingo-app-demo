@@ -34,7 +34,7 @@ const PracticeCustomization = () => {
   ];
 
   const handleStartPractice = () => {
-    navigate("/practice/display", {
+    navigate("/practice-display", {
       state: {
         practiceType,
         practiceName,
@@ -46,14 +46,14 @@ const PracticeCustomization = () => {
   };
 
   const OptionCard = ({ title, options, selectedValue, onSelect }) => (
-    <div className="bg-white rounded-2xl shadow-lg p-6 mb-6">
-      <h3 className="text-xl font-bold text-gray-800 mb-4 text-center">{title}</h3>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+    <div className="bg-white p-3 mb-6">
+      <h3 className="text-xl font-bold text-gray-800 mb-4 text-start">{title}</h3>
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-8 gap-3">
         {options.map((option) => (
           <button
             key={option.value}
             onClick={() => onSelect(option.value)}
-            className={`p-4 rounded-xl border-2 transition-all duration-200 font-semibold text-lg
+            className={`p-2 rounded-xl border-2 transition-all duration-200 font-semibold text-lg
               ${selectedValue === option.value
                 ? "border-yellow-500 bg-yellow-50 text-yellow-700 shadow-md"
                 : "border-gray-200 bg-gray-50 text-gray-700 hover:border-yellow-400 hover:bg-yellow-25"
@@ -67,19 +67,19 @@ const PracticeCustomization = () => {
   );
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white pb-24">
+    <div className="min-h-screen bg-gradient-to-b from-amber-50 to-white pb-24 ">
       {/* Header */}
       <div className="bg-white shadow-sm">
-        <div className="max-w-4xl mx-auto px-4 py-4">
+        <div className="px-1 py-4">
           <div className="flex items-center justify-between">
             <button
-              onClick={() => navigate(-1)}
+              onClick={() => navigate('/lessons/section')}
               className="p-3 text-amber-600 rounded-lg hover:bg-amber-50 transition-colors"
             >
               <FaArrowLeft className="text-xl" />
             </button>
             
-            <div className="flex items-center gap-6 text-lg">
+            <div className="flex ml-6 items-center gap-6 text-lg">
               <div className="flex items-center gap-2">
                 <FaCoins className="text-yellow-500" />
                 <span className="font-semibold">1,250</span>
@@ -98,19 +98,19 @@ const PracticeCustomization = () => {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-4xl mx-auto px-4 py-8">
+      <div className="mx-auto px-4 py-8 pl-10">
         {/* Practice Title */}
-        <div className="text-center mb-8">
+        <div className="text-start mb-8">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">
-            {practiceName || "Practice Session"}
+            {practiceName || "Practice"}
           </h1>
           <p className="text-lg text-gray-600">
-            Customize your practice session
+            
           </p>
         </div>
 
         {/* Customization Cards */}
-        <div className="max-w-2xl mx-auto">
+        <div className="">
           <OptionCard
             title="Difficulty Level"
             options={difficultyOptions}

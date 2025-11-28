@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+/* Smooth transitions for dark mode */
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+
+/* Prevent transition on page load */
+body.loading * {
+  transition: none !important;
+}
+
 .lesson-container {
   background-image: url("../src/assets/Lesson-Night.jpg");
   background-repeat: no-repeat;
@@ -187,5 +197,3 @@ html {
   display: flex;
   justify-content: center;
 }
-
-

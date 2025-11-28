@@ -22,13 +22,15 @@ import Ranking from "./pages/Ranking";
 import RoleplaySelection from "./pages/RolePlaySelection";
 import RoleplayExercise from "./pages/RolePlay";
 import PracticeCustomization from "./pages/PracticeCustomization";
+import { ThemeProvider } from "./contexts/ThemeContext";
 
 function App() {
   useEffect(() => {
     console.log("App component rendered.");
   }, []);
   return (
-    <Router>
+    <ThemeProvider>
+      <Router>
       <Routes>
         <Route path="/" element={<Welcome />} />
         <Route path="/dashboard/ranking" element={<Ranking />} />
@@ -39,7 +41,7 @@ function App() {
        <Route path="/lessons/section/roleplay/:scenarioId" element={<RoleplayExercise></RoleplayExercise>}></Route>
         <Route path="/challenge/display" element={<ChallengeDisplay />} />
         <Route path="/lessons/section/challenge" element={<Challenge />} />
-        <Route path="/practice/display" element={<PracticeDisplay />} />
+        <Route path="/practice-display" element={<PracticeDisplay />} />
         <Route path="/login" element={<Login />} />
         <Route path="/lessons" element={<Lesson />} />
         <Route path="/dashboard" element={<Dashboard />} />
@@ -59,6 +61,7 @@ function App() {
         <Route path="/lessons/shop" element={<Shop />} />
       </Routes>
     </Router>
+    </ThemeProvider>
   );
 }
 

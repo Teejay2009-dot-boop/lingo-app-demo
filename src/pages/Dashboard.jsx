@@ -65,8 +65,8 @@ const checkLivesRegeneration = async (uid) => {
 
   // If no last update time, set it to now and return
   if (!lastLifeUpdate) {
-    await updateDoc(userRef, { 
-      last_life_update: now 
+    await updateDoc(userRef, {
+      last_life_update: now,
     });
     return { currentLives, updated: false };
   }
@@ -78,7 +78,7 @@ const checkLivesRegeneration = async (uid) => {
   // If at least 1 hour has passed, add one life
   if (hoursSinceLastUpdate >= 1) {
     const newLives = Math.min(currentLives + 1, maxLives);
-    
+
     // Calculate the exact time for the next regeneration
     // This ensures we don't accumulate multiple lives at once
     const hoursToAdd = Math.floor(hoursSinceLastUpdate);
@@ -101,9 +101,9 @@ const checkLivesRegeneration = async (uid) => {
       });
     }
 
-    return { 
-      currentLives: newLives, 
-      updated: newLives > currentLives 
+    return {
+      currentLives: newLives,
+      updated: newLives > currentLives,
     };
   }
 
@@ -132,7 +132,7 @@ const getTimeUntilNextLife = (lastLifeUpdate, currentLives, maxLives = 5) => {
     .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
 };
 
-// CORRECT: Consume life and reset timer
+// FIXED: Consume life and reset timer
 export const consumeLife = async (uid) => {
   if (!uid) return false;
 
@@ -141,7 +141,7 @@ export const consumeLife = async (uid) => {
 
   if (!userSnap.exists()) return false;
 
-  const userData = userDataSnap.data();
+  const userData = userSnap.data(); // FIXED: Changed from userDataSnap to userSnap
   const currentLives = userData.lives || 0;
 
   if (currentLives <= 0) return false;
@@ -356,10 +356,10 @@ const Dashboard = () => {
   // FIXED: Lives regeneration - only check when lives are not full
   useEffect(() => {
     if (!auth.currentUser || !userData) return;
-    
+
     const currentLives = userData.lives || 0;
     const maxLives = userData.max_lives || 5;
-    
+
     // Only check regeneration if lives are not full
     if (currentLives >= maxLives) return;
 
@@ -372,7 +372,7 @@ const Dashboard = () => {
 
     // Check immediately
     checkLives();
-    
+
     // Check every 30 seconds if lives are not full
     const interval = setInterval(checkLives, 30000);
 

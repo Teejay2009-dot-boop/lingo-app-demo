@@ -62,6 +62,9 @@ const LessonMap = () => {
       });
       setModuleProgress(progressMap);
       setLoading(false);
+
+      // Debug: Log progress data
+      console.log("📊 Module Progress:", progressMap);
     });
 
     return () => {
@@ -107,13 +110,44 @@ const LessonMap = () => {
     return num?.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",") || "0";
   };
 
+  // FIXED: Better module unlocking logic
+  const isModuleUnlocked = (section, moduleIdx) => {
+    // First module is always unlocked
+    if (moduleIdx === 0) return true;
+
+    const previousModule = section.modules[moduleIdx - 1];
+    const previousProgress = moduleProgress[previousModule.module_id];
+
+    if (!previousProgress) {
+      console.log(
+        `🔒 Module ${
+          moduleIdx + 1
+        } locked: No progress data for previous module`
+      );
+      return false;
+    }
+
+    const previousCompleted = previousProgress.completedLessons || 0;
+    const previousTotal = previousModule.lessons.length;
+    const isPreviousCompleted = previousCompleted >= previousTotal;
+
+    console.log(`🔓 Module ${moduleIdx + 1} check:`, {
+      previousModule: previousModule.title,
+      previousCompleted,
+      previousTotal,
+      isPreviousCompleted,
+    });
+
+    return isPreviousCompleted;
+  };
+
   if (loading) {
     return <div className="text-center py-8">Loading modules...</div>;
   }
 
   return (
     <>
-      <div className="w-full bg-white h-10 flex  justify-between items-center pr-1 md:pr-5 pt-4">
+      <div className="w-full bg-white h-10 flex  justify-between items-center pr-10 md:pr-5 pt-4">
         <div>
           <button
             onClick={() => navigate(-1)}
@@ -122,14 +156,14 @@ const LessonMap = () => {
             <FaArrowLeft />
           </button>
         </div>
-        <div className="flex justify-between gap-5 md:gap-7 lg:gap-10 md:text-xl text-md">
+        <div className="flex justify-between gap-9 md:gap-7 lg:gap-10 md:text-xl text-md">
           <div className="flex justify-center items-center gap-2">
             <FaCoins className="text-yellow-500" />
             <p className="font-semibold">{formatNumber(userData.coins)}</p>
           </div>
           <div className="flex justify-center items-center gap-2">
             <FaHeart className="text-red-600" />
-            <p className="font-semibold">{userData.lives}/5</p>
+            <p className="font-semibold">{userData.lives}</p>
           </div>
           <div className="flex justify-center items-center gap-2 text-amber">
             <span className="font-semibold">XP</span>
@@ -140,8 +174,10 @@ const LessonMap = () => {
 
       <section className="min-h-screen bg-white pb-12 pt-7 px-4">
         <h2 className="text-3xl font-bold text-center mb-10 text-amber font-fredoka">
-          Choose a Section
+          
         </h2>
+
+        
 
         <div className="relative flex flex-col items-center space-y-8">
           {sections.map((section, sectionIdx) => (
@@ -167,14 +203,8 @@ const LessonMap = () => {
                     completedLessons: 0,
                   };
 
-                  // Determine if the current module should be locked
-                  const isLocked =
-                    moduleIdx > 0 &&
-                    !(
-                      moduleProgress[section.modules[moduleIdx - 1].module_id]
-                        ?.completedLessons ===
-                      section.modules[moduleIdx - 1].lessons.length
-                    );
+                  // FIXED: Use the improved unlocking logic
+                  const isLocked = !isModuleUnlocked(section, moduleIdx);
 
                   const completedLessons = progress.completedLessons || 0;
                   const totalLessons = module.lessons.length;
@@ -223,7 +253,20 @@ const LessonMap = () => {
                               />
                             </div>
                           )}
+
+                          {/* Lock icon for locked modules */}
+                          {isLocked && (
+                            <div className="absolute inset-0 bg-black bg-opacity-40 rounded-full flex items-center justify-center">
+                              <FaLock className="text-white text-xl" />
+                            </div>
+                          )}
                         </div>
+                      </div>
+
+                      {/* Debug info for each module */}
+                      <div className="text-xs text-gray-500 mt-1 text-center">
+                        {progress.completedLessons || 0}/{module.lessons.length}
+                        {isLocked && " 🔒"}
                       </div>
 
                       {/* Connector line below (except last module in a section) */}
@@ -252,8 +295,6 @@ const LessonMap = () => {
               <h3 className="text-2xl font-bold text-center mb-6 text-indigo-700 font-fredoka">
                 {selectedModule.title}
               </h3>
-
-              {/* Module Progress - REMOVED the progress bar section completely */}
 
               <div className="space-y-4">
                 {selectedModule.lessons.map((lesson, lessonIdx) => {
